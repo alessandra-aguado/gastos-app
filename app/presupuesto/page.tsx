@@ -1,6 +1,8 @@
 import { getTopCategories, getSpendByTopCategory, getBudgets } from "@/lib/queries";
 import { setBudget } from "@/lib/actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function PresupuestoPage() {
   const categories = await getTopCategories();
   const spendByCategory = await getSpendByTopCategory();

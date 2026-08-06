@@ -44,22 +44,27 @@ const PAYMENT_METHODS = [
 ];
 
 export async function ensureSeeded() {
-  const count = await prisma.category.count();
-  if (count > 0) return;
-
+  // Usa upsert (en vez de create) para que sea seguro llamarlo varias veces
+  // en paralelo, como hace Next.js al prerenderizar durante el build.
   for (const c of TOP_CATEGORIES) {
-    await prisma.category.create({
-      data: { id: c.id, name: c.name, icon: c.icon, description: c.description },
+    await prisma.category.upsert({
+      where: { id: c.id },
+      update: {},
+      create: { id: c.id, name: c.name, icon: c.icon, description: c.description },
     });
   }
   for (const s of SUBCATEGORIES) {
-    await prisma.category.create({
-      data: { id: s.id, name: s.name, parentId: s.parentId },
+    await prisma.category.upsert({
+      where: { id: s.id },
+      update: {},
+      create: { id: s.id, name: s.name, parentId: s.parentId },
     });
   }
   for (const p of PAYMENT_METHODS) {
-    await prisma.paymentMethod.create({
-      data: { id: p.id, name: p.name, type: p.type },
+    await prisma.paymentMethod.upsert({
+      where: { id: p.id },
+      update: {},
+      create: { id: p.id, name: p.name, type: p.type },
     });
   }
 }

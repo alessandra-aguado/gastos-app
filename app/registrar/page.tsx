@@ -2,6 +2,8 @@ import { createTransaction } from "@/lib/actions";
 import { getTopCategories, getPaymentMethods } from "@/lib/queries";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export default async function RegistrarPage() {
   const categories = await getTopCategories();
   const paymentMethods = await getPaymentMethods();
