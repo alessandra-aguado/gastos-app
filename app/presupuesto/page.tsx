@@ -1,17 +1,12 @@
-import { setBudget } from "@/lib/actions";
 import { getTopCategories, getSpendByTopCategory, getBudgets } from "@/lib/queries";
+import { setBudget } from "@/lib/actions";
 
 export default async function PresupuestoPage() {
-  const categories = getTopCategories();
-  const spendByCategory = getSpendByTopCategory();
-  const budgets = getBudgets();
+  const categories = await getTopCategories();
+  const spendByCategory = await getSpendByTopCategory();
+  const budgets = await getBudgets();
   const budgetMap: Record<string, number> = {};
   for (const b of budgets) budgetMap[b.categoryId] = b.amountLimit;
-
-  async function action(formData: FormData) {
-    "use server";
-    await setBudget(formData);
-  }
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
@@ -50,7 +45,7 @@ export default async function PresupuestoPage() {
                 </div>
               )}
 
-              <form action={action} className="mt-3 flex items-center gap-2">
+              <form action={setBudget} className="mt-3 flex items-center gap-2">
                 <input type="hidden" name="categoryId" value={c.id} />
                 <input
                   name="amountLimit"

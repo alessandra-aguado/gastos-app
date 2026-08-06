@@ -1,87 +1,85 @@
-import db from "./db";
+import { prisma, ensureSeeded } from "./db";
 
-export type Category = {
-  id: string;
-  name: string;
-  icon: string | null;
-  description: string | null;
-  parentId: string | null;
-};
-
-export type PaymentMethod = { id: string; name: string; type: string };
-
-export function currentMonth() {
-  return new Date().toISOString().slice(0, 7); // "2026-08"
+export function currentMonthRange(base = new Date()) {
+  const start = new Date(base.getFullYear(), base.getMonth(), 1);
+  const end = new Date(base.getFullYear(), base.getMonth() + 1, 1);
+  return { start, end };
 }
 
-export function getCategories(): Category[] {
-  return db.prepare("SELECT * FROM Category ORDER BY parentId IS NOT NULL, name").all() as Category[];
+export function currentMonthKey(base = new Date()) {
+  return base.toISOString().slice(0, 7); // "2026-08"
 }
 
-export function getTopCategories(): Category[] {
-  return db.prepare("SELECT * FROM Category WHERE parentId IS NULL ORDER BY name").all() as Category[];
+export async function getCategories() {
+  await ensureSeeded();
+  return prisma.category.findMany({ orderBy: [{ name: "asc" }] });
 }
 
-export function getPaymentMethods(): PaymentMethod[] {
-  return db.prepare("SELECT * FROM PaymentMethod ORDER BY name").all() as PaymentMethod[];
+export async function getTopCategories() {
+  await ensureSeeded();
+  return prisma.category.findMany({ where: { parentId: null }, orderBy: { name: "asc" } });
 }
 
-export function getMonthSummary(month = currentMonth()) {
-  const rows = db
-    .prepare(`SELECT amount FROM "Transaction" WHERE date LIKE ? `)
-    .all(`${month}%`) as { amount: number }[];
+export async function getPaymentMethods() {
+  await ensureSeeded();
+  return prisma.paymentMethod.findMany({ orderBy: { name: "asc" } });
+}
 
-  const total = rows.reduce((sum, r) => sum + r.amount, 0);
-  const count = rows.length;
+export async function getMonthSummary() {
+  const { start, end } = currentMonthRange();
+  const txs = await prisma.transaction.findMany({
+    where: { date: { gte: start, lt: end } },
+    select: { amount: true, status: true },
+  });
+  const total = txs.reduce((s, t) => s + t.amount, 0);
+  const count = txs.length;
   const avg = count > 0 ? total / count : 0;
-  const pending = (
-    db.prepare(`SELECT COUNT(*) as c FROM "Transaction" WHERE status = 'pendiente_revision'`).get() as { c: number }
-  ).c;
-
+  const pending = txs.filter((t) => t.status === "pendiente_revision").length;
   return { total, count, avg, pending };
 }
 
-export function getDailySpend(month = currentMonth()) {
-  const rows = db
-    .prepare(`SELECT date, SUM(amount) as total FROM "Transaction" WHERE date LIKE ? GROUP BY date ORDER BY date`)
-    .all(`${month}%`) as { date: string; total: number }[];
-  return rows;
-}
-
-export function getSpendByTopCategory(month = currentMonth()) {
-  const rows = db
-    .prepare(
-      `SELECT c.id as categoryId, COALESCE(c.parentId, c.id) as topId, SUM(t.amount) as total
-       FROM "Transaction" t
-       JOIN Category c ON c.id = t.categoryId
-       WHERE t.date LIKE ?
-       GROUP BY topId`
-    )
-    .all(`${month}%`) as { topId: string; total: number }[];
-
+// Devuelve un mapa { "06": 137.5, "07": 20 } con el día del mes como llave.
+export async function getDailySpend(): Promise<Record<string, number>> {
+  const { start, end } = currentMonthRange();
+  const txs = await prisma.transaction.findMany({
+    where: { date: { gte: start, lt: end } },
+    select: { date: true, amount: true },
+  });
   const map: Record<string, number> = {};
-  for (const r of rows) map[r.topId] = r.total;
+  for (const t of txs) {
+    const day = t.date.toISOString().slice(8, 10);
+    map[day] = (map[day] || 0) + t.amount;
+  }
   return map;
 }
 
-export function listTransactionsByCategory(topCategoryId: string, month = currentMonth()) {
-  return db
-    .prepare(
-      `SELECT t.*, c.name as categoryName, pm.name as paymentMethodName
-       FROM "Transaction" t
-       LEFT JOIN Category c ON c.id = t.categoryId
-       LEFT JOIN PaymentMethod pm ON pm.id = t.paymentMethodId
-       WHERE t.date LIKE ? AND (t.categoryId = ? OR c.parentId = ?)
-       ORDER BY t.date DESC`
-    )
-    .all(`${month}%`, topCategoryId, topCategoryId);
+export async function getSpendByTopCategory(): Promise<Record<string, number>> {
+  const { start, end } = currentMonthRange();
+  const txs = await prisma.transaction.findMany({
+    where: { date: { gte: start, lt: end } },
+    select: { amount: true, category: { select: { id: true, parentId: true } } },
+  });
+  const map: Record<string, number> = {};
+  for (const t of txs) {
+    if (!t.category) continue;
+    const topId = t.category.parentId ?? t.category.id;
+    map[topId] = (map[topId] || 0) + t.amount;
+  }
+  return map;
 }
 
-export function getBudgets(month = currentMonth()) {
-  return db.prepare(`SELECT * FROM Budget WHERE month = ?`).all(month) as {
-    id: string;
-    categoryId: string;
-    month: string;
-    amountLimit: number;
-  }[];
+export async function listTransactionsByCategory(topCategoryId: string) {
+  const { start, end } = currentMonthRange();
+  return prisma.transaction.findMany({
+    where: {
+      date: { gte: start, lt: end },
+      OR: [{ categoryId: topCategoryId }, { category: { parentId: topCategoryId } }],
+    },
+    include: { category: true, paymentMethod: true },
+    orderBy: { date: "desc" },
+  });
+}
+
+export async function getBudgets() {
+  return prisma.budget.findMany({ where: { month: currentMonthKey() } });
 }

@@ -7,20 +7,12 @@ export default async function GastosPage({
   searchParams: Promise<{ cat?: string }>;
 }) {
   const { cat } = await searchParams;
-  const categories = getTopCategories();
-  const spendByCategory = getSpendByTopCategory();
+  const categories = await getTopCategories();
+  const spendByCategory = await getSpendByTopCategory();
 
   if (cat) {
     const category = categories.find((c) => c.id === cat);
-    const transactions = listTransactionsByCategory(cat) as {
-      id: string;
-      amount: number;
-      date: string;
-      merchant: string | null;
-      categoryName: string;
-      paymentMethodName: string;
-      notes: string | null;
-    }[];
+    const transactions = await listTransactionsByCategory(cat);
 
     return (
       <div className="max-w-3xl mx-auto px-6 py-8">
@@ -44,9 +36,10 @@ export default async function GastosPage({
               className="bg-surface border border-border rounded-xl px-4 py-3 flex items-center justify-between"
             >
               <div>
-                <p className="text-sm font-medium">{t.merchant || t.categoryName}</p>
+                <p className="text-sm font-medium">{t.merchant || t.category?.name}</p>
                 <p className="text-xs text-muted">
-                  {t.date} · {t.paymentMethodName} {t.notes ? `· ${t.notes}` : ""}
+                  {t.date.toISOString().slice(0, 10)} · {t.paymentMethod?.name}
+                  {t.notes ? ` · ${t.notes}` : ""}
                 </p>
               </div>
               <p className="font-semibold">S/ {t.amount.toFixed(0)}</p>

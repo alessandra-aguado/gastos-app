@@ -8,19 +8,17 @@ import {
 } from "@/lib/queries";
 
 export default async function Home() {
-  const summary = getMonthSummary();
-  const daily = getDailySpend();
-  const spendByCategory = getSpendByTopCategory();
-  const categories = getTopCategories();
-  const budgets = getBudgets();
+  const summary = await getMonthSummary();
+  const dailyMap = await getDailySpend();
+  const spendByCategory = await getSpendByTopCategory();
+  const categories = await getTopCategories();
+  const budgets = await getBudgets();
 
   const totalBudget = budgets.reduce((s, b) => s + b.amountLimit, 0);
   const budgetPct = totalBudget > 0 ? Math.round((summary.total / totalBudget) * 100) : null;
 
   const now = new Date();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const dailyMap: Record<string, number> = {};
-  for (const d of daily) dailyMap[d.date.slice(8, 10)] = d.total;
   const maxSpend = Math.max(1, ...Object.values(dailyMap));
 
   const chips = [
@@ -79,7 +77,7 @@ export default async function Home() {
       <section className="bg-surface border border-border rounded-2xl p-6">
         <p className="text-sm font-medium mb-4">Gasto diario</p>
         {summary.count === 0 ? (
-          <p className="text-sm text-muted">Aún no registras gastos este mes. Dale a "+ Registrar gasto" para empezar.</p>
+          <p className="text-sm text-muted">Aún no registras gastos este mes. Dale a &quot;+ Registrar gasto&quot; para empezar.</p>
         ) : (
           <div className="flex items-end gap-1 h-32 overflow-x-auto">
             {Array.from({ length: daysInMonth }, (_, i) => {

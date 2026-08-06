@@ -3,8 +3,8 @@ import { getTopCategories, getPaymentMethods } from "@/lib/queries";
 import { redirect } from "next/navigation";
 
 export default async function RegistrarPage() {
-  const categories = getTopCategories();
-  const paymentMethods = getPaymentMethods();
+  const categories = await getTopCategories();
+  const paymentMethods = await getPaymentMethods();
   const today = new Date().toISOString().slice(0, 10);
 
   async function action(formData: FormData) {

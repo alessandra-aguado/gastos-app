@@ -4,7 +4,8 @@
 // En tu máquina esto no pasará: solo corre `npm install && npx prisma generate`.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -88,6 +89,8 @@ model Budget {
   month       String // formato "2026-08"
   amountLimit Float
   createdAt   DateTime @default(now())
+
+  @@unique([categoryId, month])
 }
 
 model FixedExpense {

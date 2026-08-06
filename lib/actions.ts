@@ -1,11 +1,12 @@
 "use server";
 
-import db from "./db";
+import { prisma, ensureSeeded } from "./db";
 import { revalidatePath } from "next/cache";
-import { randomUUID } from "crypto";
-import { currentMonth } from "./queries";
+import { currentMonthKey } from "./queries";
 
 export async function createTransaction(formData: FormData) {
+  await ensureSeeded();
+
   const amount = parseFloat(String(formData.get("amount")));
   const date = String(formData.get("date"));
   const categoryId = String(formData.get("categoryId"));
@@ -17,10 +18,18 @@ export async function createTransaction(formData: FormData) {
     throw new Error("Faltan campos requeridos");
   }
 
-  db.prepare(
-    `INSERT INTO "Transaction" (id, amount, date, merchant, source, status, notes, categoryId, paymentMethodId)
-     VALUES (?, ?, ?, ?, 'manual', 'confirmado', ?, ?, ?)`
-  ).run(randomUUID(), amount, date, merchant, notes, categoryId, paymentMethodId);
+  await prisma.transaction.create({
+    data: {
+      amount,
+      date: new Date(date),
+      merchant: merchant || null,
+      source: "manual",
+      status: "confirmado",
+      notes: notes || null,
+      categoryId,
+      paymentMethodId,
+    },
+  });
 
   revalidatePath("/");
   revalidatePath("/gastos");
@@ -30,13 +39,13 @@ export async function createTransaction(formData: FormData) {
 export async function setBudget(formData: FormData) {
   const categoryId = String(formData.get("categoryId"));
   const amountLimit = parseFloat(String(formData.get("amountLimit")));
-  const month = currentMonth();
+  const month = currentMonthKey();
 
-  db.prepare(
-    `INSERT INTO Budget (id, categoryId, month, amountLimit)
-     VALUES (?, ?, ?, ?)
-     ON CONFLICT(categoryId, month) DO UPDATE SET amountLimit = excluded.amountLimit`
-  ).run(randomUUID(), categoryId, month, amountLimit);
+  await prisma.budget.upsert({
+    where: { categoryId_month: { categoryId, month } },
+    update: { amountLimit },
+    create: { categoryId, month, amountLimit },
+  });
 
   revalidatePath("/presupuesto");
   revalidatePath("/");
