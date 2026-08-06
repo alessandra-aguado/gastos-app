@@ -1,0 +1,177 @@
+// Esquema completo según el modelo de datos acordado.
+// NOTA: en este sandbox no se pudo correr `prisma generate` (el binario del
+// engine se descarga de binaries.prisma.sh, bloqueado por la red del sandbox).
+// En tu máquina esto no pasará: solo corre `npm install && npx prisma generate`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Para probar local sin nada instalado, puedes cambiar esto a:
+  // provider = "sqlite"
+  // url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  icon        String?
+  description String? // se inyecta al prompt de clasificación de la IA
+  parentId    String?
+  parent      Category?  @relation("Subcategories", fields: [parentId], references: [id])
+  children    Category[] @relation("Subcategories")
+
+  transactions     Transaction[]
+  transactionItems TransactionItem[]
+  budgets          Budget[]
+  fixedExpenses    FixedExpense[]
+  wishlistItems    WishlistItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PaymentMethod {
+  id           String   @id @default(cuid())
+  name         String
+  type         String // debito | credito | billetera_digital | efectivo
+  bankOrIssuer String?
+  transactions Transaction[]
+  createdAt    DateTime @default(now())
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  amount        Float
+  date          DateTime
+  merchant      String?
+  source        String // foto | voz | texto | manual | email
+  rawInput      String? // texto original o referencia a la imagen
+  aiConfidence  Int? // 0-100
+  status        String   @default("confirmado") // confirmado | pendiente_revision
+  notes         String?
+
+  categoryId      String?
+  category        Category?      @relation(fields: [categoryId], references: [id])
+  paymentMethodId String?
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  fixedExpenseId  String?
+  fixedExpense    FixedExpense?  @relation(fields: [fixedExpenseId], references: [id])
+
+  items TransactionItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Línea de producto dentro de una boleta (supermercado, etc).
+// Alimenta el comparador de precios por producto + tienda.
+model TransactionItem {
+  id            String   @id @default(cuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  productName   String
+  quantity      Float    @default(1)
+  unitPrice     Float
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+model Budget {
+  id          String @id @default(cuid())
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  month       String // formato "2026-08"
+  amountLimit Float
+  createdAt   DateTime @default(now())
+}
+
+model FixedExpense {
+  id          String   @id @default(cuid())
+  name        String
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  amount      Float
+  frequency   String // mensual | semanal | anual
+  nextDueDate DateTime?
+  transactions Transaction[]
+  createdAt   DateTime @default(now())
+}
+
+model SavingsGoal {
+  id                String   @id @default(cuid())
+  name              String // propósito: "curso de inglés", "depa"
+  targetAmount      Float
+  currentAmount     Float    @default(0)
+  targetDate        DateTime?
+  status            String   @default("activa") // activa | completada
+  originWishlistId  String?  @unique
+  originWishlist    WishlistItem? @relation(fields: [originWishlistId], references: [id])
+  contributions     SavingsContribution[]
+  createdAt         DateTime @default(now())
+}
+
+model SavingsContribution {
+  id            String      @id @default(cuid())
+  savingsGoalId String
+  savingsGoal   SavingsGoal @relation(fields: [savingsGoalId], references: [id], onDelete: Cascade)
+  amount        Float
+  date          DateTime
+  createdAt     DateTime    @default(now())
+}
+
+model Investment {
+  id               String   @id @default(cuid())
+  platform         String // Trii, bolsa de valores, etc.
+  instrumentType   String // acciones, fondo, etc.
+  amountContributed Float
+  date             DateTime
+  currentValue     Float?
+  createdAt        DateTime @default(now())
+}
+
+model Debt {
+  id              String   @id @default(cuid())
+  type            String // tarjeta_credito | prestamo_personal
+  counterpartName String? // nombre del amigo o del banco
+  direction       String? // yo_debo | me_deben (solo prestamo_personal)
+  principalAmount Float
+  balance         Float
+  dueDate         DateTime?
+  payments        DebtPayment[]
+  createdAt       DateTime @default(now())
+}
+
+model DebtPayment {
+  id     String   @id @default(cuid())
+  debtId String
+  debt   Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  amount Float
+  date   DateTime
+  note   String?
+}
+
+model WishlistItem {
+  id             String   @id @default(cuid())
+  name           String
+  estimatedPrice Float
+  categoryId     String?
+  category       Category? @relation(fields: [categoryId], references: [id])
+  isNecessary    Boolean  @default(false)
+  status         String   @default("pendiente") // pendiente | comprado | convertido_a_meta
+  savingsGoal    SavingsGoal?
+  createdAt      DateTime @default(now())
+}
+
+model EmailAccount {
+  id              String @id @default(cuid())
+  provider        String // gmail
+  email           String
+  oauthTokens     String? // encriptado en producción
+  bankSearchQuery String?
+  createdAt       DateTime @default(now())
+}
