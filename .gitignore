@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# datos locales de SQLite (Fase 1, interino hasta migrar a Postgres/Prisma)
+/data/

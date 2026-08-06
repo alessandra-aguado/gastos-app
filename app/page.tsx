@@ -1,63 +1,74 @@
-const chips = [
-  { icon: "📊", label: "Presupuesto", value: "65% usado" },
-  { icon: "🎯", label: "Metas", value: "3 activas" },
-  { icon: "💳", label: "Debo", value: "S/ 450" },
-  { icon: "🔥", label: "Racha", value: "12 días" },
-];
+import Link from "next/link";
+import {
+  getMonthSummary,
+  getDailySpend,
+  getSpendByTopCategory,
+  getTopCategories,
+  getBudgets,
+} from "@/lib/queries";
 
-const dailySpend = [12, 34, 8, 51, 20, 63, 15]; // últimos 7 días, mock
-const days = ["L", "M", "M", "J", "V", "S", "D"];
-const maxSpend = Math.max(...dailySpend);
+export default async function Home() {
+  const summary = getMonthSummary();
+  const daily = getDailySpend();
+  const spendByCategory = getSpendByTopCategory();
+  const categories = getTopCategories();
+  const budgets = getBudgets();
 
-const categories = [
-  { icon: "🛒", name: "Supermercado", amount: "S/ 210" },
-  { icon: "🥬", name: "Mercado", amount: "S/ 95" },
-  { icon: "🚌", name: "Transporte", amount: "S/ 120" },
-  { icon: "🍽️", name: "Salidas a comer", amount: "S/ 180" },
-  { icon: "🎬", name: "Entretenimiento", amount: "S/ 60" },
-  { icon: "💊", name: "Salud", amount: "S/ 40" },
-];
+  const totalBudget = budgets.reduce((s, b) => s + b.amountLimit, 0);
+  const budgetPct = totalBudget > 0 ? Math.round((summary.total / totalBudget) * 100) : null;
 
-export default function Home() {
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dailyMap: Record<string, number> = {};
+  for (const d of daily) dailyMap[d.date.slice(8, 10)] = d.total;
+  const maxSpend = Math.max(1, ...Object.values(dailyMap));
+
+  const chips = [
+    { icon: "📊", label: "Presupuesto", value: budgetPct !== null ? `${budgetPct}% usado` : "sin definir" },
+    { icon: "🎯", label: "Metas", value: "próxima fase" },
+    { icon: "💳", label: "Debo", value: "próxima fase" },
+    { icon: "🔥", label: "Racha", value: "próxima fase" },
+  ];
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Hola, Ale 👋</h1>
-          <p className="text-muted text-sm mt-1">Así vas este mes de agosto</p>
+          <p className="text-muted text-sm mt-1">
+            Así vas en {now.toLocaleDateString("es-PE", { month: "long", year: "numeric" })}
+          </p>
         </div>
-        <button className="bg-accent text-white text-sm font-medium px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+        <Link
+          href="/registrar"
+          className="bg-accent text-white text-sm font-medium px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity"
+        >
           + Registrar gasto
-        </button>
+        </Link>
       </header>
 
-      {/* Resumen del mes */}
       <section className="bg-surface border border-border rounded-2xl p-6 flex flex-wrap items-center gap-8">
         <div>
           <p className="text-xs text-muted">Gastado este mes</p>
-          <p className="text-3xl font-semibold mt-1">S/ 1,240</p>
+          <p className="text-3xl font-semibold mt-1">S/ {summary.total.toFixed(0)}</p>
         </div>
         <div>
           <p className="text-xs text-muted">Transacciones</p>
-          <p className="text-3xl font-semibold mt-1">38</p>
+          <p className="text-3xl font-semibold mt-1">{summary.count}</p>
         </div>
         <div>
           <p className="text-xs text-muted">Promedio por gasto</p>
-          <p className="text-3xl font-semibold mt-1">S/ 33</p>
+          <p className="text-3xl font-semibold mt-1">S/ {summary.avg.toFixed(0)}</p>
         </div>
         <div>
           <p className="text-xs text-muted">Pendientes por clasificar</p>
-          <p className="text-3xl font-semibold mt-1 text-positive">0</p>
+          <p className="text-3xl font-semibold mt-1 text-positive">{summary.pending}</p>
         </div>
       </section>
 
-      {/* Chips de cada sección */}
       <section className="flex flex-wrap gap-3">
         {chips.map((c) => (
-          <div
-            key={c.label}
-            className="flex items-center gap-2 bg-surface border border-border rounded-full px-4 py-2 text-sm"
-          >
+          <div key={c.label} className="flex items-center gap-2 bg-surface border border-border rounded-full px-4 py-2 text-sm">
             <span>{c.icon}</span>
             <span className="text-muted">{c.label}</span>
             <span className="font-medium">{c.value}</span>
@@ -65,35 +76,42 @@ export default function Home() {
         ))}
       </section>
 
-      {/* Gasto diario */}
       <section className="bg-surface border border-border rounded-2xl p-6">
         <p className="text-sm font-medium mb-4">Gasto diario</p>
-        <div className="flex items-end gap-4 h-32">
-          {dailySpend.map((v, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-2">
-              <div
-                className="w-full bg-accent-soft rounded-t-lg"
-                style={{ height: `${(v / maxSpend) * 100}%`, background: "var(--accent)" }}
-              />
-              <span className="text-xs text-muted">{days[i]}</span>
-            </div>
-          ))}
-        </div>
+        {summary.count === 0 ? (
+          <p className="text-sm text-muted">Aún no registras gastos este mes. Dale a "+ Registrar gasto" para empezar.</p>
+        ) : (
+          <div className="flex items-end gap-1 h-32 overflow-x-auto">
+            {Array.from({ length: daysInMonth }, (_, i) => {
+              const day = String(i + 1).padStart(2, "0");
+              const v = dailyMap[day] || 0;
+              return (
+                <div key={day} className="flex-1 min-w-[6px] flex flex-col items-center gap-1 h-full justify-end">
+                  <div
+                    className="w-full rounded-t"
+                    style={{ height: `${(v / maxSpend) * 100}%`, background: v > 0 ? "var(--accent)" : "var(--border)" }}
+                    title={`${day}: S/ ${v.toFixed(0)}`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* Categorías */}
       <section>
         <p className="text-sm font-medium mb-3">Por categoría</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {categories.map((c) => (
-            <button
-              key={c.name}
+            <Link
+              key={c.id}
+              href={`/gastos?cat=${c.id}`}
               className="bg-surface border border-border rounded-2xl p-4 text-left hover:border-accent transition-colors"
             >
               <span className="text-xl">{c.icon}</span>
               <p className="text-sm mt-2">{c.name}</p>
-              <p className="text-lg font-semibold mt-0.5">{c.amount}</p>
-            </button>
+              <p className="text-lg font-semibold mt-0.5">S/ {(spendByCategory[c.id] || 0).toFixed(0)}</p>
+            </Link>
           ))}
         </div>
       </section>
