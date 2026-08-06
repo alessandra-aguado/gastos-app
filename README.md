@@ -24,3 +24,4 @@ Abre http://localhost:3000
 ## Siguientes fases
 
 Ver el documento `app_gastos_estructura_y_modelo_de_datos.md` compartido en la conversación con Claude — tiene las 10 fases completas (OCR, voz, categorización con IA, ahorros, deudas, deseos, asistente IA, correo).
+
