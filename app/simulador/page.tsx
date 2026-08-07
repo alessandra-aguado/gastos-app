@@ -1,4 +1,4 @@
-import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, nextMonthKeys } from "@/lib/queries";
+import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, getDebtPaymentPlans, nextMonthKeys } from "@/lib/queries";
 import { formatMonto } from "@/lib/format";
 import { Calculator } from "lucide-react";
 import SimulationItemModal from "./SimulationItemModal";
@@ -15,17 +15,25 @@ function etiquetaMes(mes: string) {
 
 export default async function SimuladorPage() {
   const months = nextMonthKeys(3);
-  const [settings, fijos, deudas, categories, medios, items] = await Promise.all([
+  const [settings, fijos, deudas, categories, medios, items, planesPago] = await Promise.all([
     getSettings(),
     getFijos(),
     getDeudas(),
     getTopCategories(),
     getPaymentMethods(),
     getSimulationItems(months),
+    getDebtPaymentPlans(months),
   ]);
 
   const decimales = settings?.decimales ?? 0;
   const ingresoBase = settings?.monthlyIncome || 0;
+  const alertaDefault = settings?.alertaTarjetaDefault ?? 30;
+
+  const planPorDeudaMes: Record<string, Record<string, number>> = {};
+  for (const p of planesPago) {
+    if (!planPorDeudaMes[p.debtId]) planPorDeudaMes[p.debtId] = {};
+    planPorDeudaMes[p.debtId][p.month] = p.amount;
+  }
 
   const fijosSinTarjeta = fijos.filter((f) => f.paymentMethod?.type !== "credito").reduce((s, f) => s + f.amount, 0);
   const fijosConTarjetaPorMedio: Record<string, number> = {};
@@ -36,33 +44,39 @@ export default async function SimuladorPage() {
   }
 
   const tarjetas = deudas.filter((d) => d.type === "tarjeta_credito" && d.status !== "pagada");
-  const cuotasTarjetas = tarjetas.reduce((s, d) => s + (d.minPayment || 0), 0);
+  function cuotasTarjetasMes(mes: string) {
+    return tarjetas.reduce((s, d) => s + (planPorDeudaMes[d.id]?.[mes] ?? d.minPayment ?? 0), 0);
+  }
 
   const deudasActivas = deudas.filter((d) => d.status !== "pagada" && (d.type === "tarjeta_credito" || d.direction === "yo_debo"));
 
   const itemsPorMes: Record<string, typeof items> = {};
   for (const m of months) itemsPorMes[m] = items.filter((i) => i.month === m);
 
-  const filas: { mes: string; itemsMes: typeof items; ingresosHip: number; gastosHip: number; saldoDelMes: number; saldoAcumulado: number }[] = [];
+  const filas: { mes: string; itemsMes: typeof items; ingresosHip: number; gastosHip: number; cuotasTarjetas: number; saldoDelMes: number; saldoAcumulado: number }[] = [];
   for (const mes of months) {
     const itemsMes = itemsPorMes[mes];
     const ingresosHip = itemsMes.filter((i) => i.type === "ingreso").reduce((s, i) => s + i.amount, 0);
     const gastosHip = itemsMes.filter((i) => i.type === "gasto" || i.type === "prestamo").reduce((s, i) => s + i.amount, 0);
-    const saldoDelMes = ingresoBase + ingresosHip - fijosSinTarjeta - cuotasTarjetas - gastosHip;
+    const cuotas = cuotasTarjetasMes(mes);
+    const saldoDelMes = ingresoBase + ingresosHip - fijosSinTarjeta - cuotas - gastosHip;
     const previo = filas.length > 0 ? filas[filas.length - 1].saldoAcumulado : 0;
-    filas.push({ mes, itemsMes, ingresosHip, gastosHip, saldoDelMes, saldoAcumulado: previo + saldoDelMes });
+    filas.push({ mes, itemsMes, ingresosHip, gastosHip, cuotasTarjetas: cuotas, saldoDelMes, saldoAcumulado: previo + saldoDelMes });
   }
 
   const proyeccionTarjetas = tarjetas.map((d) => {
     let balance = d.balance;
+    const umbral = d.alertaPorcentaje ?? alertaDefault;
     const porMes = months.map((mes) => {
       const itemsMes = itemsPorMes[mes];
       const cargosFijos = d.paymentMethodId ? fijosConTarjetaPorMedio[d.paymentMethodId] || 0 : 0;
       const cargosHip = itemsMes.filter((i) => (i.type === "gasto" || i.type === "prestamo") && i.paymentMethodId === d.paymentMethodId).reduce((s, i) => s + i.amount, 0);
       const pagoExtra = itemsMes.filter((i) => i.type === "pago_deuda" && i.debtId === d.id).reduce((s, i) => s + i.amount, 0);
-      balance = Math.max(0, balance + cargosFijos + cargosHip - (d.minPayment || 0) - pagoExtra);
+      const planMes = planPorDeudaMes[d.id]?.[mes];
+      const pagoDeuda = planMes ?? (d.minPayment || 0);
+      balance = Math.max(0, balance + cargosFijos + cargosHip - pagoDeuda - pagoExtra);
       const pctUso = d.creditLimit ? Math.min(999, Math.round((balance / d.creditLimit) * 100)) : null;
-      return { mes, balance, pctUso };
+      return { mes, balance, pctUso, umbral, segunPlan: planMes !== undefined };
     });
     return { deuda: d, porMes };
   });
@@ -75,7 +89,7 @@ export default async function SimuladorPage() {
       </p>
 
       <div className="mt-6 space-y-4">
-        {filas.map(({ mes, itemsMes, saldoDelMes, saldoAcumulado: acumulado }) => (
+        {filas.map(({ mes, itemsMes, saldoDelMes, cuotasTarjetas: cuotasMes, saldoAcumulado: acumulado }) => (
           <div key={mes} className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
             <div className="flex justify-between items-center mb-3">
               <p className="text-sm font-medium capitalize">{etiquetaMes(mes)}</p>
@@ -92,7 +106,7 @@ export default async function SimuladorPage() {
             </div>
             <div className="flex justify-between items-center text-sm text-muted py-1 mb-2">
               <span>Cuotas de tarjetas</span>
-              <span className="text-foreground">− S/ {formatMonto(cuotasTarjetas, decimales)}</span>
+              <span className="text-foreground">− S/ {formatMonto(cuotasMes, decimales)}</span>
             </div>
 
             {itemsMes.length > 0 && (
@@ -125,13 +139,14 @@ export default async function SimuladorPage() {
                 <div key={deuda.id}>
                   <p className="text-sm font-medium mb-1.5">{deuda.counterpartName || "Tarjeta de crédito"}</p>
                   <div className="grid grid-cols-3 gap-2">
-                    {porMes.map(({ mes, balance, pctUso }) => (
+                    {porMes.map(({ mes, balance, pctUso, umbral, segunPlan }) => (
                       <div key={mes} className="border border-border rounded-lg p-2.5">
                         <p className="text-[11px] text-muted capitalize mb-1">{etiquetaMes(mes).split(" ")[0]}</p>
-                        <p className={`text-sm font-medium ${pctUso !== null && pctUso >= 80 ? "text-warning" : ""}`}>S/ {formatMonto(balance, decimales)}</p>
+                        <p className={`text-sm font-medium ${pctUso !== null && pctUso >= umbral ? "text-warning" : ""}`}>S/ {formatMonto(balance, decimales)}</p>
                         {pctUso !== null && (
-                          <p className={`text-[11px] ${pctUso >= 80 ? "text-warning" : "text-muted"}`}>{pctUso}% de tu línea</p>
+                          <p className={`text-[11px] ${pctUso >= umbral ? "text-warning" : "text-muted"}`}>{pctUso}% de tu línea</p>
                         )}
+                        <p className="text-[10px] text-muted mt-0.5">{segunPlan ? "según tu plan" : "pago mínimo est."}</p>
                       </div>
                     ))}
                   </div>

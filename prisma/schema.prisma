@@ -181,11 +181,28 @@ model Debt {
   startDate       DateTime? // desde cuando existe la deuda
   status          String   @default("activa") // activa | pagada
   dueDate         DateTime?
+  alertaPorcentaje Int?    // umbral de alerta de uso (%) personalizado para esta tarjeta; si es null se usa Settings.alertaTarjetaDefault
   paymentMethodId String?        @unique // vincula esta deuda a la tarjeta (PaymentMethod tipo credito) para sincronizar gastos automaticamente
   paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   payments        DebtPayment[]
   simulationItems SimulationItem[]
+  paymentPlans    DebtPaymentPlan[]
   createdAt       DateTime @default(now())
+}
+
+// Plan de pago futuro y real (no hipotético) para una deuda de tarjeta: "pienso pagar
+// esto en tal mes". Distinto de DebtPayment (que registra un pago ya hecho). Alimenta
+// Presupuesto > Proyeccion y el Simulador para no asumir siempre el pago minimo.
+model DebtPaymentPlan {
+  id        String   @id @default(cuid())
+  debtId    String
+  debt      Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  month     String   // "2026-08"
+  amount    Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([debtId, month])
 }
 
 model DebtPayment {
@@ -304,6 +321,7 @@ model Settings {
   pctVariable   Float   @default(30) // % del ingreso destinado a gastos variables
   pctAhorro     Float   @default(10) // % del ingreso destinado a ahorro
   decimales     Int     @default(0) // cantidad de decimales al mostrar montos en soles (0-3, personalizable)
+  alertaTarjetaDefault Int @default(30) // % de uso de tarjeta al que se muestra alerta, por defecto (personalizable por tarjeta en Debt.alertaPorcentaje)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

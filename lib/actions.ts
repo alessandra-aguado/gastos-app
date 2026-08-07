@@ -398,6 +398,8 @@ export async function createDeuda(formData: FormData) {
   let dueDay: number | null = null;
   let minPayment: number | null = null;
   let paymentMethodId: string | null = null;
+  let creditLimit: number | null = null;
+  let alertaPorcentaje: number | null = null;
 
   if (type === "tarjeta_credito") {
     paymentMethodId = String(formData.get("paymentMethodId") || "").trim() || null;
@@ -412,6 +414,11 @@ export async function createDeuda(formData: FormData) {
     counterpartName = medio.bankOrIssuer || medio.name;
     dueDay = medio.closingDay ?? null;
     minPayment = balance * 0.1;
+
+    const creditLimitRaw = formData.get("creditLimit");
+    creditLimit = creditLimitRaw && String(creditLimitRaw) ? parseFloat(String(creditLimitRaw)) : null;
+    const alertaRaw = formData.get("alertaPorcentaje");
+    alertaPorcentaje = alertaRaw && String(alertaRaw) ? Math.min(100, Math.max(1, parseInt(String(alertaRaw), 10))) : null;
   }
 
   const deudaCreada = await prisma.debt.create({
@@ -423,6 +430,8 @@ export async function createDeuda(formData: FormData) {
       balance,
       minPayment,
       dueDay,
+      creditLimit,
+      alertaPorcentaje,
       startDate: startDateRaw ? new Date(startDateRaw) : new Date(),
       interestRate: type === "prestamo_personal" && interestRateRaw ? parseFloat(String(interestRateRaw)) : null,
       paymentMethodId,
@@ -455,6 +464,8 @@ export async function updateDeuda(formData: FormData) {
   let dueDay = deuda.dueDay;
   let minPayment = deuda.minPayment;
   let paymentMethodId = deuda.paymentMethodId;
+  let creditLimit = deuda.creditLimit;
+  let alertaPorcentaje = deuda.alertaPorcentaje;
 
   if (deuda.type === "tarjeta_credito") {
     paymentMethodId = String(formData.get("paymentMethodId") || "").trim() || deuda.paymentMethodId;
@@ -472,6 +483,11 @@ export async function updateDeuda(formData: FormData) {
       }
     }
     minPayment = balance * 0.1;
+
+    const creditLimitRaw = formData.get("creditLimit");
+    creditLimit = creditLimitRaw && String(creditLimitRaw) ? parseFloat(String(creditLimitRaw)) : null;
+    const alertaRaw = formData.get("alertaPorcentaje");
+    alertaPorcentaje = alertaRaw && String(alertaRaw) ? Math.min(100, Math.max(1, parseInt(String(alertaRaw), 10))) : null;
   }
 
   await prisma.debt.update({
@@ -481,6 +497,8 @@ export async function updateDeuda(formData: FormData) {
       balance,
       minPayment,
       dueDay,
+      creditLimit,
+      alertaPorcentaje,
       startDate: startDateRaw ? new Date(startDateRaw) : deuda.startDate,
       interestRate: deuda.type === "prestamo_personal" && interestRateRaw ? parseFloat(String(interestRateRaw)) : deuda.interestRate,
       paymentMethodId,
@@ -1373,4 +1391,63 @@ export async function eliminarMediosDePagoBulk(ids: string[]): Promise<{ ok: boo
     };
   }
   return { ok: true, eliminados: idsEliminables.length };
+}
+
+// ---------- Plan de pago de deuda (real, no hipotético) ----------
+// Distinto del Simulador: esto es "sí voy a pagar esto, en tal mes", y alimenta
+// Presupuesto > Proyección y el Simulador en vez de asumir siempre el pago mínimo.
+export async function guardarPlanPago(formData: FormData) {
+  const debtId = String(formData.get("debtId") || "");
+  const month = String(formData.get("month") || "");
+  const amount = parseFloat(String(formData.get("amount") || "0"));
+
+  if (!debtId || !month || !amount || amount <= 0) {
+    throw new Error("Faltan datos del plan de pago.");
+  }
+
+  const deuda = await prisma.debt.findUnique({ where: { id: debtId } });
+  if (!deuda || deuda.type !== "tarjeta_credito") throw new Error("Deuda no encontrada.");
+
+  await prisma.debtPaymentPlan.upsert({
+    where: { debtId_month: { debtId, month } },
+    update: { amount },
+    create: { debtId, month, amount },
+  });
+
+  await registrarActividad(
+    "Deuda",
+    "editar",
+    `Plan de pago de "${deuda.counterpartName ?? "tarjeta"}" para ${month}: S/ ${amount.toFixed(0)}`
+  );
+
+  revalidatePath("/presupuesto");
+  revalidatePath("/simulador");
+  revalidatePath("/debo");
+}
+
+export async function eliminarPlanPago(formData: FormData) {
+  const id = String(formData.get("id") || "");
+  if (!id) return;
+  await prisma.debtPaymentPlan.delete({ where: { id } }).catch(() => null);
+
+  revalidatePath("/presupuesto");
+  revalidatePath("/simulador");
+  revalidatePath("/debo");
+}
+
+// ---------- Alerta de uso de tarjeta (default global, personalizable por tarjeta en Deuda) ----------
+export async function updateAlertaTarjetaDefault(formData: FormData) {
+  const alertaTarjetaDefault = Math.min(100, Math.max(1, parseInt(String(formData.get("alertaTarjetaDefault") || "30"), 10) || 30));
+
+  await prisma.settings.upsert({
+    where: { id: "singleton" },
+    update: { alertaTarjetaDefault },
+    create: { id: "singleton", alertaTarjetaDefault },
+  });
+
+  await registrarActividad("Ajustes", "editar", `Alerta de uso de tarjeta (default) actualizada a ${alertaTarjetaDefault}%`);
+
+  revalidatePath("/ajustes");
+  revalidatePath("/debo");
+  revalidatePath("/simulador");
 }

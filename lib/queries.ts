@@ -405,6 +405,15 @@ export async function getDeudas() {
   });
 }
 
+// Planes de pago reales (no hipotéticos) para deudas de tarjeta, opcionalmente
+// filtrados a un set de meses ("YYYY-MM"). Alimentan Presupuesto > Proyección y el Simulador.
+export async function getDebtPaymentPlans(months?: string[]) {
+  return prisma.debtPaymentPlan.findMany({
+    where: months ? { month: { in: months } } : undefined,
+    orderBy: { month: "asc" },
+  });
+}
+
 // ---------- Fijos ----------
 export async function getFijos() {
   return prisma.fixedExpense.findMany({

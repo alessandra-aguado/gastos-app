@@ -15,6 +15,7 @@ type Deuda = {
   interestRate: number | null;
   startDate: Date | null;
   paymentMethodId: string | null;
+  alertaPorcentaje?: number | null;
 };
 
 type Medio = { id: string; name: string };
@@ -25,7 +26,7 @@ function toDateInput(d: Date | null) {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
 }
 
-export default function DeudaModal({ deuda, medios, onClose }: { deuda?: Deuda; medios?: Medio[]; onClose?: () => void }) {
+export default function DeudaModal({ deuda, medios, alertaDefault, onClose }: { deuda?: Deuda; medios?: Medio[]; alertaDefault?: number; onClose?: () => void }) {
   const esEdicion = !!deuda;
   const [abierto, setAbierto] = useState(esEdicion);
   const [tipo, setTipo] = useState<"tarjeta_credito" | "prestamo_personal">(
@@ -124,6 +125,17 @@ export default function DeudaModal({ deuda, medios, onClose }: { deuda?: Deuda; 
                   <>
                     <label className="text-xs text-muted block mb-1">Interés (opcional, %)</label>
                     <input name="interestRate" type="number" step="0.1" defaultValue={deuda?.interestRate ?? undefined} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="0" />
+                  </>
+                )}
+
+                {tipo === "tarjeta_credito" && (
+                  <>
+                    <label className="text-xs text-muted block mb-1">Línea de crédito (opcional)</label>
+                    <input name="creditLimit" type="number" step="any" defaultValue={deuda?.creditLimit ?? undefined} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="1800" />
+
+                    <label className="text-xs text-muted block mb-1">Avisarme cuando use más de (%)</label>
+                    <input name="alertaPorcentaje" type="number" min="1" max="100" defaultValue={deuda?.alertaPorcentaje ?? undefined} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-1" placeholder={String(alertaDefault ?? 30)} />
+                    <p className="text-xs text-muted mb-2.5">Déjalo vacío para usar el default de Ajustes ({alertaDefault ?? 30}%).</p>
                   </>
                 )}
               </>

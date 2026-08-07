@@ -19,6 +19,7 @@ type Deuda = {
   interestRate: number | null;
   startDate: Date | null;
   paymentMethodId: string | null;
+  alertaPorcentaje?: number | null;
 };
 
 type Medio = { id: string; name: string };
@@ -35,11 +36,13 @@ function borrarConConfirmacion(id: string, nombre: string) {
   void eliminarDeuda(fd);
 }
 
-export function TarjetaCredito({ deuda, medios }: { deuda: Deuda; medios?: Medio[] }) {
+export function TarjetaCredito({ deuda, medios, alertaDefault, planMesActual, mesActualLabel }: { deuda: Deuda; medios?: Medio[]; alertaDefault?: number; planMesActual?: number; mesActualLabel?: string }) {
   const [pagando, setPagando] = useState(false);
   const [editando, setEditando] = useState(false);
   const decimales = useDecimales();
   const pct = deuda.creditLimit ? Math.min(100, Math.round((deuda.balance / deuda.creditLimit) * 100)) : 0;
+  const umbral = deuda.alertaPorcentaje ?? alertaDefault ?? 30;
+  const enAlerta = deuda.creditLimit ? pct >= umbral : false;
   const medioVinculado = medios?.find((m) => m.id === deuda.paymentMethodId);
 
   return (
@@ -84,15 +87,18 @@ export function TarjetaCredito({ deuda, medios }: { deuda: Deuda; medios?: Medio
       ) : (
         <>
           <div className="h-1.5 rounded-full bg-background overflow-hidden mb-1.5">
-            <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: enAlerta ? "var(--warning)" : "var(--accent)" }} />
           </div>
           <div className="flex justify-between text-xs text-muted">
             <span><span className="text-foreground font-medium">S/ {formatMonto(deuda.balance, decimales)}</span>{deuda.creditLimit ? ` de línea S/ ${formatMonto(deuda.creditLimit, decimales)}` : ""}</span>
-            <span>{pct}% usado</span>
+            <span className={enAlerta ? "text-warning font-medium" : ""}>{pct}% usado{deuda.creditLimit ? ` · alerta ${umbral}%` : ""}</span>
           </div>
+          {planMesActual !== undefined && (
+            <p className="text-[11px] text-accent mt-1.5">Planeas pagar S/ {formatMonto(planMesActual, decimales)} en {mesActualLabel}.</p>
+          )}
         </>
       )}
-      {editando && <DeudaModal deuda={deuda} medios={medios} onClose={() => setEditando(false)} />}
+      {editando && <DeudaModal deuda={deuda} medios={medios} alertaDefault={alertaDefault} onClose={() => setEditando(false)} />}
     </div>
   );
 }

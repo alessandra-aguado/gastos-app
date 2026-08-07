@@ -1,4 +1,4 @@
-import { getTopCategories, getSpendByTopCategory, getBudgets, getFijos, getDeudas, getSettings, getGastoVariableReal, getPlannedExpenses, getGastoDelMesPorMedio, getPaymentMethods, getCuentas } from "@/lib/queries";
+import { getTopCategories, getSpendByTopCategory, getBudgets, getFijos, getDeudas, getSettings, getGastoVariableReal, getPlannedExpenses, getGastoDelMesPorMedio, getPaymentMethods, getCuentas, getDebtPaymentPlans, nextMonthKeys, currentMonthKey } from "@/lib/queries";
 import { formatMonto } from "@/lib/format";
 import { PieChart } from "lucide-react";
 import CategoryIcon from "../components/CategoryIcon";
@@ -7,6 +7,7 @@ import PresupuestoTabs from "../components/PresupuestoTabs";
 import IngresoMensualField from "./IngresoMensualField";
 import PlannedExpenseModal from "./PlannedExpenseModal";
 import PlannedExpenseRow from "./PlannedExpenseRow";
+import PlanPagoDeudaRow from "./PlanPagoDeudaRow";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,20 @@ export default async function PresupuestoPage() {
     getPaymentMethods(),
     getCuentas(),
   ]);
+
+  const mesActual = currentMonthKey();
+  const mesesPlan = nextMonthKeys(3);
+  const planesPago = await getDebtPaymentPlans(mesesPlan);
+  const tarjetasActivas = deudas.filter((d) => d.type === "tarjeta_credito" && d.status !== "pagada");
+  const planesPorDeuda: Record<string, typeof planesPago> = {};
+  for (const p of planesPago) {
+    if (!planesPorDeuda[p.debtId]) planesPorDeuda[p.debtId] = [];
+    planesPorDeuda[p.debtId].push(p);
+  }
+  const planMesActualPorDeuda: Record<string, number> = {};
+  for (const p of planesPago) {
+    if (p.month === mesActual) planMesActualPorDeuda[p.debtId] = p.amount;
+  }
   const budgetMap: Record<string, number> = {};
   for (const b of budgets) budgetMap[b.categoryId] = b.amountLimit;
 
@@ -36,9 +51,8 @@ export default async function PresupuestoPage() {
   const totalFijos = fijosSinTarjeta.reduce((s, f) => s + f.amount, 0);
   const totalFijosTarjeta = fijosConTarjeta.reduce((s, f) => s + f.amount, 0);
 
-  const cuotasTarjetas = deudas
-    .filter((d) => d.type === "tarjeta_credito" && d.status !== "pagada")
-    .reduce((s, d) => s + (d.minPayment || 0), 0);
+  const cuotasTarjetas = tarjetasActivas.reduce((s, d) => s + (planMesActualPorDeuda[d.id] ?? d.minPayment ?? 0), 0);
+  const usaPlanDePago = tarjetasActivas.some((d) => planMesActualPorDeuda[d.id] !== undefined);
   const decimales = settings?.decimales ?? 0;
   const ingresoMensual = settings?.monthlyIncome || 0;
   const disponibleAntesDePlanes = ingresoMensual - totalFijos - cuotasTarjetas;
@@ -134,6 +148,18 @@ export default async function PresupuestoPage() {
         }
         planificados={
           <div className="space-y-3">
+            {tarjetasActivas.length > 0 && (
+              <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
+                <p className="text-sm font-medium mb-1">Plan de pago de tarjetas</p>
+                <p className="text-xs text-muted mb-3">
+                  ¿En qué mes piensas pagar cada tarjeta y por cuánto? Esto reemplaza el cálculo automático de pago mínimo en Proyección y el Simulador.
+                </p>
+                {tarjetasActivas.map((d) => (
+                  <PlanPagoDeudaRow key={d.id} deuda={d} planes={planesPorDeuda[d.id] || []} mesesDisponibles={mesesPlan} />
+                ))}
+              </div>
+            )}
+
             <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
               <div className="flex justify-between items-center mb-3">
                 <p className="text-sm font-medium">
@@ -197,10 +223,13 @@ export default async function PresupuestoPage() {
               </div>
               <div className="flex justify-between items-center text-sm text-muted py-1.5">
                 <span>
-                  Deuda, cuotas de tarjetas <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
+                  Deuda, cuotas de tarjetas <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">{usaPlanDePago ? "Tu plan" : "Auto"}</span>
                 </span>
                 <span className="text-foreground">− S/ {formatMonto(cuotasTarjetas, decimales)}</span>
               </div>
+              {usaPlanDePago && (
+                <p className="text-xs text-muted -mt-1 mb-1">Incluye tu plan de pago de tarjetas de la pestaña &quot;Planificados&quot; para este mes.</p>
+              )}
               {totalFijosTarjeta > 0 && (
                 <div className="flex justify-between items-center text-xs text-muted py-1">
                   <span>Fijos con tarjeta (ya en tu deuda, no se resta aparte)</span>

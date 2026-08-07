@@ -1,4 +1,4 @@
-import { getDeudas, getMetas, getPaymentMethods, getSettings } from "@/lib/queries";
+import { getDeudas, getMetas, getPaymentMethods, getSettings, getDebtPaymentPlans, currentMonthKey } from "@/lib/queries";
 import { formatMonto } from "@/lib/format";
 import { CreditCard, Shield } from "lucide-react";
 import { TarjetaCredito, PrestamoPersonal } from "./DeudaCard";
@@ -10,11 +10,18 @@ export const dynamic = "force-dynamic";
 export default async function DeboPage() {
   const [deudas, metas, medios, settings] = await Promise.all([getDeudas(), getMetas(), getPaymentMethods(), getSettings()]);
   const decimales = settings?.decimales ?? 0;
+  const alertaDefault = settings?.alertaTarjetaDefault ?? 30;
   const mediosCredito = medios.filter((m) => m.type === "credito");
 
   const activas = deudas.filter((d) => d.status !== "pagada");
   const tarjetas = activas.filter((d) => d.type === "tarjeta_credito");
   const prestamos = activas.filter((d) => d.type === "prestamo_personal");
+
+  const mesActual = currentMonthKey();
+  const planesMesActual = await getDebtPaymentPlans([mesActual]);
+  const planPorDeuda: Record<string, number> = {};
+  for (const p of planesMesActual) planPorDeuda[p.debtId] = p.amount;
+  const mesActualLabel = new Date(`${mesActual}-01T00:00:00`).toLocaleDateString("es-PE", { month: "long", year: "numeric" });
 
   const debes = tarjetas.reduce((s, d) => s + d.balance, 0) + prestamos.filter((d) => d.direction === "yo_debo").reduce((s, d) => s + d.balance, 0);
   const meDeben = prestamos.filter((d) => d.direction === "me_deben").reduce((s, d) => s + d.balance, 0);
@@ -47,7 +54,7 @@ export default async function DeboPage() {
               d.startDate ? new Date(d.startDate).toLocaleDateString("es-PE") : "",
             ])}
           />
-          <DeudaModal medios={mediosCredito} />
+          <DeudaModal medios={mediosCredito} alertaDefault={alertaDefault} />
         </div>
       </div>
 
@@ -56,7 +63,16 @@ export default async function DeboPage() {
         {tarjetas.length === 0 ? (
           <div className="border border-dashed border-border rounded-xl p-6 text-center text-muted text-xs">Sin tarjetas registradas.</div>
         ) : (
-          tarjetas.map((d) => <TarjetaCredito key={d.id} deuda={d} medios={mediosCredito} />)
+          tarjetas.map((d) => (
+            <TarjetaCredito
+              key={d.id}
+              deuda={d}
+              medios={mediosCredito}
+              alertaDefault={alertaDefault}
+              planMesActual={planPorDeuda[d.id]}
+              mesActualLabel={mesActualLabel}
+            />
+          ))
         )}
       </div>
 
