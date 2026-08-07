@@ -1,4 +1,6 @@
 import Link from "next/link";
+import RachaChip from "./components/RachaChip";
+import PatrimonioCard from "./components/PatrimonioCard";
 import {
   getMonthSummary,
   getDailySpend,
@@ -25,9 +27,8 @@ export default async function Home() {
 
   const chips = [
     { icon: "📊", label: "Presupuesto", value: budgetPct !== null ? `${budgetPct}% usado` : "sin definir" },
-    { icon: "🎯", label: "Metas", value: "próxima fase" },
-    { icon: "💳", label: "Debo", value: "próxima fase" },
-    { icon: "🔥", label: "Racha", value: "próxima fase" },
+    { icon: "🎯", label: "Metas", value: "3 activas" },
+    { icon: "💳", label: "Debo", value: "S/ 2,890" },
   ];
 
   return (
@@ -66,7 +67,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="flex flex-wrap gap-3">
+      <section className="flex flex-wrap items-start gap-3">
         {chips.map((c) => (
           <div key={c.label} className="flex items-center gap-2 bg-surface border border-border rounded-full px-4 py-2 text-sm">
             <span>{c.icon}</span>
@@ -74,7 +75,10 @@ export default async function Home() {
             <span className="font-medium">{c.value}</span>
           </div>
         ))}
+        <RachaChip />
       </section>
+
+      <PatrimonioCard />
 
       <section className="bg-surface border border-border rounded-2xl p-6">
         <p className="text-sm font-medium mb-4">Gasto diario</p>

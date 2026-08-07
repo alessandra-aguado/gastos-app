@@ -1,6 +1,7 @@
 import { createTransaction } from "@/lib/actions";
 import { getTopCategories, getPaymentMethods } from "@/lib/queries";
 import { redirect } from "next/navigation";
+import MetodoSelector from "../components/MetodoSelector";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +20,12 @@ export default async function RegistrarPage() {
     <div className="max-w-lg mx-auto px-6 py-10">
       <h1 className="text-2xl font-semibold">+ Registrar gasto</h1>
       <p className="text-muted text-sm mt-1">
-        Entrada manual (Fase 1). Foto, voz y texto libre llegan en fases siguientes.
+        Elige cómo quieres registrar este gasto.
       </p>
 
-      <form action={action} className="mt-8 space-y-5">
+      <div className="mt-8">
+      <MetodoSelector manual={
+      <form action={action} className="space-y-5">
         <div>
           <label className="text-sm font-medium block mb-1">Monto (S/)</label>
           <input
@@ -99,9 +102,11 @@ export default async function RegistrarPage() {
           type="submit"
           className="w-full bg-accent text-white font-medium py-3 rounded-full hover:opacity-90 transition-opacity"
         >
-          Guardar gasto
+          Guardar
         </button>
       </form>
+      } />
+      </div>
     </div>
   );
 }
