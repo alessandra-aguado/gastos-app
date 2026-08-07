@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
-import { getTopCategories, getSpendByTopCategory, listTransactionsByCategory, getMonthlyTrend } from "@/lib/queries";
+import { getTopCategories, getSpendByTopCategory, listTransactionsByCategory, getMonthlyTrend, getPaymentMethods } from "@/lib/queries";
 import CategoryIcon from "../components/CategoryIcon";
 import { colorForIndex } from "@/lib/categoryColors";
 import RangoSelector from "../components/RangoSelector";
 import { rangeForPreset, parsePreset, formatRangeLabel, toDateInputValue } from "@/lib/dateRanges";
+import TransactionRow from "./TransactionRow";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function GastosPage({
   if (cat) {
     const category = categories.find((c) => c.id === cat);
     const transactions = await listTransactionsByCategory(cat, range);
+    const medios = await getPaymentMethods();
 
     return (
       <div className="max-w-3xl mx-auto px-6 py-8">
@@ -43,19 +45,7 @@ export default async function GastosPage({
             <p className="text-sm text-muted">Sin gastos registrados en esta categoría en este período.</p>
           )}
           {transactions.map((t) => (
-            <div
-              key={t.id}
-              className="bg-surface border border-border rounded-xl px-4 py-3 flex items-center justify-between"
-            >
-              <div>
-                <p className="text-sm font-medium">{t.merchant || t.category?.name}</p>
-                <p className="text-xs text-muted">
-                  {t.date.toISOString().slice(0, 10)} · {t.paymentMethod?.name}
-                  {t.notes ? ` · ${t.notes}` : ""}
-                </p>
-              </div>
-              <p className="font-semibold">S/ {t.amount.toFixed(0)}</p>
-            </div>
+            <TransactionRow key={t.id} transaccion={t} categorias={categories} medios={medios} />
           ))}
         </div>
       </div>

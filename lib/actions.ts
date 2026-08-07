@@ -57,6 +57,63 @@ export async function createTransaction(formData: FormData) {
   revalidatePath("/presupuesto");
 }
 
+export async function updateTransaction(formData: FormData) {
+  const id = String(formData.get("id"));
+  const amount = parseFloat(String(formData.get("amount")));
+  const date = String(formData.get("date"));
+  const categoryId = String(formData.get("categoryId"));
+  const paymentMethodId = String(formData.get("paymentMethodId"));
+  const notes = String(formData.get("notes") || "");
+  const merchant = String(formData.get("merchant") || "");
+
+  if (!id || !amount || !date || !categoryId || !paymentMethodId) {
+    throw new Error("Faltan campos requeridos");
+  }
+
+  const anterior = await prisma.transaction.findUnique({ where: { id } });
+  if (!anterior) throw new Error("Gasto no encontrado");
+
+  // Revierte el efecto que tenia el gasto anterior sobre una deuda de tarjeta
+  // vinculada, y aplica el nuevo (por si cambio el monto o el medio de pago).
+  await sincronizarDeudaTarjeta(anterior.paymentMethodId, -anterior.amount);
+
+  await prisma.transaction.update({
+    where: { id },
+    data: {
+      amount,
+      date: new Date(date),
+      merchant: merchant || null,
+      notes: notes || null,
+      categoryId,
+      paymentMethodId,
+    },
+  });
+
+  await sincronizarDeudaTarjeta(paymentMethodId, amount);
+
+  await registrarActividad("Gasto", "editar", `Gasto de S/ ${amount.toFixed(0)} editado${merchant ? ` (${merchant})` : ""}`);
+
+  revalidatePath("/");
+  revalidatePath("/gastos");
+  revalidatePath("/presupuesto");
+  revalidatePath("/debo");
+}
+
+export async function eliminarTransaccion(formData: FormData) {
+  const id = String(formData.get("id"));
+  const gasto = await prisma.transaction.delete({ where: { id } });
+
+  // Revierte el efecto en la deuda de tarjeta vinculada, si aplica.
+  await sincronizarDeudaTarjeta(gasto.paymentMethodId, -gasto.amount);
+
+  await registrarActividad("Gasto", "eliminar", `Gasto de S/ ${gasto.amount.toFixed(0)} eliminado${gasto.merchant ? ` (${gasto.merchant})` : ""}`);
+
+  revalidatePath("/");
+  revalidatePath("/gastos");
+  revalidatePath("/presupuesto");
+  revalidatePath("/debo");
+}
+
 export async function setBudget(formData: FormData) {
   const categoryId = String(formData.get("categoryId"));
   const amountLimit = parseFloat(String(formData.get("amountLimit")));
