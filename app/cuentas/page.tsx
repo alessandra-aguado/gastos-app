@@ -1,20 +1,45 @@
 import { getCuentas, getReconciliacionCuentas } from "@/lib/queries";
-import { Wallet } from "lucide-react";
+import { Wallet, Users } from "lucide-react";
 import CuentaRow from "./CuentaRow";
 import NuevaCuentaModal from "./NuevaCuentaModal";
 import ReconciliacionCard from "./ReconciliacionCard";
 
 export const dynamic = "force-dynamic";
 
-export default async function CuentasPage() {
-  const [cuentas, recon] = await Promise.all([getCuentas(), getReconciliacionCuentas()]);
-  const total = cuentas.filter((c) => c.type !== "puntos").reduce((s, c) => s + c.balance, 0);
+type CuentaConDatos = Awaited<ReturnType<typeof getCuentas>>[number];
 
-  const grupos = new Map<string, typeof cuentas>();
+function agruparPorBanco(cuentas: CuentaConDatos[]) {
+  const grupos = new Map<string, CuentaConDatos[]>();
   for (const c of cuentas) {
     if (!grupos.has(c.bank)) grupos.set(c.bank, []);
     grupos.get(c.bank)!.push(c);
   }
+  return Array.from(grupos.entries());
+}
+
+function ListaCuentas({ cuentas }: { cuentas: CuentaConDatos[] }) {
+  return (
+    <>
+      {agruparPorBanco(cuentas).map(([bank, items]) => (
+        <div key={bank}>
+          <p className="text-xs text-muted mb-2">{bank}</p>
+          <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] overflow-hidden mb-4">
+            {items.map((c, i) => {
+              const dias = c.lastCheckIn ? Math.floor((Date.now() - new Date(c.lastCheckIn).getTime()) / 86400000) : null;
+              return <CuentaRow key={c.id} cuenta={c} ultimo={i === items.length - 1} dias={dias} />;
+            })}
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+export default async function CuentasPage() {
+  const [cuentas, recon] = await Promise.all([getCuentas(), getReconciliacionCuentas()]);
+  const propias = cuentas.filter((c) => c.type !== "custodia");
+  const custodia = cuentas.filter((c) => c.type === "custodia");
+  const total = propias.filter((c) => c.type !== "puntos").reduce((s, c) => s + c.balance, 0);
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
@@ -33,17 +58,22 @@ export default async function CuentasPage() {
           Aún no registras cuentas. Agrega la primera con &quot;+ Agregar cuenta&quot;.
         </div>
       ) : (
-        Array.from(grupos.entries()).map(([bank, items]) => (
-          <div key={bank}>
-            <p className="text-xs text-muted mb-2">{bank}</p>
-            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] overflow-hidden mb-4">
-              {items.map((c, i) => {
-                const dias = c.lastCheckIn ? Math.floor((Date.now() - new Date(c.lastCheckIn).getTime()) / 86400000) : null;
-                return <CuentaRow key={c.id} cuenta={c} ultimo={i === items.length - 1} dias={dias} />;
-              })}
+        <>
+          {propias.length > 0 && <ListaCuentas cuentas={propias} />}
+
+          {custodia.length > 0 && (
+            <div className="mt-2">
+              <p className="text-sm font-medium flex items-center gap-1.5 mb-1">
+                <Users size={15} strokeWidth={2} className="text-muted" />
+                Dinero que administras para otros
+              </p>
+              <p className="text-xs text-muted mb-3">
+                No se suma a tu patrimonio ni a tu reconciliación mensual, porque no es tuyo.
+              </p>
+              <ListaCuentas cuentas={custodia} />
             </div>
-          </div>
-        ))
+          )}
+        </>
       )}
     </div>
   );

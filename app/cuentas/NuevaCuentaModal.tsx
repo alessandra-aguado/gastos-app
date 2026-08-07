@@ -63,6 +63,7 @@ export default function NuevaCuentaModal() {
                   <option value="ahorro">Ahorro</option>
                   <option value="billetera">Billetera digital</option>
                   <option value="puntos">Recompensas / puntos</option>
+                  <option value="custodia">Fondo de terceros (plata que administras para alguien más)</option>
                 </select>
                 <label className="text-xs text-muted block mb-1">Saldo actual</label>
                 <input name="balance" type="number" placeholder="1200" className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" />

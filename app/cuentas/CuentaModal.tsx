@@ -35,6 +35,7 @@ export default function CuentaModal({ cuenta, onClose }: { cuenta: Cuenta; onClo
           <option value="ahorro">Ahorro</option>
           <option value="billetera">Billetera digital</option>
           <option value="puntos">Recompensas / puntos</option>
+          <option value="custodia">Fondo de terceros (plata que administras para alguien más)</option>
         </select>
 
         <button disabled={guardando} className="w-full py-2.5 bg-accent text-white rounded-lg text-sm font-medium disabled:opacity-60">Guardar cambios</button>

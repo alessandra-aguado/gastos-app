@@ -309,7 +309,7 @@ export async function getActivityLog(limit = 150) {
 // ---------- Reconciliacion de cuentas ----------
 export async function getReconciliacionCuentas() {
   const cuentas = await getCuentas();
-  const relevantes = cuentas.filter((c) => c.type !== "puntos");
+  const relevantes = cuentas.filter((c) => c.type !== "puntos" && c.type !== "custodia");
   const month = currentMonthKey();
   const prevMonth = previousMonthKey();
 

@@ -55,7 +55,7 @@ export default async function Home({
   const totalDebo = deudas
     .filter((d) => d.status !== "pagada" && (d.type === "tarjeta_credito" || d.direction === "yo_debo"))
     .reduce((s, d) => s + d.balance, 0);
-  const patrimonio = cuentas.filter((c) => c.type !== "puntos").reduce((s, c) => s + c.balance, 0);
+  const patrimonio = cuentas.filter((c) => c.type !== "puntos" && c.type !== "custodia").reduce((s, c) => s + c.balance, 0);
 
   const chips = [
     { Icon: PieChart, label: "Presupuesto", value: budgetPct !== null ? `${budgetPct}% usado` : "sin definir" },
