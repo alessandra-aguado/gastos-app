@@ -2,6 +2,7 @@ import Link from "next/link";
 import RachaChip from "./components/RachaChip";
 import PatrimonioCard from "./components/PatrimonioCard";
 import TendenciaGeneral from "./components/TendenciaGeneral";
+import MesSelector from "./components/MesSelector";
 import {
   getMonthSummary,
   getDailySpend,
@@ -13,20 +14,30 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  const summary = await getMonthSummary();
-  const dailyMap = await getDailySpend();
-  const spendByCategory = await getSpendByTopCategory();
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ mes?: string }>;
+}) {
+  const { mes } = await searchParams;
+  const now = new Date();
+  const mesKey = mes && /^\d{4}-\d{2}$/.test(mes) ? mes : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const [y, m] = mesKey.split("-").map(Number);
+  const base = new Date(y, m - 1, 1);
+
+  const summary = await getMonthSummary(base);
+  const dailyMap = await getDailySpend(base);
+  const spendByCategory = await getSpendByTopCategory(base);
   const categories = await getTopCategories();
-  const budgets = await getBudgets();
+  const budgets = await getBudgets(base);
   const trend = await getMonthlyTrend();
 
   const totalBudget = budgets.reduce((s, b) => s + b.amountLimit, 0);
   const budgetPct = totalBudget > 0 ? Math.round((summary.total / totalBudget) * 100) : null;
 
-  const now = new Date();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
   const maxSpend = Math.max(1, ...Object.values(dailyMap));
+  const esMesActual = base.getFullYear() === now.getFullYear() && base.getMonth() === now.getMonth();
 
   const chips = [
     { icon: "📊", label: "Presupuesto", value: budgetPct !== null ? `${budgetPct}% usado` : "sin definir" },
@@ -39,9 +50,7 @@ export default async function Home() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Hola, Ale 👋</h1>
-          <p className="text-muted text-sm mt-1">
-            Así vas en {now.toLocaleDateString("es-PE", { month: "long", year: "numeric" })}
-          </p>
+          <MesSelector mes={mesKey} />
         </div>
         <Link
           href="/registrar"
@@ -53,7 +62,7 @@ export default async function Home() {
 
       <section className="bg-surface border border-border rounded-2xl p-6 flex flex-wrap items-center gap-8">
         <div>
-          <p className="text-xs text-muted">Gastado este mes</p>
+          <p className="text-xs text-muted">Gastado {esMesActual ? "este mes" : "en el mes"}</p>
           <p className="text-3xl font-semibold mt-1">S/ {summary.total.toFixed(0)}</p>
         </div>
         <div>
@@ -89,7 +98,11 @@ export default async function Home() {
       <section className="bg-surface border border-border rounded-2xl p-6">
         <p className="text-sm font-medium mb-4">Gasto diario</p>
         {summary.count === 0 ? (
-          <p className="text-sm text-muted">Aún no registras gastos este mes. Dale a &quot;+ Registrar gasto&quot; para empezar.</p>
+          <p className="text-sm text-muted">
+            {esMesActual
+              ? 'Aún no registras gastos este mes. Dale a "+ Registrar gasto" para empezar.'
+              : "No hay gastos registrados en este mes."}
+          </p>
         ) : (
           <div className="flex items-end gap-1 h-36 overflow-x-auto">
             {Array.from({ length: daysInMonth }, (_, i) => {

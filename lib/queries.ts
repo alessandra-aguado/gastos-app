@@ -25,8 +25,8 @@ export async function getPaymentMethods() {
   return prisma.paymentMethod.findMany({ orderBy: { name: "asc" } });
 }
 
-export async function getMonthSummary() {
-  const { start, end } = currentMonthRange();
+export async function getMonthSummary(base?: Date) {
+  const { start, end } = currentMonthRange(base);
   const txs = await prisma.transaction.findMany({
     where: { date: { gte: start, lt: end } },
     select: { amount: true, status: true },
@@ -39,8 +39,8 @@ export async function getMonthSummary() {
 }
 
 // Devuelve un mapa { "06": 137.5, "07": 20 } con el día del mes como llave.
-export async function getDailySpend(): Promise<Record<string, number>> {
-  const { start, end } = currentMonthRange();
+export async function getDailySpend(base?: Date): Promise<Record<string, number>> {
+  const { start, end } = currentMonthRange(base);
   const txs = await prisma.transaction.findMany({
     where: { date: { gte: start, lt: end } },
     select: { date: true, amount: true },
@@ -53,8 +53,8 @@ export async function getDailySpend(): Promise<Record<string, number>> {
   return map;
 }
 
-export async function getSpendByTopCategory(): Promise<Record<string, number>> {
-  const { start, end } = currentMonthRange();
+export async function getSpendByTopCategory(base?: Date): Promise<Record<string, number>> {
+  const { start, end } = currentMonthRange(base);
   const txs = await prisma.transaction.findMany({
     where: { date: { gte: start, lt: end } },
     select: { amount: true, category: { select: { id: true, parentId: true } } },
@@ -80,8 +80,8 @@ export async function listTransactionsByCategory(topCategoryId: string) {
   });
 }
 
-export async function getBudgets() {
-  return prisma.budget.findMany({ where: { month: currentMonthKey() } });
+export async function getBudgets(base?: Date) {
+  return prisma.budget.findMany({ where: { month: currentMonthKey(base) } });
 }
 
 // Total gastado por mes, los últimos 6 meses (incluye el actual).
