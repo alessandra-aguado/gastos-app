@@ -93,12 +93,8 @@ async function llamarGemini(parts: Record<string, unknown>[], prompt: string): P
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }, ...parts] }],
       generationConfig: {
-        responseFormat: {
-          text: {
-            mimeType: "application/json",
-            schema: RESPONSE_SCHEMA,
-          },
-        },
+        responseMimeType: "application/json",
+        responseSchema: RESPONSE_SCHEMA,
       },
     }),
   });
