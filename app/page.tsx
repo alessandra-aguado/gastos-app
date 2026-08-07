@@ -7,6 +7,7 @@ import {
   getSpendByTopCategory,
   getTopCategories,
   getBudgets,
+  getMonthlyTrend,
 } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ export default async function Home() {
   const spendByCategory = await getSpendByTopCategory();
   const categories = await getTopCategories();
   const budgets = await getBudgets();
+  const trend = await getMonthlyTrend();
 
   const totalBudget = budgets.reduce((s, b) => s + b.amountLimit, 0);
   const budgetPct = totalBudget > 0 ? Math.round((summary.total / totalBudget) * 100) : null;
@@ -24,6 +26,11 @@ export default async function Home() {
   const now = new Date();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const maxSpend = Math.max(1, ...Object.values(dailyMap));
+
+  const ingresoMensual = 3500; // referencia estática, aún no hay modelo de Ingreso real
+  const deudaTotal = 2890; // de Debo, aún mockup
+  const ahorroTotal = 11720; // de Metas, aún mockup
+  const maxTrend = Math.max(ingresoMensual, ...trend.map((m) => m.total));
 
   const chips = [
     { icon: "📊", label: "Presupuesto", value: budgetPct !== null ? `${budgetPct}% usado` : "sin definir" },
@@ -79,6 +86,44 @@ export default async function Home() {
       </section>
 
       <PatrimonioCard />
+
+      <section className="bg-surface border border-border rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-sm font-medium">Tendencia general</p>
+          <p className="text-xs text-muted">Gasto es real · ingreso, deuda y ahorro son referencia</p>
+        </div>
+        <div className="flex gap-5 mt-4">
+          <div className="flex-1">
+            <div className="relative h-28 flex items-end gap-2">
+              <div
+                className="absolute left-0 right-0 border-t border-dashed"
+                style={{ borderColor: "var(--muted)", bottom: `${(ingresoMensual / maxTrend) * 100}%` }}
+              />
+              {trend.map((m) => (
+                <div key={m.key} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end z-10">
+                  <div
+                    className="w-full rounded-t"
+                    style={{ height: `${(m.total / maxTrend) * 100}%`, background: m.total > 0 ? "var(--accent)" : "var(--border)", minHeight: 2 }}
+                    title={`${m.label}: S/ ${m.total.toFixed(0)}`}
+                  />
+                  <span className="text-[10px] text-muted">{m.label}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted mt-2">— — Ingreso de referencia: S/ {ingresoMensual.toLocaleString("es-PE")}/mes</p>
+          </div>
+          <div className="flex flex-col gap-3 justify-center border-l border-border pl-5 shrink-0">
+            <div>
+              <p className="text-xs text-muted">Deuda total</p>
+              <p className="text-lg font-semibold">S/ {deudaTotal.toLocaleString("es-PE")}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted">Ahorro total</p>
+              <p className="text-lg font-semibold text-positive">S/ {ahorroTotal.toLocaleString("es-PE")}</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="bg-surface border border-border rounded-2xl p-6">
         <p className="text-sm font-medium mb-4">Gasto diario</p>
