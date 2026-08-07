@@ -116,6 +116,17 @@ export async function getBudgets(range?: DateRange) {
   return prisma.budget.findMany({ where: { month: { in: Array.from(meses) } } });
 }
 
+// Gasto variable real: transacciones que NO vienen de un Fijo marcado como pagado
+// (para no duplicar el monto de Fijos en la proyeccion de Presupuesto).
+export async function getGastoVariableReal(range?: DateRange) {
+  const { start, end } = range ?? currentMonthRange();
+  const result = await prisma.transaction.aggregate({
+    where: { date: { gte: start, lt: end }, fixedExpenseId: null },
+    _sum: { amount: true },
+  });
+  return result._sum.amount || 0;
+}
+
 // Racha de días consecutivos con al menos un gasto registrado.
 export async function getRachaData() {
   const txs = await prisma.transaction.findMany({ select: { date: true }, orderBy: { date: "asc" } });

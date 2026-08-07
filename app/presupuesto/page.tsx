@@ -1,4 +1,4 @@
-import { getTopCategories, getSpendByTopCategory, getBudgets, getFijos, getDeudas, getSettings } from "@/lib/queries";
+import { getTopCategories, getSpendByTopCategory, getBudgets, getFijos, getDeudas, getSettings, getGastoVariableReal } from "@/lib/queries";
 import { PieChart } from "lucide-react";
 import CategoryIcon from "../components/CategoryIcon";
 import { setBudget } from "@/lib/actions";
@@ -8,13 +8,14 @@ import IngresoMensualField from "./IngresoMensualField";
 export const dynamic = "force-dynamic";
 
 export default async function PresupuestoPage() {
-  const [categories, spendByCategory, budgets, fijos, deudas, settings] = await Promise.all([
+  const [categories, spendByCategory, budgets, fijos, deudas, settings, gastoVariableReal] = await Promise.all([
     getTopCategories(),
     getSpendByTopCategory(),
     getBudgets(),
     getFijos(),
     getDeudas(),
     getSettings(),
+    getGastoVariableReal(),
   ]);
   const budgetMap: Record<string, number> = {};
   for (const b of budgets) budgetMap[b.categoryId] = b.amountLimit;
@@ -25,6 +26,9 @@ export default async function PresupuestoPage() {
     .reduce((s, d) => s + (d.minPayment || 0), 0);
   const ingresoMensual = settings?.monthlyIncome || 0;
   const disponibleAntesDePlanes = ingresoMensual - totalFijos - cuotasTarjetas;
+  const totalPlanVariable = budgets.reduce((s, b) => s + b.amountLimit, 0);
+  const disponibleDespuesDePlanes = disponibleAntesDePlanes - totalPlanVariable;
+  const diffVariable = totalPlanVariable - gastoVariableReal;
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
@@ -116,8 +120,52 @@ export default async function PresupuestoPage() {
               )}
             </div>
 
-            <div className="border border-dashed border-border rounded-xl p-5 text-center text-muted text-sm">
-              Los gastos variables planeados (y su contraste con lo que termines gastando de verdad) llegan en la próxima actualización.
+            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
+              <div className="flex justify-between items-center text-sm text-muted py-1.5">
+                <span>
+                  Gastos variables planificados <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
+                </span>
+                <span className="text-foreground">− S/ {totalPlanVariable.toFixed(0)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-2.5 mt-1.5 border-t border-border">
+                <span className="text-sm text-muted">Disponible después de planes</span>
+                <span className="text-base font-medium">S/ {disponibleDespuesDePlanes.toFixed(0)}</span>
+              </div>
+              {totalPlanVariable === 0 && (
+                <p className="text-xs text-muted mt-2.5">
+                  Define límites por categoría en la pestaña &quot;Límites&quot; para planificar tus gastos variables.
+                </p>
+              )}
+            </div>
+
+            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
+              <p className="text-sm font-medium mb-3">Planificado vs. real este mes</p>
+              <div className="flex justify-between items-center text-sm mb-1">
+                <span className="text-muted">Planificado (límites por categoría)</span>
+                <span>S/ {totalPlanVariable.toFixed(0)}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm mb-2">
+                <span className="text-muted">Gastado (variable, sin fijos)</span>
+                <span>S/ {gastoVariableReal.toFixed(0)}</span>
+              </div>
+              {totalPlanVariable > 0 && (
+                <div className="h-2 rounded-full bg-background overflow-hidden mb-2.5">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.min(100, Math.round((gastoVariableReal / totalPlanVariable) * 100))}%`,
+                      background: gastoVariableReal > totalPlanVariable ? "#e11d48" : "var(--accent)",
+                    }}
+                  />
+                </div>
+              )}
+              <p className={`text-xs ${totalPlanVariable === 0 ? "text-muted" : diffVariable >= 0 ? "text-positive" : "text-warning"}`}>
+                {totalPlanVariable === 0
+                  ? "Aún no tienes límites definidos, así que no hay con qué comparar tu gasto real."
+                  : diffVariable >= 0
+                  ? `Vas bien: te quedan S/ ${diffVariable.toFixed(0)} de tu plan este mes.`
+                  : `Te excediste por S/ ${Math.abs(diffVariable).toFixed(0)} sobre lo planificado.`}
+              </p>
             </div>
           </div>
         }
