@@ -4,6 +4,7 @@ import { ArrowLeft, Users } from "lucide-react";
 import { getCuentaPorId, getFundMovements } from "@/lib/queries";
 import MovimientoModal from "./MovimientoModal";
 import MovimientoRow from "./MovimientoRow";
+import DescargarCSV from "../../components/DescargarCSV";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,19 @@ export default async function CuentaCustodiaPage({ params }: { params: Promise<{
           <h1 className="text-2xl font-semibold flex items-center gap-2"><Users size={20} strokeWidth={1.75} />{cuenta.name}</h1>
           <p className="text-muted text-sm mt-1">Saldo actual: S/ {cuenta.balance.toLocaleString("es-PE")} · plata de {cuenta.bank}, no es tuya</p>
         </div>
-        <MovimientoModal accountId={id} />
+        <div className="flex items-center gap-2">
+          <DescargarCSV
+            filename={`movimientos-${cuenta.name.toLowerCase().replace(/\s+/g, "-")}.csv`}
+            headers={["Fecha", "Tipo", "Monto", "Descripción"]}
+            rows={movimientos.map((m) => [
+              new Date(m.date).toLocaleDateString("es-PE"),
+              m.type === "ingreso" ? "Entrada" : "Gasto",
+              m.amount.toFixed(2),
+              m.description || "",
+            ])}
+          />
+          <MovimientoModal accountId={id} />
+        </div>
       </div>
 
       <p className="text-xs text-muted mb-6">

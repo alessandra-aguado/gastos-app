@@ -2,6 +2,7 @@ import { getInversiones } from "@/lib/queries";
 import { TrendingUp } from "lucide-react";
 import InversionModal from "./InversionModal";
 import InversionRow from "./InversionRow";
+import DescargarCSV from "../components/DescargarCSV";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,24 @@ export default async function InversionesPage() {
             S/ {invertido.toFixed(0)} invertido · valor actual S/ {actual.toFixed(0)} · {rentabilidad >= 0 ? "+" : ""}{rentabilidad.toFixed(1)}%
           </p>
         </div>
-        <InversionModal />
+        <div className="flex items-center gap-2">
+          <DescargarCSV
+            filename="inversiones.csv"
+            headers={["Plataforma", "Tipo de instrumento", "Modalidad", "Monto invertido", "Fecha", "Valor actual", "TEA", "Plazo (meses)", "Vencimiento"]}
+            rows={inversiones.map((inv) => [
+              inv.platform,
+              inv.instrumentType,
+              inv.kind === "fija" ? "Renta fija" : "Renta variable",
+              inv.amountContributed.toFixed(2),
+              new Date(inv.date).toLocaleDateString("es-PE"),
+              valorActual(inv).toFixed(2),
+              inv.tea ?? "",
+              inv.termMonths ?? "",
+              inv.maturityDate ? new Date(inv.maturityDate).toLocaleDateString("es-PE") : "",
+            ])}
+          />
+          <InversionModal />
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-5">

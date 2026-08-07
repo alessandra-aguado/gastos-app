@@ -6,6 +6,7 @@ import { colorForIndex } from "@/lib/categoryColors";
 import RangoSelector from "../components/RangoSelector";
 import { rangeForPreset, parsePreset, formatRangeLabel, toDateInputValue } from "@/lib/dateRanges";
 import TransactionRow from "./TransactionRow";
+import DescargarCSV from "../components/DescargarCSV";
 
 export const dynamic = "force-dynamic";
 
@@ -29,16 +30,31 @@ export default async function GastosPage({
 
     return (
       <div className="max-w-3xl mx-auto px-6 py-8">
-        <Link href="/gastos" className="text-sm text-muted hover:text-accent">
-          ← Todas las categorías
-        </Link>
-        <h1 className="text-2xl font-semibold mt-2 flex items-center gap-2">
-          <CategoryIcon icon={category?.icon} size={22} />
-          {category?.name}
-        </h1>
-        <p className="text-muted text-sm mt-1">
-          S/ {(spendByCategory[cat] || 0).toFixed(0)} en {rangeLabel.toLowerCase()} · {transactions.length} transacciones
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <Link href="/gastos" className="text-sm text-muted hover:text-accent">
+              ← Todas las categorías
+            </Link>
+            <h1 className="text-2xl font-semibold mt-2 flex items-center gap-2">
+              <CategoryIcon icon={category?.icon} size={22} />
+              {category?.name}
+            </h1>
+            <p className="text-muted text-sm mt-1">
+              S/ {(spendByCategory[cat] || 0).toFixed(0)} en {rangeLabel.toLowerCase()} · {transactions.length} transacciones
+            </p>
+          </div>
+          <DescargarCSV
+            filename={`gastos-${(category?.name || "categoria").toLowerCase().replace(/\s+/g, "-")}.csv`}
+            headers={["Fecha", "Monto", "Comercio", "Medio de pago", "Notas"]}
+            rows={transactions.map((t) => [
+              new Date(t.date).toLocaleDateString("es-PE"),
+              t.amount.toFixed(2),
+              t.merchant || "",
+              t.paymentMethod?.name || "",
+              t.notes || "",
+            ])}
+          />
+        </div>
 
         <div className="mt-6 space-y-2">
           {transactions.length === 0 && (

@@ -2,6 +2,7 @@ import { getIngresos } from "@/lib/queries";
 import { CircleDollarSign } from "lucide-react";
 import IngresoModal from "./IngresoModal";
 import IngresoRow from "./IngresoRow";
+import DescargarCSV from "../components/DescargarCSV";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,20 @@ export default async function IngresosPage() {
             S/ {totalMes.toLocaleString("es-PE")} este mes · S/ {fijoMes.toLocaleString("es-PE")} fijo · S/ {variableMes.toLocaleString("es-PE")} variable
           </p>
         </div>
-        <IngresoModal />
+        <div className="flex items-center gap-2">
+          <DescargarCSV
+            filename="ingresos.csv"
+            headers={["Fecha", "Tipo", "Monto", "Fuente", "Notas"]}
+            rows={ingresos.map((i) => [
+              new Date(i.date).toLocaleDateString("es-PE"),
+              i.type === "fijo" ? "Fijo" : "Variable",
+              i.amount.toFixed(2),
+              i.source || "",
+              i.notes || "",
+            ])}
+          />
+          <IngresoModal />
+        </div>
       </div>
 
       {ingresos.length === 0 ? (

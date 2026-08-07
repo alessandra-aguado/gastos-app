@@ -2,6 +2,7 @@ import { getDeudas, getMetas, getPaymentMethods } from "@/lib/queries";
 import { CreditCard, Shield } from "lucide-react";
 import { TarjetaCredito, PrestamoPersonal } from "./DeudaCard";
 import DeudaModal from "./DeudaModal";
+import DescargarCSV from "../components/DescargarCSV";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,23 @@ export default async function DeboPage() {
           <h1 className="text-2xl font-semibold flex items-center gap-2"><CreditCard size={22} strokeWidth={1.75} />Deuda</h1>
           <p className="text-muted text-sm mt-1">Debes S/ {debes.toLocaleString("es-PE")} · te deben S/ {meDeben.toLocaleString("es-PE")}</p>
         </div>
-        <DeudaModal medios={mediosCredito} />
+        <div className="flex items-center gap-2">
+          <DescargarCSV
+            filename="deudas.csv"
+            headers={["Tipo", "Contraparte", "Dirección", "Saldo", "Línea de crédito", "Cuota mínima", "Vence el día", "Desde"]}
+            rows={activas.map((d) => [
+              d.type === "tarjeta_credito" ? "Tarjeta de crédito" : "Préstamo personal",
+              d.counterpartName || "",
+              d.direction === "yo_debo" ? "Yo debo" : d.direction === "me_deben" ? "Me deben" : "",
+              d.balance.toFixed(2),
+              d.creditLimit ?? "",
+              d.minPayment ?? "",
+              d.dueDay ?? "",
+              d.startDate ? new Date(d.startDate).toLocaleDateString("es-PE") : "",
+            ])}
+          />
+          <DeudaModal medios={mediosCredito} />
+        </div>
       </div>
 
       <p className="text-xs text-muted mb-2">Tarjetas de crédito</p>
