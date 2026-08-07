@@ -848,6 +848,80 @@ export async function eliminarCuenta(formData: FormData) {
   revalidatePath("/");
 }
 
+// ================= Movimientos de fondos custodia =================
+
+export async function createFundMovement(formData: FormData) {
+  const accountId = String(formData.get("accountId"));
+  const type = String(formData.get("type"));
+  const amount = parseFloat(String(formData.get("amount")));
+  const date = String(formData.get("date"));
+  const description = String(formData.get("description") || "").trim();
+
+  if (!accountId || !amount || !date || (type !== "ingreso" && type !== "gasto")) {
+    throw new Error("Faltan campos requeridos");
+  }
+  const cuenta = await prisma.account.findUnique({ where: { id: accountId } });
+  if (!cuenta || cuenta.type !== "custodia") throw new Error("Cuenta inválida");
+
+  const delta = type === "ingreso" ? amount : -amount;
+  await prisma.$transaction([
+    prisma.fundMovement.create({
+      data: { accountId, type, amount, date: new Date(date), description: description || null },
+    }),
+    prisma.account.update({ where: { id: accountId }, data: { balance: { increment: delta } } }),
+  ]);
+
+  await registrarActividad(
+    "Fondo",
+    "crear",
+    `${type === "ingreso" ? "Entrada" : "Gasto"} de S/ ${amount.toFixed(0)} en "${cuenta.name}"${description ? ` (${description})` : ""}`
+  );
+  revalidatePath("/cuentas");
+  revalidatePath(`/cuentas/${accountId}`);
+}
+
+export async function updateFundMovement(formData: FormData) {
+  const id = String(formData.get("id"));
+  const type = String(formData.get("type"));
+  const amount = parseFloat(String(formData.get("amount")));
+  const date = String(formData.get("date"));
+  const description = String(formData.get("description") || "").trim();
+
+  if (!id || !amount || !date || (type !== "ingreso" && type !== "gasto")) {
+    throw new Error("Faltan campos requeridos");
+  }
+  const anterior = await prisma.fundMovement.findUnique({ where: { id } });
+  if (!anterior) throw new Error("Movimiento no encontrado");
+
+  const deltaReversa = anterior.type === "ingreso" ? -anterior.amount : anterior.amount;
+  const deltaNuevo = type === "ingreso" ? amount : -amount;
+
+  await prisma.$transaction([
+    prisma.fundMovement.update({
+      where: { id },
+      data: { type, amount, date: new Date(date), description: description || null },
+    }),
+    prisma.account.update({
+      where: { id: anterior.accountId },
+      data: { balance: { increment: deltaReversa + deltaNuevo } },
+    }),
+  ]);
+
+  await registrarActividad("Fondo", "editar", `Movimiento editado: S/ ${amount.toFixed(0)} (${type})`);
+  revalidatePath("/cuentas");
+  revalidatePath(`/cuentas/${anterior.accountId}`);
+}
+
+export async function eliminarFundMovement(formData: FormData) {
+  const id = String(formData.get("id"));
+  const mov = await prisma.fundMovement.delete({ where: { id } });
+  const delta = mov.type === "ingreso" ? -mov.amount : mov.amount;
+  await prisma.account.update({ where: { id: mov.accountId }, data: { balance: { increment: delta } } });
+  await registrarActividad("Fondo", "eliminar", `Movimiento de S/ ${mov.amount.toFixed(0)} eliminado`);
+  revalidatePath("/cuentas");
+  revalidatePath(`/cuentas/${mov.accountId}`);
+}
+
 export async function eliminarDeuda(formData: FormData) {
   const id = String(formData.get("id"));
   const deudaEliminada = await prisma.debt.delete({ where: { id } });

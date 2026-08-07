@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { updateSaldoCuenta, eliminarCuenta } from "@/lib/actions";
 import RowMenu from "../components/RowMenu";
 import CuentaModal from "./CuentaModal";
@@ -21,7 +22,13 @@ export default function CuentaRow({ cuenta, ultimo, dias }: { cuenta: Cuenta; ul
   return (
     <div className={`flex justify-between items-center px-4 py-3 ${!ultimo ? "border-b border-border" : ""}`}>
       <div>
-        <p className="text-sm font-medium">{cuenta.name}</p>
+        {cuenta.type === "custodia" ? (
+          <Link href={`/cuentas/${cuenta.id}`} className="text-sm font-medium hover:text-accent transition-colors">
+            {cuenta.name} <span className="text-xs text-muted">· ver movimientos →</span>
+          </Link>
+        ) : (
+          <p className="text-sm font-medium">{cuenta.name}</p>
+        )}
         <p className="text-xs text-muted">{dias === null ? "Sin actualizar" : dias === 0 ? "Actualizado hoy" : `Actualizado hace ${dias} día${dias === 1 ? "" : "s"}`}</p>
       </div>
       {editando ? (

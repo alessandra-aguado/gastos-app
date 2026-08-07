@@ -1,0 +1,96 @@
+"use client";
+
+import { useState } from "react";
+import { createFundMovement, updateFundMovement } from "@/lib/actions";
+
+type Movimiento = {
+  id: string;
+  type: string;
+  amount: number;
+  date: Date;
+  description: string | null;
+};
+
+function toDateInput(d: Date) {
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
+function hoy() {
+  return toDateInput(new Date());
+}
+
+export default function MovimientoModal({
+  accountId,
+  movimiento,
+  onClose,
+}: {
+  accountId: string;
+  movimiento?: Movimiento;
+  onClose?: () => void;
+}) {
+  const esEdicion = !!movimiento;
+  const [abierto, setAbierto] = useState(esEdicion);
+  const [tipo, setTipo] = useState<"ingreso" | "gasto">((movimiento?.type as "ingreso" | "gasto") || "gasto");
+
+  function cerrar() {
+    setAbierto(false);
+    onClose?.();
+  }
+
+  return (
+    <>
+      {!esEdicion && (
+        <button onClick={() => setAbierto(true)} className="bg-accent text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity">
+          + Nuevo movimiento
+        </button>
+      )}
+
+      {abierto && (
+        <div className="fixed inset-0 bg-black/45 flex items-center justify-center p-5 z-50" onClick={cerrar}>
+          <form
+            action={async (fd) => {
+              fd.set("accountId", accountId);
+              if (esEdicion) {
+                fd.set("id", movimiento!.id);
+                await updateFundMovement(fd);
+              } else {
+                await createFundMovement(fd);
+              }
+              cerrar();
+            }}
+            className="w-[380px] bg-surface rounded-xl p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-3.5">
+              <span className="text-sm font-medium">{esEdicion ? "Editar movimiento" : "Nuevo movimiento"}</span>
+              <button type="button" onClick={cerrar} className="text-muted">✕</button>
+            </div>
+
+            <label className="text-xs text-muted block mb-1.5">Tipo</label>
+            <div className="flex gap-1.5 mb-2.5">
+              <button type="button" onClick={() => setTipo("ingreso")} className={`flex-1 text-xs py-2 rounded-lg border ${tipo === "ingreso" ? "bg-accent-soft text-accent border-accent" : "border-border"}`}>
+                Entra dinero
+              </button>
+              <button type="button" onClick={() => setTipo("gasto")} className={`flex-1 text-xs py-2 rounded-lg border ${tipo === "gasto" ? "bg-accent-soft text-accent border-accent" : "border-border"}`}>
+                Sale dinero
+              </button>
+            </div>
+            <input type="hidden" name="type" value={tipo} />
+
+            <label className="text-xs text-muted block mb-1">Monto</label>
+            <input name="amount" type="number" step="0.01" required defaultValue={movimiento?.amount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="45" />
+
+            <label className="text-xs text-muted block mb-1">Fecha</label>
+            <input name="date" type="date" required defaultValue={movimiento ? toDateInput(movimiento.date) : hoy()} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" />
+
+            <label className="text-xs text-muted block mb-1">Descripción (opcional)</label>
+            <textarea name="description" defaultValue={movimiento?.description || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3.5 h-16" placeholder="Pollo a la brasa para mi mamá, pagado con BBVA débito..." />
+
+            <button className="w-full py-2.5 bg-accent text-white rounded-lg text-sm font-medium">{esEdicion ? "Guardar cambios" : "Agregar movimiento"}</button>
+          </form>
+        </div>
+      )}
+    </>
+  );
+}

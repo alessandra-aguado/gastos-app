@@ -301,6 +301,14 @@ export async function getCuentas() {
   return prisma.account.findMany({ orderBy: [{ bank: "asc" }, { createdAt: "asc" }] });
 }
 
+export async function getCuentaPorId(id: string) {
+  return prisma.account.findUnique({ where: { id } });
+}
+
+export async function getFundMovements(accountId: string) {
+  return prisma.fundMovement.findMany({ where: { accountId }, orderBy: { date: "desc" } });
+}
+
 // ---------- Historial de cambios ----------
 export async function getActivityLog(limit = 150) {
   return prisma.activityLog.findMany({ orderBy: { createdAt: "desc" }, take: limit });

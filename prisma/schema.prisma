@@ -210,13 +210,28 @@ model Account {
   id              String    @id @default(cuid())
   name            String // "Cuenta corriente", "Guardadito"
   bank            String // BCP, Interbank, BBVA...
-  type            String // corriente | ahorro | billetera | puntos
+  type            String // corriente | ahorro | billetera | puntos | custodia
   balance         Float     @default(0)
   lastCheckIn     DateTime?
   paymentMethodId String?        @unique
   paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   checkIns        AccountCheckIn[]
+  movements       FundMovement[]
   createdAt       DateTime  @default(now())
+}
+
+// Movimientos de una cuenta tipo "custodia" (plata de terceros que administras).
+// Cada movimiento ajusta el balance de la cuenta y vive separado de Transaction,
+// para no contaminar Gastos/Presupuesto con dinero que no es tuyo.
+model FundMovement {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  type        String   // ingreso | gasto
+  amount      Float
+  date        DateTime
+  description String?
+  createdAt   DateTime @default(now())
 }
 
 // Snapshot del saldo confirmado por mes, para reconciliacion mensual.
