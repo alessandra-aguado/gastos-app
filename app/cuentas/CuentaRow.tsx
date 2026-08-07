@@ -45,9 +45,15 @@ export default function CuentaRow({ cuenta, ultimo, dias }: { cuenta: Cuenta; ul
         </form>
       ) : (
         <div className="flex items-center gap-2">
-          <button onClick={() => setEditando(true)} className="text-sm hover:text-accent transition-colors">
-            S/ {cuenta.balance.toLocaleString("es-PE")}
-          </button>
+          {cuenta.type === "custodia" ? (
+            <span className="text-sm" title="El saldo de un fondo de terceros se ajusta solo registrando movimientos, para dejar registro de en qué se usó.">
+              S/ {cuenta.balance.toLocaleString("es-PE")}
+            </span>
+          ) : (
+            <button onClick={() => setEditando(true)} className="text-sm hover:text-accent transition-colors">
+              S/ {cuenta.balance.toLocaleString("es-PE")}
+            </button>
+          )}
           <RowMenu onEdit={() => setEditandoDatos(true)} onDelete={() => borrarConConfirmacion(cuenta.id, cuenta.name)} />
         </div>
       )}
