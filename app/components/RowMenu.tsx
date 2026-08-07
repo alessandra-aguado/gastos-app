@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+
+const MENU_WIDTH = 144; // w-36
 
 export default function RowMenu({
   onEdit,
@@ -10,10 +13,29 @@ export default function RowMenu({
   onDelete: () => void;
 }) {
   const [abierto, setAbierto] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  function actualizarPosicion() {
+    const rect = btnRef.current?.getBoundingClientRect();
+    if (rect) setPos({ top: rect.bottom + 4, left: rect.right - MENU_WIDTH });
+  }
+
+  useEffect(() => {
+    if (!abierto) return;
+    actualizarPosicion();
+    window.addEventListener("scroll", actualizarPosicion, true);
+    window.addEventListener("resize", actualizarPosicion);
+    return () => {
+      window.removeEventListener("scroll", actualizarPosicion, true);
+      window.removeEventListener("resize", actualizarPosicion);
+    };
+  }, [abierto]);
 
   return (
     <div className="relative shrink-0">
       <button
+        ref={btnRef}
         onClick={(e) => {
           e.stopPropagation();
           setAbierto((v) => !v);
@@ -28,31 +50,38 @@ export default function RowMenu({
         </svg>
       </button>
 
-      {abierto && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setAbierto(false)} />
-          <div className="absolute right-0 top-full mt-1 z-50 w-36 bg-surface border border-border rounded-lg shadow-[0_4px_12px_rgba(16,24,40,0.08)] py-1">
-            <button
-              onClick={() => {
-                setAbierto(false);
-                onEdit();
-              }}
-              className="w-full text-left text-xs px-3 py-2 hover:bg-hover transition-colors"
+      {abierto &&
+        pos &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setAbierto(false)} />
+            <div
+              className="fixed z-50 bg-surface border border-border rounded-lg shadow-[0_4px_12px_rgba(16,24,40,0.08)] py-1"
+              style={{ top: pos.top, left: pos.left, width: MENU_WIDTH }}
             >
-              Editar
-            </button>
-            <button
-              onClick={() => {
-                setAbierto(false);
-                onDelete();
-              }}
-              className="w-full text-left text-xs px-3 py-2 hover:bg-hover transition-colors text-warning"
-            >
-              Eliminar
-            </button>
-          </div>
-        </>
-      )}
+              <button
+                onClick={() => {
+                  setAbierto(false);
+                  onEdit();
+                }}
+                className="w-full text-left text-xs px-3 py-2 hover:bg-hover transition-colors"
+              >
+                Editar
+              </button>
+              <button
+                onClick={() => {
+                  setAbierto(false);
+                  onDelete();
+                }}
+                className="w-full text-left text-xs px-3 py-2 hover:bg-hover transition-colors text-warning"
+              >
+                Eliminar
+              </button>
+            </div>
+          </>,
+          document.body
+        )}
     </div>
   );
 }
