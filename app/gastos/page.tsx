@@ -3,7 +3,7 @@ import { getTopCategories, getSpendByTopCategory, listTransactionsByCategory, ge
 
 export const dynamic = "force-dynamic";
 
-const PALETTE = ["#f05b53", "#5b8ff0", "#f0b85b", "#5bc4a8", "#a778e0", "#e07ba7", "#7bb8e0", "#c4a15b"];
+const PALETTE = ["#6d4aff", "#5b6cff", "#f97316", "#16a34a", "#a778e0", "#e07ba7", "#7bb8e0", "#c4a15b"];
 
 export default async function GastosPage({
   searchParams,
@@ -79,7 +79,7 @@ export default async function GastosPage({
       <p className="text-muted text-sm mt-2">Detalle de tus gastos por categoría este mes.</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-        <div className="bg-surface border border-border rounded-2xl p-5">
+        <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
           <p className="text-sm font-medium mb-4">Por categoría</p>
           {totalMes === 0 ? (
             <p className="text-sm text-muted">Aún no hay gastos este mes para graficar.</p>
@@ -107,7 +107,7 @@ export default async function GastosPage({
           )}
         </div>
 
-        <div className="bg-surface border border-border rounded-2xl p-5">
+        <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
           <p className="text-sm font-medium mb-4">Tendencia, últimos 6 meses</p>
           <div className="flex items-end gap-2 h-32">
             {trend.map((m) => (
@@ -129,7 +129,7 @@ export default async function GastosPage({
           <Link
             key={c.id}
             href={`/gastos?cat=${c.id}`}
-            className="bg-surface border border-border rounded-2xl p-4 hover:border-accent transition-colors"
+            className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4 hover:border-accent transition-colors"
           >
             <span className="text-xl">{c.icon}</span>
             <p className="text-sm mt-2">{c.name}</p>

@@ -27,7 +27,7 @@ export default function RachaChip() {
       </button>
 
       {open && (
-        <div className="mt-3 bg-surface border border-border rounded-2xl p-4" style={{ width: 300 }}>
+        <div className="mt-3 bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4" style={{ width: 300 }}>
           <div className="flex items-center justify-between mb-3 gap-3">
             <div>
               <p className="text-xl font-semibold text-accent whitespace-nowrap">🔥 12 días</p>

@@ -27,7 +27,7 @@ export default function MetasPage() {
         </div>
         <button
           onClick={() => setModalAbierto(true)}
-          className="text-sm px-4 py-2 rounded-full border border-border hover:border-accent transition-colors"
+          className="text-sm px-4 py-2 rounded-lg border border-border hover:border-accent transition-colors"
         >
           + Nueva meta
         </button>
@@ -37,7 +37,7 @@ export default function MetasPage() {
         {metas.map((m) => {
           const pct = Math.round((m.actual / m.objetivo) * 100);
           return (
-            <div key={m.nombre} className="bg-surface border border-border rounded-2xl p-4">
+            <div key={m.nombre} className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4">
               <div className="flex justify-between items-start mb-2.5">
                 <div className="flex gap-2.5 items-center">
                   <span className="text-xl">{m.icon}</span>
@@ -70,14 +70,14 @@ export default function MetasPage() {
 
       {modalAbierto && (
         <div className="fixed inset-0 bg-black/45 flex items-center justify-center p-5 z-50" onClick={() => setModalAbierto(false)}>
-          <div className="w-[380px] bg-surface rounded-2xl p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="w-[380px] bg-surface rounded-xl p-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-3.5">
               <span className="text-sm font-medium">Nueva meta</span>
               <button onClick={() => setModalAbierto(false)} className="text-muted">✕</button>
             </div>
 
             <label className="text-xs text-muted block mb-1">¿Para qué estás ahorrando?</label>
-            <input className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm mb-3" placeholder="Curso de inglés, depa, fondo de emergencia..." />
+            <input className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" placeholder="Curso de inglés, depa, fondo de emergencia..." />
 
             <label className="text-xs text-muted block mb-1.5">¿Cómo la vas a lograr?</label>
             <div className="flex gap-2 mb-3">
@@ -135,25 +135,25 @@ export default function MetasPage() {
                 ) : (
                   <div className="mb-3">
                     <label className="text-xs text-muted block mb-1">¿Cuánto necesitas en total?</label>
-                    <input type="number" placeholder="1200" className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm" />
+                    <input type="number" placeholder="1200" className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm" />
                   </div>
                 )}
 
                 <label className="text-xs text-muted block mb-1">¿Ya tienes algo ahorrado?</label>
-                <input type="number" placeholder="0" className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm mb-3" />
+                <input type="number" placeholder="0" className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" />
 
                 <label className="text-xs text-muted block mb-1">¿Para cuándo te gustaría lograrlo?</label>
-                <input type="date" className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm mb-3" />
+                <input type="date" className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" />
 
                 <label className="text-xs text-muted block mb-1">¿Por qué te importa esta meta?</label>
-                <textarea placeholder="Para poder aplicar a un mejor trabajo..." className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm mb-3 h-12" />
+                <textarea placeholder="Para poder aplicar a un mejor trabajo..." className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3 h-12" />
 
                 <label className="flex items-start gap-2 text-xs text-muted mb-3.5">
                   <input type="checkbox" className="mt-0.5" />
                   <span>Usar como mi fondo de emergencia<br /><span className="text-[11px]">La usaremos como colchón cuando tengas deudas en cuotas.</span></span>
                 </label>
 
-                <button className="w-full py-2.5 bg-accent text-white rounded-full text-sm font-medium">Crear meta</button>
+                <button className="w-full py-2.5 bg-accent text-white rounded-lg text-sm font-medium">Crear meta</button>
               </>
             ) : (
               <div className="bg-accent-soft rounded-xl p-3.5">

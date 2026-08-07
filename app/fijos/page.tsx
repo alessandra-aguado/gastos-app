@@ -24,10 +24,10 @@ export default function FijosPage() {
           <h1 className="text-2xl font-semibold">🔁 Fijos</h1>
           <p className="text-muted text-sm mt-1">S/ {total} comprometidos este mes · {pagados} de {fijos.length} pagados</p>
         </div>
-        <button onClick={() => setModalAbierto(true)} className="text-sm px-4 py-2 rounded-full border border-border hover:border-accent transition-colors">+ Nuevo fijo</button>
+        <button onClick={() => setModalAbierto(true)} className="text-sm px-4 py-2 rounded-lg border border-border hover:border-accent transition-colors">+ Nuevo fijo</button>
       </div>
 
-      <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+      <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] overflow-hidden">
         {fijos.map((f, i) => (
           <div key={f.nombre} className={`flex justify-between items-center px-4 py-3 ${i < fijos.length - 1 ? "border-b border-border" : ""}`}>
             <div className="flex gap-2.5 items-center">
@@ -51,28 +51,28 @@ export default function FijosPage() {
 
       {modalAbierto && (
         <div className="fixed inset-0 bg-black/45 flex items-center justify-center p-5 z-50" onClick={() => setModalAbierto(false)}>
-          <div className="w-[380px] bg-surface rounded-2xl p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="w-[380px] bg-surface rounded-xl p-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-3.5">
               <span className="text-sm font-medium">Nuevo fijo</span>
               <button onClick={() => setModalAbierto(false)} className="text-muted">✕</button>
             </div>
 
             <label className="text-xs text-muted block mb-1">Nombre</label>
-            <input defaultValue="Internet" className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm mb-2.5" />
+            <input defaultValue="Internet" className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" />
 
             <div className="flex gap-2 mb-2.5">
               <div className="flex-1">
                 <label className="text-xs text-muted block mb-1">Categoría</label>
-                <select className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm"><option>Suscripciones</option></select>
+                <select className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm"><option>Suscripciones</option></select>
               </div>
               <div className="flex-1">
                 <label className="text-xs text-muted block mb-1">Monto</label>
-                <input type="number" defaultValue={90} className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm" />
+                <input type="number" defaultValue={90} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm" />
               </div>
             </div>
 
             <label className="text-xs text-muted block mb-1">Medio de pago</label>
-            <select className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm mb-1">
+            <select className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-1">
               <option>Interbank (crédito)</option><option>BCP (débito)</option><option>Yape, sale de BCP</option><option>Efectivo</option>
             </select>
             <p className="text-xs text-muted mb-3">Tus medios de pago se agregan en Ajustes.</p>
@@ -86,18 +86,18 @@ export default function FijosPage() {
             {comoVence === "unica" ? (
               <div className="mb-2.5">
                 <label className="text-xs text-muted block mb-1">¿Qué día del mes vence?</label>
-                <input type="number" defaultValue={5} className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm" />
+                <input type="number" defaultValue={5} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm" />
               </div>
             ) : (
               <div className="mb-2.5">
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <label className="text-xs text-muted block mb-1">Se emite el día</label>
-                    <input type="number" defaultValue={5} className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm" />
+                    <input type="number" defaultValue={5} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm" />
                   </div>
                   <div className="flex-1">
                     <label className="text-xs text-muted block mb-1">Vence el día</label>
-                    <input type="number" defaultValue={20} className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm" />
+                    <input type="number" defaultValue={20} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm" />
                   </div>
                 </div>
                 <p className="text-xs text-muted mt-1.5">Puedes pagarlo cualquier día dentro de ese rango.</p>
@@ -105,7 +105,7 @@ export default function FijosPage() {
             )}
 
             <label className="text-xs text-muted block mb-1">¿Cuántos días antes te recuerdo?</label>
-            <input type="number" defaultValue={0} placeholder="0 = el mismo día" className="w-full border border-border rounded-xl px-3 py-2 bg-background text-sm mb-2.5" />
+            <input type="number" defaultValue={0} placeholder="0 = el mismo día" className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" />
 
             <label className="flex items-start gap-2 text-xs text-muted mb-3">
               <input type="checkbox" defaultChecked className="mt-0.5" />
@@ -116,7 +116,7 @@ export default function FijosPage() {
               <p className="text-xs text-accent leading-relaxed">Al marcarlo pagado se registra solo en Gastos, con esta categoría y medio de pago.</p>
             </div>
 
-            <button className="w-full py-2.5 bg-accent text-white rounded-full text-sm font-medium">Guardar fijo</button>
+            <button className="w-full py-2.5 bg-accent text-white rounded-lg text-sm font-medium">Guardar fijo</button>
           </div>
         </div>
       )}

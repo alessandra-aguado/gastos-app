@@ -100,7 +100,7 @@ export default async function RegistrarPage() {
 
         <button
           type="submit"
-          className="w-full bg-accent text-white font-medium py-3 rounded-full hover:opacity-90 transition-opacity"
+          className="w-full bg-accent text-white font-medium py-3 rounded-lg hover:opacity-90 transition-opacity"
         >
           Guardar
         </button>

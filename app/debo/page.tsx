@@ -6,12 +6,12 @@ export default function DeboPage() {
           <h1 className="text-2xl font-semibold">💳 Debo</h1>
           <p className="text-muted text-sm mt-1">Debes S/ 2,890 · te deben S/ 200</p>
         </div>
-        <button className="text-sm px-4 py-2 rounded-full border border-border hover:border-accent transition-colors">+ Nueva deuda</button>
+        <button className="text-sm px-4 py-2 rounded-lg border border-border hover:border-accent transition-colors">+ Nueva deuda</button>
       </div>
 
       <p className="text-xs text-muted mb-2">Tarjetas de crédito</p>
       <div className="space-y-2.5 mb-6">
-        <div className="bg-surface border border-border rounded-2xl p-4">
+        <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4">
           <div className="flex justify-between items-start mb-2">
             <div>
               <p className="text-sm font-medium">Interbank</p>
@@ -28,7 +28,7 @@ export default function DeboPage() {
           </div>
         </div>
 
-        <div className="bg-surface border border-border rounded-2xl p-4">
+        <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4">
           <div className="flex justify-between items-start mb-2">
             <div>
               <p className="text-sm font-medium">Falabella</p>
@@ -48,7 +48,7 @@ export default function DeboPage() {
 
       <p className="text-xs text-muted mb-2">Préstamos personales</p>
       <div className="space-y-2.5 mb-6">
-        <div className="bg-surface border border-border rounded-2xl p-4 flex justify-between items-center">
+        <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4 flex justify-between items-center">
           <div>
             <p className="text-sm font-medium">Juan <span className="text-xs text-muted font-normal">· almuerzo prestado</span></p>
             <p className="text-xs text-muted">Yo debo</p>
@@ -58,7 +58,7 @@ export default function DeboPage() {
             <button className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">Pagar</button>
           </div>
         </div>
-        <div className="bg-surface border border-border rounded-2xl p-4 flex justify-between items-center">
+        <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4 flex justify-between items-center">
           <div>
             <p className="text-sm font-medium">Sofía <span className="text-xs text-muted font-normal">· le presté para su matrícula</span></p>
             <p className="text-xs text-positive">Me deben</p>
@@ -70,7 +70,7 @@ export default function DeboPage() {
         </div>
       </div>
 
-      <div className="bg-accent-soft rounded-2xl p-4 flex gap-2.5 items-center">
+      <div className="bg-accent-soft rounded-xl p-4 flex gap-2.5 items-center">
         <span className="text-lg">🛡️</span>
         <p className="text-xs text-accent leading-relaxed">Tu fondo de emergencia tiene S/ 1,200 — cubre 3.9 meses de tus cuotas actuales (S/ 310/mes).</p>
       </div>

@@ -29,12 +29,12 @@ export default function AsistenciaIaPage() {
         {conversacionInicial.map((m, i) =>
           m.rol === "usuario" ? (
             <div key={i} className="flex justify-end">
-              <div className="bg-surface border border-border rounded-2xl rounded-tr-sm px-3.5 py-2.5 text-sm max-w-[80%]">{m.texto}</div>
+              <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] rounded-tr-sm px-3.5 py-2.5 text-sm max-w-[80%]">{m.texto}</div>
             </div>
           ) : (
             <div key={i} className="flex gap-2.5 items-start">
               <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center text-white text-xs shrink-0">🤖</div>
-              <div className="bg-accent-soft text-accent rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-sm max-w-[80%] leading-relaxed">{m.texto}</div>
+              <div className="bg-accent-soft text-accent rounded-xl rounded-tl-sm px-3.5 py-2.5 text-sm max-w-[80%] leading-relaxed">{m.texto}</div>
             </div>
           )
         )}
@@ -57,9 +57,9 @@ export default function AsistenciaIaPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Pregúntale algo sobre tus gastos..."
-          className="flex-1 border border-border rounded-full px-4 py-2.5 bg-surface text-sm"
+          className="flex-1 border border-border rounded-lg px-4 py-2.5 bg-surface text-sm"
         />
-        <button className="bg-accent text-white text-sm font-medium px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity shrink-0">
+        <button className="bg-accent text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity shrink-0">
           Enviar
         </button>
       </div>

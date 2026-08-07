@@ -28,7 +28,7 @@ export default function AjustesPage() {
 
       {tab === "categorias" ? (
         <>
-          <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-3">
+          <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] overflow-hidden mb-3">
             {categorias.map((c, i) => (
               <div key={c.nombre} className={`flex justify-between items-start px-4 py-3 ${i < categorias.length - 1 ? "border-b border-border" : ""}`}>
                 <div className="flex gap-2.5">
@@ -42,7 +42,7 @@ export default function AjustesPage() {
               </div>
             ))}
           </div>
-          <div className="bg-surface border border-dashed border-border rounded-2xl p-4">
+          <div className="bg-surface border border-dashed border-border rounded-xl p-4">
             <p className="text-xs text-muted mb-2">Nueva categoría</p>
             <div className="flex gap-2 mb-2">
               <input placeholder="Ícono" className="w-16 border border-border rounded-lg px-2 py-1.5 bg-background text-sm" />
@@ -54,7 +54,7 @@ export default function AjustesPage() {
         </>
       ) : (
         <>
-          <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-3">
+          <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] overflow-hidden mb-3">
             {medios.map((m, i) => (
               <div key={m.nombre} className={`flex justify-between items-center px-4 py-3 ${i < medios.length - 1 ? "border-b border-border" : ""}`}>
                 <p className="text-sm">{m.nombre} <span className="text-muted text-xs">· {m.tipo}</span></p>
@@ -62,7 +62,7 @@ export default function AjustesPage() {
               </div>
             ))}
           </div>
-          <div className="bg-surface border border-dashed border-border rounded-2xl p-4">
+          <div className="bg-surface border border-dashed border-border rounded-xl p-4">
             <p className="text-xs text-muted mb-2">Nuevo medio de pago</p>
             <div className="flex gap-2 mb-2">
               <input placeholder="Nombre" className="flex-1 border border-border rounded-lg px-2 py-1.5 bg-background text-sm" />

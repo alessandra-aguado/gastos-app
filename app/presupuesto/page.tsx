@@ -29,7 +29,7 @@ export default async function PresupuestoPage() {
           const over = limit > 0 && spent > limit;
 
           return (
-            <div key={c.id} className="bg-surface border border-border rounded-2xl p-4">
+            <div key={c.id} className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">
                   {c.icon} {c.name}
@@ -75,7 +75,7 @@ export default async function PresupuestoPage() {
         }
         proyeccion={
           <div className="space-y-3">
-            <div className="bg-surface border border-border rounded-2xl p-5">
+            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
               <div className="flex justify-between items-center text-sm text-muted mb-2.5">
                 <span>Ingreso mensual</span>
                 <span className="text-foreground font-medium">S/ 3,500</span>
@@ -98,7 +98,7 @@ export default async function PresupuestoPage() {
               </div>
             </div>
 
-            <div className="bg-surface border border-border rounded-2xl p-5">
+            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
               <div className="flex justify-between items-center mb-2.5">
                 <span className="text-sm text-muted">Gastos planeados</span>
                 <button className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">+ Agregar plan</button>
@@ -121,13 +121,13 @@ export default async function PresupuestoPage() {
               </div>
             </div>
 
-            <div className="bg-accent-soft rounded-2xl p-5">
+            <div className="bg-accent-soft rounded-xl p-5">
               <p className="text-xs text-accent">Disponible real este mes</p>
-              <p className="text-2xl font-semibold text-accent">S/ 2,100</p>
+              <p className="text-2xl font-bold text-accent">S/ 2,100</p>
               <p className="text-[11px] text-accent mt-0.5">3,500 − 800 fijos − 450 debo − 150 planeado</p>
             </div>
 
-            <div className="bg-surface border border-border rounded-2xl p-5">
+            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
               <div className="flex justify-between text-sm text-muted mb-2">
                 <span>Real vs proyectado, planes de agosto</span>
                 <span className="text-foreground">S/ 62 de S/ 150</span>

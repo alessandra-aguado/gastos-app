@@ -36,12 +36,12 @@ export default function MetodoSelector({ manual }: { manual: ReactNode }) {
             <span className="text-xs text-positive">boleta_tottus.jpg · leída con IA, confianza 92%</span>
           </div>
           <div className="flex gap-2 mb-2.5">
-            <div className="flex-1"><label className="text-xs text-muted block mb-1">Comercio</label><input defaultValue="Tottus" className="w-full border border-border rounded-xl px-3 py-2 bg-surface text-sm" /></div>
-            <div className="flex-1"><label className="text-xs text-muted block mb-1">Monto total</label><input defaultValue="S/ 87.40" className="w-full border border-border rounded-xl px-3 py-2 bg-surface text-sm" /></div>
+            <div className="flex-1"><label className="text-xs text-muted block mb-1">Comercio</label><input defaultValue="Tottus" className="w-full border border-border rounded-lg px-3 py-2 bg-surface text-sm" /></div>
+            <div className="flex-1"><label className="text-xs text-muted block mb-1">Monto total</label><input defaultValue="S/ 87.40" className="w-full border border-border rounded-lg px-3 py-2 bg-surface text-sm" /></div>
           </div>
           <div className="flex gap-2 mb-3">
-            <div className="flex-1"><label className="text-xs text-muted block mb-1">Categoría</label><select className="w-full border border-border rounded-xl px-3 py-2 bg-surface text-sm"><option>Supermercado</option></select></div>
-            <div className="flex-1"><label className="text-xs text-muted block mb-1">Medio de pago</label><select className="w-full border border-border rounded-xl px-3 py-2 bg-surface text-sm"><option>BCP débito</option></select></div>
+            <div className="flex-1"><label className="text-xs text-muted block mb-1">Categoría</label><select className="w-full border border-border rounded-lg px-3 py-2 bg-surface text-sm"><option>Supermercado</option></select></div>
+            <div className="flex-1"><label className="text-xs text-muted block mb-1">Medio de pago</label><select className="w-full border border-border rounded-lg px-3 py-2 bg-surface text-sm"><option>BCP débito</option></select></div>
           </div>
           <p className="text-xs text-muted mb-1.5">Productos detectados</p>
           <div className="bg-surface border border-border rounded-xl px-3 mb-3">
@@ -50,7 +50,7 @@ export default function MetodoSelector({ manual }: { manual: ReactNode }) {
             <div className="flex justify-between text-sm py-2"><span>Detergente</span><span className="text-muted">S/ 22.90</span></div>
           </div>
           <p className="text-xs text-muted mb-3">Corrige lo que haga falta antes de guardar — así la IA aprende para la próxima.</p>
-          <button className="w-full py-2.5 bg-accent text-white rounded-full text-sm font-medium">Guardar</button>
+          <button className="w-full py-2.5 bg-accent text-white rounded-lg text-sm font-medium">Guardar</button>
         </div>
       )}
 
@@ -62,12 +62,12 @@ export default function MetodoSelector({ manual }: { manual: ReactNode }) {
           </div>
           <div className="bg-background rounded-xl px-3 py-2.5 text-sm italic mb-3.5">&quot;Gasté 45 soles en un almuerzo con Marco, pagué con Yape.&quot;</div>
           <div className="flex gap-2 mb-2.5">
-            <div className="flex-1"><label className="text-xs text-muted block mb-1">Monto</label><input defaultValue="S/ 45" className="w-full border border-border rounded-xl px-3 py-2 bg-surface text-sm" /></div>
-            <div className="flex-1"><label className="text-xs text-muted block mb-1">Categoría</label><select className="w-full border border-border rounded-xl px-3 py-2 bg-surface text-sm"><option>Salidas a comer</option></select></div>
+            <div className="flex-1"><label className="text-xs text-muted block mb-1">Monto</label><input defaultValue="S/ 45" className="w-full border border-border rounded-lg px-3 py-2 bg-surface text-sm" /></div>
+            <div className="flex-1"><label className="text-xs text-muted block mb-1">Categoría</label><select className="w-full border border-border rounded-lg px-3 py-2 bg-surface text-sm"><option>Salidas a comer</option></select></div>
           </div>
           <div className="flex gap-2 mb-3">
-            <div className="flex-1"><label className="text-xs text-muted block mb-1">Medio de pago</label><select className="w-full border border-border rounded-xl px-3 py-2 bg-surface text-sm"><option>Yape, sale de BCP</option></select></div>
-            <div className="flex-1"><label className="text-xs text-muted block mb-1">Notas</label><input defaultValue="Almuerzo con Marco" className="w-full border border-border rounded-xl px-3 py-2 bg-surface text-sm" /></div>
+            <div className="flex-1"><label className="text-xs text-muted block mb-1">Medio de pago</label><select className="w-full border border-border rounded-lg px-3 py-2 bg-surface text-sm"><option>Yape, sale de BCP</option></select></div>
+            <div className="flex-1"><label className="text-xs text-muted block mb-1">Notas</label><input defaultValue="Almuerzo con Marco" className="w-full border border-border rounded-lg px-3 py-2 bg-surface text-sm" /></div>
           </div>
           <p className="text-xs text-muted mb-3">Mismo motor que texto libre — pasa por el mismo procesamiento.</p>
           <button className="w-full py-2.5 bg-accent text-white rounded-full text-sm font-medium">Guardar</button>
@@ -77,7 +77,7 @@ export default function MetodoSelector({ manual }: { manual: ReactNode }) {
       {metodo === "texto" && (
         <div>
           <label className="text-xs text-muted block mb-1">Escribe qué gastaste</label>
-          <textarea placeholder="Compré pan y leche en Tottus por 18 soles" className="w-full border border-border rounded-xl px-3 py-2 bg-surface text-sm mb-3 h-16" />
+          <textarea placeholder="Compré pan y leche en Tottus por 18 soles" className="w-full border border-border rounded-lg px-3 py-2 bg-surface text-sm mb-3 h-16" />
           <p className="text-xs text-muted mb-3">La IA lo lee y te pre-llena los campos, igual que Foto y Voz. Revisas y guardas.</p>
           <button className="w-full py-2.5 bg-accent text-white rounded-full text-sm font-medium">Guardar</button>
         </div>

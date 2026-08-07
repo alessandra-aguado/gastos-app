@@ -54,28 +54,28 @@ export default async function Home({
         </div>
         <Link
           href="/registrar"
-          className="bg-accent text-white text-sm font-medium px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity"
+          className="bg-accent text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
         >
           + Registrar gasto
         </Link>
       </header>
 
-      <section className="bg-surface border border-border rounded-2xl p-6 flex flex-wrap items-center gap-8">
+      <section className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6 flex flex-wrap items-center gap-8">
         <div>
           <p className="text-xs text-muted">Gastado {esMesActual ? "este mes" : "en el mes"}</p>
-          <p className="text-3xl font-semibold mt-1">S/ {summary.total.toFixed(0)}</p>
+          <p className="text-3xl font-bold mt-1">S/ {summary.total.toFixed(0)}</p>
         </div>
         <div>
           <p className="text-xs text-muted">Transacciones</p>
-          <p className="text-3xl font-semibold mt-1">{summary.count}</p>
+          <p className="text-3xl font-bold mt-1">{summary.count}</p>
         </div>
         <div>
           <p className="text-xs text-muted">Promedio por gasto</p>
-          <p className="text-3xl font-semibold mt-1">S/ {summary.avg.toFixed(0)}</p>
+          <p className="text-3xl font-bold mt-1">S/ {summary.avg.toFixed(0)}</p>
         </div>
         <div>
           <p className="text-xs text-muted">Pendientes por clasificar</p>
-          <p className="text-3xl font-semibold mt-1 text-positive">{summary.pending}</p>
+          <p className="text-3xl font-bold mt-1 text-positive">{summary.pending}</p>
         </div>
       </section>
 
@@ -91,11 +91,11 @@ export default async function Home({
         <RachaChip />
       </section>
 
-      <section className="bg-surface border border-border rounded-2xl p-6">
+      <section className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
         <TendenciaGeneral meses={trend.map((m) => m.label)} gastoReal={trend.map((m) => m.total)} />
       </section>
 
-      <section className="bg-surface border border-border rounded-2xl p-6">
+      <section className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
         <p className="text-sm font-medium mb-4">Gasto diario</p>
         {summary.count === 0 ? (
           <p className="text-sm text-muted">
@@ -132,7 +132,7 @@ export default async function Home({
             <Link
               key={c.id}
               href={`/gastos?cat=${c.id}`}
-              className="bg-surface border border-border rounded-2xl p-4 text-left hover:border-accent transition-colors"
+              className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4 text-left hover:border-accent transition-colors"
             >
               <span className="text-xl">{c.icon}</span>
               <p className="text-sm mt-2">{c.name}</p>
