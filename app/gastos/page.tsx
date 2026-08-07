@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { getTopCategories, getSpendByTopCategory, listTransactionsByCategory } from "@/lib/queries";
+import { getTopCategories, getSpendByTopCategory, listTransactionsByCategory, getMonthlyTrend } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
+
+const PALETTE = ["#f05b53", "#5b8ff0", "#f0b85b", "#5bc4a8", "#a778e0", "#e07ba7", "#7bb8e0", "#c4a15b"];
 
 export default async function GastosPage({
   searchParams,
@@ -52,10 +54,76 @@ export default async function GastosPage({
     );
   }
 
+  const trend = await getMonthlyTrend();
+  const maxTrend = Math.max(1, ...trend.map((m) => m.total));
+
+  const conCategoriasConGasto = categories
+    .map((c, i) => ({ ...c, monto: spendByCategory[c.id] || 0, color: PALETTE[i % PALETTE.length] }))
+    .filter((c) => c.monto > 0)
+    .sort((a, b) => b.monto - a.monto);
+  const totalMes = conCategoriasConGasto.reduce((s, c) => s + c.monto, 0);
+
+  let acumulado = 0;
+  const gradientStops = conCategoriasConGasto
+    .map((c) => {
+      const desde = (acumulado / totalMes) * 100;
+      acumulado += c.monto;
+      const hasta = (acumulado / totalMes) * 100;
+      return `${c.color} ${desde}% ${hasta}%`;
+    })
+    .join(", ");
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
       <h1 className="text-2xl font-semibold">🛒 Gastos</h1>
       <p className="text-muted text-sm mt-2">Detalle de tus gastos por categoría este mes.</p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+        <div className="bg-surface border border-border rounded-2xl p-5">
+          <p className="text-sm font-medium mb-4">Por categoría</p>
+          {totalMes === 0 ? (
+            <p className="text-sm text-muted">Aún no hay gastos este mes para graficar.</p>
+          ) : (
+            <div className="flex items-center gap-5">
+              <div
+                className="w-32 h-32 rounded-full shrink-0 relative"
+                style={{ background: `conic-gradient(${gradientStops})` }}
+              >
+                <div className="absolute inset-3 bg-surface rounded-full flex flex-col items-center justify-center">
+                  <span className="text-xs text-muted">Total</span>
+                  <span className="text-sm font-semibold">S/ {totalMes.toFixed(0)}</span>
+                </div>
+              </div>
+              <div className="space-y-1.5 flex-1 min-w-0">
+                {conCategoriasConGasto.slice(0, 5).map((c) => (
+                  <div key={c.id} className="flex items-center gap-2 text-xs">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: c.color }} />
+                    <span className="text-muted truncate flex-1">{c.name}</span>
+                    <span className="font-medium">{Math.round((c.monto / totalMes) * 100)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-surface border border-border rounded-2xl p-5">
+          <p className="text-sm font-medium mb-4">Tendencia, últimos 6 meses</p>
+          <div className="flex items-end gap-2 h-32">
+            {trend.map((m) => (
+              <div key={m.key} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                <div
+                  className="w-full rounded-t"
+                  style={{ height: `${(m.total / maxTrend) * 100}%`, background: m.total > 0 ? "var(--accent)" : "var(--border)", minHeight: 2 }}
+                  title={`${m.label}: S/ ${m.total.toFixed(0)}`}
+                />
+                <span className="text-[10px] text-muted">{m.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
         {categories.map((c) => (
           <Link

@@ -83,3 +83,26 @@ export async function listTransactionsByCategory(topCategoryId: string) {
 export async function getBudgets() {
   return prisma.budget.findMany({ where: { month: currentMonthKey() } });
 }
+
+// Total gastado por mes, los últimos 6 meses (incluye el actual).
+export async function getMonthlyTrend() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const txs = await prisma.transaction.findMany({
+    where: { date: { gte: start } },
+    select: { date: true, amount: true },
+  });
+
+  const months: { key: string; label: string; total: number }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString("es-PE", { month: "short" }), total: 0 });
+  }
+  for (const t of txs) {
+    const d = new Date(t.date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    const m = months.find((m) => m.key === key);
+    if (m) m.total += t.amount;
+  }
+  return months;
+}
