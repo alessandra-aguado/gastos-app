@@ -8,6 +8,7 @@ import { formatMonto } from "@/lib/format";
 
 type Plan = { id: string; month: string; amount: number };
 type Deuda = { id: string; counterpartName: string | null; balance: number };
+type PlanificadoPorMes = Record<string, number>;
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
@@ -16,7 +17,7 @@ function labelMes(mes: string) {
   return `${MESES[m - 1]} ${y}`;
 }
 
-export default function PlanPagoDeudaRow({ deuda, planes, mesesDisponibles }: { deuda: Deuda; planes: Plan[]; mesesDisponibles: string[] }) {
+export default function PlanPagoDeudaRow({ deuda, planes, mesesDisponibles, planificadoPorMes }: { deuda: Deuda; planes: Plan[]; mesesDisponibles: string[]; planificadoPorMes?: PlanificadoPorMes }) {
   const [agregando, setAgregando] = useState(false);
   const [mes, setMes] = useState(mesesDisponibles[0] || "");
   const [monto, setMonto] = useState(String(deuda.balance));
@@ -47,6 +48,16 @@ export default function PlanPagoDeudaRow({ deuda, planes, mesesDisponibles }: { 
         <p className="text-sm font-medium">{deuda.counterpartName}</p>
         <span className="text-xs text-muted">Debes S/ {formatMonto(deuda.balance, decimales)}</span>
       </div>
+
+      {planificadoPorMes && Object.keys(planificadoPorMes).length > 0 && (
+        <div className="space-y-1 mb-2">
+          {Object.entries(planificadoPorMes).map(([mes, monto]) => (
+            <p key={mes} className="text-xs text-accent">
+              + S/ {formatMonto(monto, decimales)} en compras planificadas se facturan en tu corte de <span className="capitalize">{labelMes(mes)}</span>
+            </p>
+          ))}
+        </div>
+      )}
 
       {planes.length > 0 && (
         <div className="space-y-1.5 mb-2">

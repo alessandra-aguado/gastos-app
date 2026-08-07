@@ -293,7 +293,8 @@ model PlannedExpense {
   id              String   @id @default(cuid())
   description     String
   amount          Float
-  month           String   // "2026-08"
+  month           String   // "2026-08" (mes en que se planifica/registra, no necesariamente el de facturacion)
+  date            DateTime? // fecha en la que piensa hacer la compra; usada para calcular el ciclo de facturacion si es con tarjeta
   kind            String   @default("gasto") // gasto | prestamo
   categoryId      String?
   category        Category?      @relation(fields: [categoryId], references: [id])

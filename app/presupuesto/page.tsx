@@ -1,4 +1,4 @@
-import { getTopCategories, getSpendByTopCategory, getBudgets, getFijos, getDeudas, getSettings, getGastoVariableReal, getPlannedExpenses, getGastoDelMesPorMedio, getPaymentMethods, getCuentas, getDebtPaymentPlans, nextMonthKeys, currentMonthKey } from "@/lib/queries";
+import { getTopCategories, getSpendByTopCategory, getBudgets, getFijos, getDeudas, getSettings, getGastoVariableReal, getPlannedExpenses, getGastoDelMesPorMedio, getPaymentMethods, getCuentas, getDebtPaymentPlans, getPlannedExpensesCredito, agruparPlanificadosPorCorte, nextMonthKeys, currentMonthKey } from "@/lib/queries";
 import { formatMonto } from "@/lib/format";
 import { PieChart } from "lucide-react";
 import CategoryIcon from "../components/CategoryIcon";
@@ -28,7 +28,11 @@ export default async function PresupuestoPage() {
 
   const mesActual = currentMonthKey();
   const mesesPlan = nextMonthKeys(3);
-  const planesPago = await getDebtPaymentPlans(mesesPlan);
+  const [planesPago, planificadosCredito] = await Promise.all([
+    getDebtPaymentPlans(mesesPlan),
+    getPlannedExpensesCredito(),
+  ]);
+  const planificadosPorMedioYMes = agruparPlanificadosPorCorte(planificadosCredito, mesesPlan);
   const tarjetasActivas = deudas.filter((d) => d.type === "tarjeta_credito" && d.status !== "pagada");
   const planesPorDeuda: Record<string, typeof planesPago> = {};
   for (const p of planesPago) {
@@ -155,7 +159,7 @@ export default async function PresupuestoPage() {
                   ¿En qué mes piensas pagar cada tarjeta y por cuánto? Esto reemplaza el cálculo automático de pago mínimo en Proyección y el Simulador.
                 </p>
                 {tarjetasActivas.map((d) => (
-                  <PlanPagoDeudaRow key={d.id} deuda={d} planes={planesPorDeuda[d.id] || []} mesesDisponibles={mesesPlan} />
+                  <PlanPagoDeudaRow key={d.id} deuda={d} planes={planesPorDeuda[d.id] || []} mesesDisponibles={mesesPlan} planificadoPorMes={d.paymentMethodId ? planificadosPorMedioYMes[d.paymentMethodId] : undefined} />
                 ))}
               </div>
             )}

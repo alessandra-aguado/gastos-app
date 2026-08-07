@@ -1087,6 +1087,14 @@ export async function eliminarSimulationItem(formData: FormData) {
 
 // ================= Gastos planificados (proyección) =================
 
+function parseFechaLocal(value: FormDataEntryValue | null): Date | null {
+  const str = String(value || "").trim();
+  if (!str) return null;
+  const [y, m, d] = str.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
 export async function createPlannedExpense(formData: FormData) {
   const description = String(formData.get("description") || "").trim();
   const amount = parseFloat(String(formData.get("amount")));
@@ -1094,6 +1102,7 @@ export async function createPlannedExpense(formData: FormData) {
   const categoryId = String(formData.get("categoryId") || "").trim();
   const paymentMethodId = String(formData.get("paymentMethodId") || "").trim();
   const counterpartName = String(formData.get("counterpartName") || "").trim();
+  const date = parseFechaLocal(formData.get("date"));
 
   if (!description || !amount || (kind !== "gasto" && kind !== "prestamo")) {
     throw new Error("Faltan campos requeridos");
@@ -1107,6 +1116,7 @@ export async function createPlannedExpense(formData: FormData) {
       amount,
       kind,
       month: currentMonthKey(),
+      date,
       categoryId: categoryId || null,
       paymentMethodId: paymentMethodId || null,
       counterpartName: counterpartName || null,
@@ -1129,6 +1139,7 @@ export async function updatePlannedExpense(formData: FormData) {
   const categoryId = String(formData.get("categoryId") || "").trim();
   const paymentMethodId = String(formData.get("paymentMethodId") || "").trim();
   const counterpartName = String(formData.get("counterpartName") || "").trim();
+  const date = parseFechaLocal(formData.get("date"));
 
   if (!id || !description || !amount) throw new Error("Faltan campos requeridos");
 
@@ -1138,6 +1149,7 @@ export async function updatePlannedExpense(formData: FormData) {
       description,
       amount,
       kind,
+      date,
       categoryId: categoryId || null,
       paymentMethodId: paymentMethodId || null,
       counterpartName: counterpartName || null,

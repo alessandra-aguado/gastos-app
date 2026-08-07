@@ -1,4 +1,4 @@
-import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, getDebtPaymentPlans, nextMonthKeys } from "@/lib/queries";
+import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, getDebtPaymentPlans, getPlannedExpensesCredito, agruparPlanificadosPorCorte, nextMonthKeys } from "@/lib/queries";
 import { formatMonto } from "@/lib/format";
 import { Calculator } from "lucide-react";
 import SimulationItemModal from "./SimulationItemModal";
@@ -15,7 +15,7 @@ function etiquetaMes(mes: string) {
 
 export default async function SimuladorPage() {
   const months = nextMonthKeys(3);
-  const [settings, fijos, deudas, categories, medios, items, planesPago] = await Promise.all([
+  const [settings, fijos, deudas, categories, medios, items, planesPago, planificadosCredito] = await Promise.all([
     getSettings(),
     getFijos(),
     getDeudas(),
@@ -23,7 +23,9 @@ export default async function SimuladorPage() {
     getPaymentMethods(),
     getSimulationItems(months),
     getDebtPaymentPlans(months),
+    getPlannedExpensesCredito(),
   ]);
+  const planificadosPorMedioYMes = agruparPlanificadosPorCorte(planificadosCredito, months);
 
   const decimales = settings?.decimales ?? 0;
   const ingresoBase = settings?.monthlyIncome || 0;
@@ -71,12 +73,13 @@ export default async function SimuladorPage() {
       const itemsMes = itemsPorMes[mes];
       const cargosFijos = d.paymentMethodId ? fijosConTarjetaPorMedio[d.paymentMethodId] || 0 : 0;
       const cargosHip = itemsMes.filter((i) => (i.type === "gasto" || i.type === "prestamo") && i.paymentMethodId === d.paymentMethodId).reduce((s, i) => s + i.amount, 0);
+      const cargosPlanificados = d.paymentMethodId ? planificadosPorMedioYMes[d.paymentMethodId]?.[mes] || 0 : 0;
       const pagoExtra = itemsMes.filter((i) => i.type === "pago_deuda" && i.debtId === d.id).reduce((s, i) => s + i.amount, 0);
       const planMes = planPorDeudaMes[d.id]?.[mes];
       const pagoDeuda = planMes ?? (d.minPayment || 0);
-      balance = Math.max(0, balance + cargosFijos + cargosHip - pagoDeuda - pagoExtra);
+      balance = Math.max(0, balance + cargosFijos + cargosHip + cargosPlanificados - pagoDeuda - pagoExtra);
       const pctUso = d.creditLimit ? Math.min(999, Math.round((balance / d.creditLimit) * 100)) : null;
-      return { mes, balance, pctUso, umbral, segunPlan: planMes !== undefined };
+      return { mes, balance, pctUso, umbral, segunPlan: planMes !== undefined, cargosPlanificados };
     });
     return { deuda: d, porMes };
   });
@@ -139,7 +142,7 @@ export default async function SimuladorPage() {
                 <div key={deuda.id}>
                   <p className="text-sm font-medium mb-1.5">{deuda.counterpartName || "Tarjeta de crédito"}</p>
                   <div className="grid grid-cols-3 gap-2">
-                    {porMes.map(({ mes, balance, pctUso, umbral, segunPlan }) => (
+                    {porMes.map(({ mes, balance, pctUso, umbral, segunPlan, cargosPlanificados }) => (
                       <div key={mes} className="border border-border rounded-lg p-2.5">
                         <p className="text-[11px] text-muted capitalize mb-1">{etiquetaMes(mes).split(" ")[0]}</p>
                         <p className={`text-sm font-medium ${pctUso !== null && pctUso >= umbral ? "text-warning" : ""}`}>S/ {formatMonto(balance, decimales)}</p>
@@ -147,6 +150,9 @@ export default async function SimuladorPage() {
                           <p className={`text-[11px] ${pctUso >= umbral ? "text-warning" : "text-muted"}`}>{pctUso}% de tu línea</p>
                         )}
                         <p className="text-[10px] text-muted mt-0.5">{segunPlan ? "según tu plan" : "pago mínimo est."}</p>
+                        {cargosPlanificados > 0 && (
+                          <p className="text-[10px] text-accent mt-0.5">+ S/ {formatMonto(cargosPlanificados, decimales)} planificado</p>
+                        )}
                       </div>
                     ))}
                   </div>

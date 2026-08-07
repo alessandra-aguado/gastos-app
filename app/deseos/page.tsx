@@ -1,4 +1,4 @@
-import { getDeseos, getTopCategories, getSettings } from "@/lib/queries";
+import { getDeseos, getTopCategories, getSettings, getPaymentMethods } from "@/lib/queries";
 import { formatMonto } from "@/lib/format";
 import { Gift } from "lucide-react";
 import DeseoRow from "./DeseoRow";
@@ -7,7 +7,7 @@ import DeseoModal from "./DeseoModal";
 export const dynamic = "force-dynamic";
 
 export default async function DeseosPage() {
-  const [deseos, categorias, settings] = await Promise.all([getDeseos(), getTopCategories(), getSettings()]);
+  const [deseos, categorias, settings, medios] = await Promise.all([getDeseos(), getTopCategories(), getSettings(), getPaymentMethods()]);
   const decimales = settings?.decimales ?? 0;
   const total = deseos.reduce((s, d) => s + d.estimatedPrice, 0);
 
@@ -28,7 +28,7 @@ export default async function DeseosPage() {
       ) : (
         <div className="space-y-2.5">
           {deseos.map((d) => (
-            <DeseoRow key={d.id} deseo={d} categorias={categorias} />
+            <DeseoRow key={d.id} deseo={d} categorias={categorias} medios={medios} />
           ))}
         </div>
       )}

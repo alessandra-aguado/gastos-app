@@ -15,6 +15,21 @@ export function previousMonthKey(base = new Date()) {
   return d.toISOString().slice(0, 7);
 }
 
+function monthKeyFromLocalDate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// Dado el dia de corte (fecha de facturacion real) de una tarjeta y una fecha de
+// compra, calcula a que mes de facturacion ("YYYY-MM") pertenece esa compra. Si el
+// corte de este mes ya paso, la compra se factura recien en el corte del mes
+// siguiente (por eso PaymentMethod.billingDay, y NO closingDay, es el que se usa
+// aqui - ver nota en MedioModal.tsx sobre el nombramiento invertido de esos campos).
+export function mesDeFacturacion(fecha: Date, billingDay: number | null | undefined) {
+  if (!billingDay) return monthKeyFromLocalDate(fecha);
+  if (fecha.getDate() <= billingDay) return monthKeyFromLocalDate(fecha);
+  return monthKeyFromLocalDate(new Date(fecha.getFullYear(), fecha.getMonth() + 1, 1));
+}
+
 export async function getCategories() {
   await ensureSeeded();
   return prisma.category.findMany({ orderBy: [{ name: "asc" }] });
@@ -167,6 +182,36 @@ export async function getSimulationItems(months: string[]) {
     include: { category: true, paymentMethod: true, debt: true },
     orderBy: { createdAt: "asc" },
   });
+}
+
+// Gastos planificados (reales, no hipoteticos) que se pagarian con tarjeta de credito
+// y siguen pendientes. Se usan para saber en que corte de facturacion van a caer y asi
+// sumarlos al saldo proyectado de la tarjeta correspondiente en Proyeccion y Simulador.
+export async function getPlannedExpensesCredito() {
+  return prisma.plannedExpense.findMany({
+    where: { status: "pendiente", kind: "gasto", paymentMethod: { type: "credito" } },
+    include: { paymentMethod: true },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+// Agrupa esos gastos planificados con tarjeta por deuda (via paymentMethodId) y por
+// mes de facturacion real (corte), usando la fecha en que Ale piensa hacer la compra.
+// Si no puso fecha, se asume que cae en el corte mas proximo (el primer mes de la lista).
+export function agruparPlanificadosPorCorte(
+  items: Awaited<ReturnType<typeof getPlannedExpensesCredito>>,
+  mesesDisponibles: string[]
+) {
+  const resultado: Record<string, Record<string, number>> = {}; // paymentMethodId -> mes -> monto
+  for (const it of items) {
+    if (!it.paymentMethodId) continue;
+    const mes = it.date
+      ? mesDeFacturacion(new Date(it.date), it.paymentMethod?.billingDay)
+      : mesesDisponibles[0];
+    if (!resultado[it.paymentMethodId]) resultado[it.paymentMethodId] = {};
+    resultado[it.paymentMethodId][mes] = (resultado[it.paymentMethodId][mes] || 0) + it.amount;
+  }
+  return resultado;
 }
 
 // Racha de días consecutivos con al menos un gasto registrado.

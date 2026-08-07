@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createPlannedExpense, updatePlannedExpense } from "@/lib/actions";
 
 type Categoria = { id: string; name: string };
-type Medio = { id: string; name: string; type: string };
+type Medio = { id: string; name: string; type: string; billingDay?: number | null };
 type PlannedExpense = {
   id: string;
   description: string;
@@ -13,6 +13,7 @@ type PlannedExpense = {
   categoryId: string | null;
   paymentMethodId: string | null;
   counterpartName: string | null;
+  date?: string | Date | null;
 };
 
 export default function PlannedExpenseModal({
@@ -20,15 +21,21 @@ export default function PlannedExpenseModal({
   medios,
   item,
   onClose,
+  prefill,
 }: {
   categorias: Categoria[];
   medios: Medio[];
   item?: PlannedExpense;
   onClose?: () => void;
+  prefill?: { description: string; amount: number; categoryId?: string };
 }) {
   const esEdicion = !!item;
   const [abierto, setAbierto] = useState(esEdicion);
   const [kind, setKind] = useState<"gasto" | "prestamo">((item?.kind as "gasto" | "prestamo") || "gasto");
+  const [medioId, setMedioId] = useState(item?.paymentMethodId || "");
+  const medioSeleccionado = medios.find((m) => m.id === medioId);
+  const esCredito = medioSeleccionado?.type === "credito";
+  const fechaDefault = item?.date ? new Date(item.date).toISOString().slice(0, 10) : "";
 
   function cerrar() {
     setAbierto(false);
@@ -38,8 +45,8 @@ export default function PlannedExpenseModal({
   return (
     <>
       {!esEdicion && (
-        <button onClick={() => setAbierto(true)} className="bg-accent text-white text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
-          + Nuevo gasto planificado
+        <button onClick={() => setAbierto(true)} className={prefill ? "text-xs px-3 py-1.5 rounded-lg border border-border hover:border-accent transition-colors" : "bg-accent text-white text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"}>
+          {prefill ? "Planificar esta compra" : "+ Nuevo gasto planificado"}
         </button>
       )}
 
@@ -74,10 +81,10 @@ export default function PlannedExpenseModal({
             </div>
 
             <label className="text-xs text-muted block mb-1">Descripción</label>
-            <input name="description" required defaultValue={item?.description} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder={kind === "prestamo" ? "Pago a papá si no llega su parte" : "Recarga tarjeta de transporte"} />
+            <input name="description" required defaultValue={item?.description ?? prefill?.description} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder={kind === "prestamo" ? "Pago a papá si no llega su parte" : "Recarga tarjeta de transporte"} />
 
             <label className="text-xs text-muted block mb-1">Monto estimado</label>
-            <input name="amount" type="number" step="any" required defaultValue={item?.amount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="1100" />
+            <input name="amount" type="number" step="any" required defaultValue={item?.amount ?? prefill?.amount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="1100" />
 
             {kind === "prestamo" ? (
               <>
@@ -87,7 +94,7 @@ export default function PlannedExpenseModal({
             ) : (
               <>
                 <label className="text-xs text-muted block mb-1">Categoría</label>
-                <select name="categoryId" required defaultValue={item?.categoryId || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5">
+                <select name="categoryId" required defaultValue={item?.categoryId || prefill?.categoryId || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5">
                   <option value="" disabled>Elige una categoría</option>
                   {categorias.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
@@ -99,12 +106,20 @@ export default function PlannedExpenseModal({
             <label className="text-xs text-muted block mb-1">
               Medio de pago {kind === "prestamo" ? "(opcional, de dónde saldría)" : ""}
             </label>
-            <select name="paymentMethodId" required={kind === "gasto"} defaultValue={item?.paymentMethodId || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3.5">
+            <select name="paymentMethodId" required={kind === "gasto"} value={medioId} onChange={(e) => setMedioId(e.target.value)} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5">
               <option value="">{kind === "prestamo" ? "Sin definir aún" : "Elige un medio de pago"}</option>
               {medios.map((m) => (
                 <option key={m.id} value={m.id}>{m.name}</option>
               ))}
             </select>
+
+            <label className="text-xs text-muted block mb-1">¿Cuándo piensas hacerlo? (opcional)</label>
+            <input name="date" type="date" defaultValue={fechaDefault} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-1" />
+            <p className="text-xs text-muted mb-3.5">
+              {esCredito
+                ? "Con tarjeta de crédito, la fecha decide en qué corte se factura y en qué mes se refleja en tu Proyección y Simulador."
+                : "Ayuda a ubicar el gasto en el mes correcto si aún no ocurre."}
+            </p>
 
             <button className="w-full py-2.5 bg-accent text-white rounded-lg text-sm font-medium">{esEdicion ? "Guardar cambios" : "Agregar"}</button>
           </form>

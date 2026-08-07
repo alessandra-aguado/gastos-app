@@ -7,6 +7,7 @@ import CategoryIcon from "../components/CategoryIcon";
 import { useDecimales } from "../components/DecimalesProvider";
 import { formatMonto } from "@/lib/format";
 import DeseoModal from "./DeseoModal";
+import PlannedExpenseModal from "../presupuesto/PlannedExpenseModal";
 
 type Deseo = {
   id: string;
@@ -21,6 +22,7 @@ type Deseo = {
 };
 
 type Categoria = { id: string; name: string };
+type Medio = { id: string; name: string; type: string; billingDay?: number | null };
 
 function borrarConConfirmacion(id: string, nombre: string) {
   if (!window.confirm(`¿Eliminar el deseo "${nombre}"? Esta acción no se puede deshacer.`)) return;
@@ -29,7 +31,7 @@ function borrarConConfirmacion(id: string, nombre: string) {
   void eliminarDeseo(fd);
 }
 
-export default function DeseoRow({ deseo, categorias }: { deseo: Deseo; categorias: Categoria[] }) {
+export default function DeseoRow({ deseo, categorias, medios }: { deseo: Deseo; categorias: Categoria[]; medios: Medio[] }) {
   const [convirtiendo, setConvirtiendo] = useState(false);
   const [editando, setEditando] = useState(false);
   const decimales = useDecimales();
@@ -54,6 +56,7 @@ export default function DeseoRow({ deseo, categorias }: { deseo: Deseo; categori
         ) : (
           <div className="flex items-center gap-2">
             <span className="text-sm">S/ {formatMonto(deseo.estimatedPrice, decimales)}</span>
+            <PlannedExpenseModal categorias={categorias} medios={medios} prefill={{ description: deseo.name, amount: deseo.estimatedPrice, categoryId: deseo.categoryId || undefined }} />
             <button onClick={() => setConvirtiendo(!convirtiendo)} className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">
               Convertir en meta
             </button>
