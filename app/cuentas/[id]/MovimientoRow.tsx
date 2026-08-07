@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ImageIcon } from "lucide-react";
 import { eliminarFundMovement } from "@/lib/actions";
 import RowMenu from "../../components/RowMenu";
 import { useDecimales } from "../../components/DecimalesProvider";
@@ -13,6 +14,7 @@ type Movimiento = {
   amount: number;
   date: Date;
   description: string | null;
+  imageUrl?: string | null;
 };
 
 function borrarConConfirmacion(id: string, etiqueta: string) {
@@ -31,7 +33,14 @@ export default function MovimientoRow({ accountId, movimiento, ultimo }: { accou
   return (
     <div className={`flex justify-between items-center px-4 py-3 ${!ultimo ? "border-b border-border" : ""}`}>
       <div>
-        <p className="text-sm font-medium">{movimiento.description || (esIngreso ? "Entrada de dinero" : "Gasto")}</p>
+        <p className="text-sm font-medium flex items-center gap-1.5">
+          {movimiento.description || (esIngreso ? "Entrada de dinero" : "Gasto")}
+          {movimiento.imageUrl && (
+            <a href={movimiento.imageUrl} target="_blank" rel="noopener noreferrer" title="Ver foto del comprobante" className="text-muted hover:text-accent">
+              <ImageIcon size={13} />
+            </a>
+          )}
+        </p>
         <p className="text-xs text-muted">
           {new Date(movimiento.date).toLocaleDateString("es-PE", { day: "numeric", month: "short", year: "numeric" })}
         </p>

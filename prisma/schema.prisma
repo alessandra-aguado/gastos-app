@@ -231,6 +231,7 @@ model FundMovement {
   amount      Float
   date        DateTime
   description String?
+  imageUrl    String?  // foto del comprobante (Vercel Blob), evidencia opcional
   createdAt   DateTime @default(now())
 }
 

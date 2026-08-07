@@ -893,6 +893,7 @@ export async function createFundMovement(formData: FormData) {
   const amount = parseFloat(String(formData.get("amount")));
   const date = String(formData.get("date"));
   const description = String(formData.get("description") || "").trim();
+  const imageUrl = String(formData.get("imageUrl") || "").trim();
 
   if (!accountId || !amount || !date || (type !== "ingreso" && type !== "gasto")) {
     throw new Error("Faltan campos requeridos");
@@ -903,7 +904,14 @@ export async function createFundMovement(formData: FormData) {
   const delta = type === "ingreso" ? amount : -amount;
   await prisma.$transaction([
     prisma.fundMovement.create({
-      data: { accountId, type, amount, date: new Date(date), description: description || null },
+      data: {
+        accountId,
+        type,
+        amount,
+        date: new Date(date),
+        description: description || null,
+        imageUrl: imageUrl || null,
+      },
     }),
     prisma.account.update({ where: { id: accountId }, data: { balance: { increment: delta } } }),
   ]);
@@ -923,6 +931,8 @@ export async function updateFundMovement(formData: FormData) {
   const amount = parseFloat(String(formData.get("amount")));
   const date = String(formData.get("date"));
   const description = String(formData.get("description") || "").trim();
+  const imageUrl = String(formData.get("imageUrl") || "").trim();
+  const removeImage = String(formData.get("removeImage") || "") === "1";
 
   if (!id || !amount || !date || (type !== "ingreso" && type !== "gasto")) {
     throw new Error("Faltan campos requeridos");
@@ -933,10 +943,18 @@ export async function updateFundMovement(formData: FormData) {
   const deltaReversa = anterior.type === "ingreso" ? -anterior.amount : anterior.amount;
   const deltaNuevo = type === "ingreso" ? amount : -amount;
 
+  const nuevaImagen = removeImage ? null : imageUrl || anterior.imageUrl;
+
   await prisma.$transaction([
     prisma.fundMovement.update({
       where: { id },
-      data: { type, amount, date: new Date(date), description: description || null },
+      data: {
+        type,
+        amount,
+        date: new Date(date),
+        description: description || null,
+        imageUrl: nuevaImagen,
+      },
     }),
     prisma.account.update({
       where: { id: anterior.accountId },
