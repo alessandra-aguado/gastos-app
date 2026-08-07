@@ -415,3 +415,115 @@ export async function eliminarDeseo(formData: FormData) {
   await prisma.wishlistItem.delete({ where: { id } });
   revalidatePath("/deseos");
 }
+
+export async function updateCategoria(formData: FormData) {
+  const id = String(formData.get("id"));
+  const name = String(formData.get("name") || "").trim();
+  const icon = String(formData.get("icon") || "").trim() || null;
+  const color = String(formData.get("color") || "").trim() || null;
+  const description = String(formData.get("description") || "").trim() || null;
+
+  if (!id || !name) throw new Error("Faltan datos de la categoría");
+
+  await prisma.category.update({ where: { id }, data: { name, icon, color, description } });
+
+  revalidatePath("/ajustes");
+  revalidatePath("/presupuesto");
+  revalidatePath("/gastos");
+  revalidatePath("/");
+}
+
+export async function eliminarCategoria(id: string): Promise<{ ok: boolean; error?: string }> {
+  const enUso = await prisma.transaction.count({ where: { categoryId: id } });
+  if (enUso > 0) {
+    return { ok: false, error: `No se puede eliminar: tiene ${enUso} gasto${enUso === 1 ? "" : "s"} asociado${enUso === 1 ? "" : "s"}.` };
+  }
+
+  await prisma.category.delete({ where: { id } });
+
+  revalidatePath("/ajustes");
+  revalidatePath("/presupuesto");
+  revalidatePath("/gastos");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function eliminarCategoriasBulk(ids: string[]): Promise<{ ok: boolean; error?: string; eliminados: number }> {
+  const conGastos = await prisma.transaction.groupBy({ by: ["categoryId"], where: { categoryId: { in: ids } } });
+  const idsConGastos = new Set(conGastos.map((g) => g.categoryId));
+  const idsEliminables = ids.filter((id) => !idsConGastos.has(id));
+
+  if (idsEliminables.length > 0) {
+    await prisma.category.deleteMany({ where: { id: { in: idsEliminables } } });
+  }
+
+  revalidatePath("/ajustes");
+  revalidatePath("/presupuesto");
+  revalidatePath("/gastos");
+  revalidatePath("/");
+
+  if (idsConGastos.size > 0) {
+    return {
+      ok: false,
+      error: `${idsConGastos.size} categoría${idsConGastos.size === 1 ? "" : "s"} no se eliminaron porque tienen gastos asociados.`,
+      eliminados: idsEliminables.length,
+    };
+  }
+  return { ok: true, eliminados: idsEliminables.length };
+}
+
+export async function updateMedioDePago(formData: FormData) {
+  const id = String(formData.get("id"));
+  const name = String(formData.get("name") || "").trim();
+  const type = String(formData.get("type") || "debito");
+  const bankOrIssuer = String(formData.get("bankOrIssuer") || "").trim() || null;
+
+  if (!id || !name) throw new Error("Faltan datos del medio de pago");
+
+  await prisma.paymentMethod.update({ where: { id }, data: { name, type, bankOrIssuer } });
+
+  revalidatePath("/ajustes");
+}
+
+export async function eliminarMedioDePago(id: string): Promise<{ ok: boolean; error?: string }> {
+  const [enTx, enFijos] = await Promise.all([
+    prisma.transaction.count({ where: { paymentMethodId: id } }),
+    prisma.fixedExpense.count({ where: { paymentMethodId: id } }),
+  ]);
+  const enUso = enTx + enFijos;
+  if (enUso > 0) {
+    return { ok: false, error: `No se puede eliminar: está en uso en ${enUso} registro${enUso === 1 ? "" : "s"}.` };
+  }
+
+  await prisma.paymentMethod.delete({ where: { id } });
+
+  revalidatePath("/ajustes");
+  return { ok: true };
+}
+
+export async function eliminarMediosDePagoBulk(ids: string[]): Promise<{ ok: boolean; error?: string; eliminados: number }> {
+  const [enTx, enFijos] = await Promise.all([
+    prisma.transaction.groupBy({ by: ["paymentMethodId"], where: { paymentMethodId: { in: ids } } }),
+    prisma.fixedExpense.groupBy({ by: ["paymentMethodId"], where: { paymentMethodId: { in: ids } } }),
+  ]);
+  const idsEnUso = new Set<string>([
+    ...enTx.map((g) => g.paymentMethodId).filter((v): v is string => !!v),
+    ...enFijos.map((g) => g.paymentMethodId).filter((v): v is string => !!v),
+  ]);
+  const idsEliminables = ids.filter((id) => !idsEnUso.has(id));
+
+  if (idsEliminables.length > 0) {
+    await prisma.paymentMethod.deleteMany({ where: { id: { in: idsEliminables } } });
+  }
+
+  revalidatePath("/ajustes");
+
+  if (idsEnUso.size > 0) {
+    return {
+      ok: false,
+      error: `${idsEnUso.size} medio${idsEnUso.size === 1 ? "" : "s"} de pago no se eliminaron porque están en uso.`,
+      eliminados: idsEliminables.length,
+    };
+  }
+  return { ok: true, eliminados: idsEliminables.length };
+}
