@@ -2,6 +2,7 @@ import { getCuentas, getReconciliacionCuentas } from "@/lib/queries";
 import { Wallet, Users } from "lucide-react";
 import CuentaRow from "./CuentaRow";
 import NuevaCuentaModal from "./NuevaCuentaModal";
+import NuevaCuentaCustodiaModal from "./NuevaCuentaCustodiaModal";
 import ReconciliacionCard from "./ReconciliacionCard";
 
 export const dynamic = "force-dynamic";
@@ -61,18 +62,25 @@ export default async function CuentasPage() {
         <>
           {propias.length > 0 && <ListaCuentas cuentas={propias} />}
 
-          {custodia.length > 0 && (
-            <div className="mt-2">
-              <p className="text-sm font-medium flex items-center gap-1.5 mb-1">
+          <div className="mt-2">
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-sm font-medium flex items-center gap-1.5">
                 <Users size={15} strokeWidth={2} className="text-muted" />
                 Dinero que administras para otros
               </p>
-              <p className="text-xs text-muted mb-3">
-                No se suma a tu patrimonio ni a tu reconciliación mensual, porque no es tuyo.
-              </p>
-              <ListaCuentas cuentas={custodia} />
+              <NuevaCuentaCustodiaModal />
             </div>
-          )}
+            <p className="text-xs text-muted mb-3">
+              No se suma a tu patrimonio ni a tu reconciliación mensual, porque no es tuyo.
+            </p>
+            {custodia.length > 0 ? (
+              <ListaCuentas cuentas={custodia} />
+            ) : (
+              <div className="border border-dashed border-border rounded-xl p-6 text-center text-muted text-xs">
+                Aún no registras fondos de terceros.
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>
