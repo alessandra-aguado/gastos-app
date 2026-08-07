@@ -271,7 +271,7 @@ export async function createDeuda(formData: FormData) {
   const minPaymentRaw = formData.get("minPayment");
   const dueDayRaw = formData.get("dueDay");
 
-  if (!balance) throw new Error("Falta el monto de la deuda");
+  if (balance === null || balance === undefined || isNaN(balance) || balance < 0) throw new Error("Falta el monto de la deuda");
 
   const startDateRaw = String(formData.get("startDate") || "");
   const interestRateRaw = formData.get("interestRate");
@@ -314,7 +314,7 @@ export async function updateDeuda(formData: FormData) {
   const startDateRaw = String(formData.get("startDate") || "");
   const interestRateRaw = formData.get("interestRate");
 
-  if (!id || !balance) throw new Error("Faltan datos de la deuda");
+  if (!id || balance === null || balance === undefined || isNaN(balance) || balance < 0) throw new Error("Faltan datos de la deuda");
 
   const deuda = await prisma.debt.findUnique({ where: { id } });
   if (!deuda) throw new Error("Deuda no encontrada");
