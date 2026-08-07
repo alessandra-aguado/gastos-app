@@ -1,4 +1,5 @@
-import { getFijos, currentMonthKey, getTopCategories, getPaymentMethods } from "@/lib/queries";
+import { getFijos, currentMonthKey, getTopCategories, getPaymentMethods, getSettings } from "@/lib/queries";
+import { formatMonto } from "@/lib/format";
 import { Repeat } from "lucide-react";
 import FijoRow from "./FijoRow";
 import FijoModal from "./FijoModal";
@@ -6,7 +7,8 @@ import FijoModal from "./FijoModal";
 export const dynamic = "force-dynamic";
 
 export default async function FijosPage() {
-  const [fijos, categorias, medios] = await Promise.all([getFijos(), getTopCategories(), getPaymentMethods()]);
+  const [fijos, categorias, medios, settings] = await Promise.all([getFijos(), getTopCategories(), getPaymentMethods(), getSettings()]);
+  const decimales = settings?.decimales ?? 0;
   const mesActual = currentMonthKey();
 
   const pagados = fijos.filter((f) => f.lastPaidMonth === mesActual).length;
@@ -17,7 +19,7 @@ export default async function FijosPage() {
       <div className="flex justify-between items-end mb-6">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2"><Repeat size={22} strokeWidth={1.75} />Fijos</h1>
-          <p className="text-muted text-sm mt-1">S/ {total.toFixed(0)} comprometidos este mes · {pagados} de {fijos.length} pagados</p>
+          <p className="text-muted text-sm mt-1">S/ {formatMonto(total, decimales)} comprometidos este mes · {pagados} de {fijos.length} pagados</p>
         </div>
         <FijoModal categorias={categorias} medios={medios} />
       </div>

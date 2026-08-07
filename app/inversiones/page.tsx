@@ -1,4 +1,5 @@
-import { getInversiones } from "@/lib/queries";
+import { getInversiones, getSettings } from "@/lib/queries";
+import { formatMonto } from "@/lib/format";
 import { TrendingUp } from "lucide-react";
 import InversionModal from "./InversionModal";
 import InversionRow from "./InversionRow";
@@ -16,7 +17,8 @@ function valorActual(inv: { kind: string; tea: number | null; amountContributed:
 }
 
 export default async function InversionesPage() {
-  const inversiones = await getInversiones();
+  const [inversiones, settings] = await Promise.all([getInversiones(), getSettings()]);
+  const decimales = settings?.decimales ?? 0;
 
   const invertido = inversiones.reduce((s, i) => s + i.amountContributed, 0);
   const actual = inversiones.reduce((s, i) => s + valorActual(i), 0);
@@ -28,7 +30,7 @@ export default async function InversionesPage() {
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2"><TrendingUp size={22} strokeWidth={1.75} />Inversiones</h1>
           <p className="text-muted text-sm mt-1">
-            S/ {invertido.toFixed(0)} invertido · valor actual S/ {actual.toFixed(0)} · {rentabilidad >= 0 ? "+" : ""}{rentabilidad.toFixed(1)}%
+            S/ {formatMonto(invertido, decimales)} invertido · valor actual S/ {formatMonto(actual, decimales)} · {rentabilidad >= 0 ? "+" : ""}{rentabilidad.toFixed(1)}%
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -54,11 +56,11 @@ export default async function InversionesPage() {
       <div className="grid grid-cols-3 gap-3 mb-5">
         <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-3">
           <p className="text-xs text-muted mb-1">Invertido</p>
-          <p className="text-base font-medium">S/ {invertido.toFixed(0)}</p>
+          <p className="text-base font-medium">S/ {formatMonto(invertido, decimales)}</p>
         </div>
         <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-3">
           <p className="text-xs text-muted mb-1">Valor actual</p>
-          <p className="text-base font-medium">S/ {actual.toFixed(0)}</p>
+          <p className="text-base font-medium">S/ {formatMonto(actual, decimales)}</p>
         </div>
         <div className="bg-positive-soft rounded-xl p-3">
           <p className="text-xs text-positive mb-1">Rentabilidad</p>

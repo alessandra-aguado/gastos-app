@@ -1,4 +1,5 @@
 import { getTopCategories, getSpendByTopCategory, getBudgets, getFijos, getDeudas, getSettings, getGastoVariableReal } from "@/lib/queries";
+import { formatMonto } from "@/lib/format";
 import { PieChart } from "lucide-react";
 import CategoryIcon from "../components/CategoryIcon";
 import { setBudget } from "@/lib/actions";
@@ -24,6 +25,7 @@ export default async function PresupuestoPage() {
   const cuotasTarjetas = deudas
     .filter((d) => d.type === "tarjeta_credito" && d.status !== "pagada")
     .reduce((s, d) => s + (d.minPayment || 0), 0);
+  const decimales = settings?.decimales ?? 0;
   const ingresoMensual = settings?.monthlyIncome || 0;
   const disponibleAntesDePlanes = ingresoMensual - totalFijos - cuotasTarjetas;
   const totalPlanVariable = budgets.reduce((s, b) => s + b.amountLimit, 0);
@@ -57,7 +59,7 @@ export default async function PresupuestoPage() {
                   {c.name}
                 </p>
                 <p className="text-sm text-muted">
-                  S/ {spent.toFixed(0)} {limit > 0 ? `/ S/ ${limit.toFixed(0)}` : ""}
+                  S/ {formatMonto(spent, decimales)} {limit > 0 ? `/ S/ ${formatMonto(limit, decimales)}` : ""}
                 </p>
               </div>
 
@@ -103,17 +105,17 @@ export default async function PresupuestoPage() {
                 <span>
                   Fijos <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
                 </span>
-                <span className="text-foreground">− S/ {totalFijos.toFixed(0)}</span>
+                <span className="text-foreground">− S/ {formatMonto(totalFijos, decimales)}</span>
               </div>
               <div className="flex justify-between items-center text-sm text-muted py-1.5">
                 <span>
                   Deuda, cuotas de tarjetas <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
                 </span>
-                <span className="text-foreground">− S/ {cuotasTarjetas.toFixed(0)}</span>
+                <span className="text-foreground">− S/ {formatMonto(cuotasTarjetas, decimales)}</span>
               </div>
               <div className="flex justify-between items-center pt-2.5 mt-1.5 border-t border-border">
                 <span className="text-sm text-muted">Disponible antes de planes</span>
-                <span className="text-base font-medium">S/ {disponibleAntesDePlanes.toFixed(0)}</span>
+                <span className="text-base font-medium">S/ {formatMonto(disponibleAntesDePlanes, decimales)}</span>
               </div>
               {!settings?.monthlyIncome && (
                 <p className="text-xs text-muted mt-2.5">Define tu ingreso mensual arriba para ver el disponible real.</p>
@@ -125,11 +127,11 @@ export default async function PresupuestoPage() {
                 <span>
                   Gastos variables planificados <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
                 </span>
-                <span className="text-foreground">− S/ {totalPlanVariable.toFixed(0)}</span>
+                <span className="text-foreground">− S/ {formatMonto(totalPlanVariable, decimales)}</span>
               </div>
               <div className="flex justify-between items-center pt-2.5 mt-1.5 border-t border-border">
                 <span className="text-sm text-muted">Disponible después de planes</span>
-                <span className="text-base font-medium">S/ {disponibleDespuesDePlanes.toFixed(0)}</span>
+                <span className="text-base font-medium">S/ {formatMonto(disponibleDespuesDePlanes, decimales)}</span>
               </div>
               {totalPlanVariable === 0 && (
                 <p className="text-xs text-muted mt-2.5">
@@ -142,11 +144,11 @@ export default async function PresupuestoPage() {
               <p className="text-sm font-medium mb-3">Planificado vs. real este mes</p>
               <div className="flex justify-between items-center text-sm mb-1">
                 <span className="text-muted">Planificado (límites por categoría)</span>
-                <span>S/ {totalPlanVariable.toFixed(0)}</span>
+                <span>S/ {formatMonto(totalPlanVariable, decimales)}</span>
               </div>
               <div className="flex justify-between items-center text-sm mb-2">
                 <span className="text-muted">Gastado (variable, sin fijos)</span>
-                <span>S/ {gastoVariableReal.toFixed(0)}</span>
+                <span>S/ {formatMonto(gastoVariableReal, decimales)}</span>
               </div>
               {totalPlanVariable > 0 && (
                 <div className="h-2 rounded-full bg-background overflow-hidden mb-2.5">
@@ -163,8 +165,8 @@ export default async function PresupuestoPage() {
                 {totalPlanVariable === 0
                   ? "Aún no tienes límites definidos, así que no hay con qué comparar tu gasto real."
                   : diffVariable >= 0
-                  ? `Vas bien: te quedan S/ ${diffVariable.toFixed(0)} de tu plan este mes.`
-                  : `Te excediste por S/ ${Math.abs(diffVariable).toFixed(0)} sobre lo planificado.`}
+                  ? `Vas bien: te quedan S/ ${formatMonto(diffVariable, decimales)} de tu plan este mes.`
+                  : `Te excediste por S/ ${formatMonto(Math.abs(diffVariable), decimales)} sobre lo planificado.`}
               </p>
             </div>
           </div>

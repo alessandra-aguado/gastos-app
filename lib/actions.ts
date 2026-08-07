@@ -740,6 +740,20 @@ export async function updateIngresoMensual(formData: FormData) {
   revalidatePath("/presupuesto");
 }
 
+export async function updateDecimales(formData: FormData) {
+  const decimales = Math.min(3, Math.max(0, parseInt(String(formData.get("decimales") || "0"), 10) || 0));
+
+  await prisma.settings.upsert({
+    where: { id: "singleton" },
+    update: { decimales },
+    create: { id: "singleton", decimales },
+  });
+
+  await registrarActividad("Ajustes", "editar", `Formato de montos actualizado a ${decimales} decimal${decimales === 1 ? "" : "es"}`);
+
+  revalidatePath("/", "layout");
+}
+
 export async function updateReglaIngreso(formData: FormData) {
   const pctFijos = parseFloat(String(formData.get("pctFijos") || "0")) || 0;
   const pctVariable = parseFloat(String(formData.get("pctVariable") || "0")) || 0;

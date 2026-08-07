@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { updateIngresoMensual } from "@/lib/actions";
+import { useDecimales } from "../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 
 export default function IngresoMensualField({ monthlyIncome }: { monthlyIncome: number | null }) {
   const [editando, setEditando] = useState(false);
+  const decimales = useDecimales();
 
   if (editando) {
     return (
@@ -35,7 +38,7 @@ export default function IngresoMensualField({ monthlyIncome }: { monthlyIncome: 
     <div className="flex justify-between items-center text-sm text-muted mb-2.5">
       <span>Ingreso mensual</span>
       <button onClick={() => setEditando(true)} className="text-foreground font-medium hover:text-accent transition-colors">
-        {monthlyIncome ? `S/ ${monthlyIncome.toLocaleString("es-PE")}` : "Definir →"}
+        {monthlyIncome ? `S/ ${formatMonto(monthlyIncome, decimales)}` : "Definir →"}
       </button>
     </div>
   );

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Wallet } from "lucide-react";
+import { formatMonto } from "@/lib/format";
 
-export default function PatrimonioCard({ total }: { total: number }) {
+export default function PatrimonioCard({ total, decimales = 0 }: { total: number; decimales?: number }) {
   return (
     <Link
       href="/cuentas"
@@ -9,7 +10,7 @@ export default function PatrimonioCard({ total }: { total: number }) {
     >
       <Wallet size={15} strokeWidth={1.75} className="text-muted" />
       <span className="text-muted">Patrimonio</span>
-      <span className="font-medium">S/ {total.toLocaleString("es-PE")}</span>
+      <span className="font-medium">S/ {formatMonto(total, decimales)}</span>
     </Link>
   );
 }

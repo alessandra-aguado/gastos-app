@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { eliminarIngreso } from "@/lib/actions";
 import RowMenu from "../components/RowMenu";
+import { useDecimales } from "../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 import IngresoModal from "./IngresoModal";
 
 type Ingreso = {
@@ -23,6 +25,7 @@ function borrarConConfirmacion(id: string, nombre: string) {
 
 export default function IngresoRow({ ingreso, ultimo }: { ingreso: Ingreso; ultimo: boolean }) {
   const [editando, setEditando] = useState(false);
+  const decimales = useDecimales();
   const nombre = ingreso.source || "Ingreso";
 
   return (
@@ -37,7 +40,7 @@ export default function IngresoRow({ ingreso, ultimo }: { ingreso: Ingreso; ulti
         </p>
       </div>
       <div className="flex items-center gap-2.5">
-        <span className="text-sm font-medium text-positive">+ S/ {ingreso.amount.toFixed(0)}</span>
+        <span className="text-sm font-medium text-positive">+ S/ {formatMonto(ingreso.amount, decimales)}</span>
         <RowMenu onEdit={() => setEditando(true)} onDelete={() => borrarConConfirmacion(ingreso.id, nombre)} />
       </div>
       {editando && <IngresoModal ingreso={ingreso} onClose={() => setEditando(false)} />}

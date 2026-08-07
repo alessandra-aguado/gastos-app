@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { registrarPagoDeuda, marcarCobrado, eliminarDeuda } from "@/lib/actions";
 import RowMenu from "../components/RowMenu";
+import { useDecimales } from "../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 import DeudaModal from "./DeudaModal";
 
 type Deuda = {
@@ -36,6 +38,7 @@ function borrarConConfirmacion(id: string, nombre: string) {
 export function TarjetaCredito({ deuda, medios }: { deuda: Deuda; medios?: Medio[] }) {
   const [pagando, setPagando] = useState(false);
   const [editando, setEditando] = useState(false);
+  const decimales = useDecimales();
   const pct = deuda.creditLimit ? Math.min(100, Math.round((deuda.balance / deuda.creditLimit) * 100)) : 0;
   const medioVinculado = medios?.find((m) => m.id === deuda.paymentMethodId);
 
@@ -45,7 +48,7 @@ export function TarjetaCredito({ deuda, medios }: { deuda: Deuda; medios?: Medio
         <div>
           <p className="text-sm font-medium">{deuda.counterpartName}</p>
           <p className="text-xs text-muted">
-            {deuda.minPayment ? `Cuota S/ ${deuda.minPayment.toFixed(0)}` : ""}
+            {deuda.minPayment ? `Cuota S/ ${formatMonto(deuda.minPayment, decimales)}` : ""}
             {deuda.dueDay ? ` · vence el ${deuda.dueDay}` : ""}
             {formatFecha(deuda.startDate) ? ` · desde ${formatFecha(deuda.startDate)}` : ""}
           </p>
@@ -84,7 +87,7 @@ export function TarjetaCredito({ deuda, medios }: { deuda: Deuda; medios?: Medio
             <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
           </div>
           <div className="flex justify-between text-xs text-muted">
-            <span><span className="text-foreground font-medium">S/ {deuda.balance.toFixed(0)}</span>{deuda.creditLimit ? ` de línea S/ ${deuda.creditLimit.toFixed(0)}` : ""}</span>
+            <span><span className="text-foreground font-medium">S/ {formatMonto(deuda.balance, decimales)}</span>{deuda.creditLimit ? ` de línea S/ ${formatMonto(deuda.creditLimit, decimales)}` : ""}</span>
             <span>{pct}% usado</span>
           </div>
         </>
@@ -97,6 +100,7 @@ export function TarjetaCredito({ deuda, medios }: { deuda: Deuda; medios?: Medio
 export function PrestamoPersonal({ deuda }: { deuda: Deuda }) {
   const [pagando, setPagando] = useState(false);
   const [editando, setEditando] = useState(false);
+  const decimales = useDecimales();
   const meDeben = deuda.direction === "me_deben";
 
   return (
@@ -123,7 +127,7 @@ export function PrestamoPersonal({ deuda }: { deuda: Deuda }) {
         </form>
       ) : (
         <div className="flex items-center gap-2">
-          <span className="text-sm">S/ {deuda.balance.toFixed(0)}</span>
+          <span className="text-sm">S/ {formatMonto(deuda.balance, decimales)}</span>
           {meDeben ? (
             <form action={marcarCobrado}>
               <input type="hidden" name="id" value={deuda.id} />

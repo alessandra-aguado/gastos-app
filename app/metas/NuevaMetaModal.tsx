@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { createMeta } from "@/lib/actions";
 import { Banknote, Receipt } from "lucide-react";
+import { useDecimales } from "../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 
 export default function NuevaMetaModal() {
+  const decimales = useDecimales();
   const [abierto, setAbierto] = useState(false);
   const [comoLograr, setComoLograr] = useState<"efectivo" | "cuotas">("efectivo");
   const [esPorcentaje, setEsPorcentaje] = useState(false);
@@ -91,7 +94,7 @@ export default function NuevaMetaModal() {
                     <p className="text-xs text-muted">
                       Tu meta sería ahorrar{" "}
                       <span className="text-accent font-medium">
-                        S/ {Math.round((valorTotal * porcentaje) / 100).toLocaleString("es-PE")}
+                        S/ {formatMonto(Math.round((valorTotal * porcentaje) / 100), decimales)}
                       </span>
                       . El resto se asume financiado, no es deuda hasta que compres.
                     </p>

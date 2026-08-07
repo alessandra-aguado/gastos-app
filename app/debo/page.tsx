@@ -1,4 +1,5 @@
-import { getDeudas, getMetas, getPaymentMethods } from "@/lib/queries";
+import { getDeudas, getMetas, getPaymentMethods, getSettings } from "@/lib/queries";
+import { formatMonto } from "@/lib/format";
 import { CreditCard, Shield } from "lucide-react";
 import { TarjetaCredito, PrestamoPersonal } from "./DeudaCard";
 import DeudaModal from "./DeudaModal";
@@ -7,7 +8,8 @@ import DescargarCSV from "../components/DescargarCSV";
 export const dynamic = "force-dynamic";
 
 export default async function DeboPage() {
-  const [deudas, metas, medios] = await Promise.all([getDeudas(), getMetas(), getPaymentMethods()]);
+  const [deudas, metas, medios, settings] = await Promise.all([getDeudas(), getMetas(), getPaymentMethods(), getSettings()]);
+  const decimales = settings?.decimales ?? 0;
   const mediosCredito = medios.filter((m) => m.type === "credito");
 
   const activas = deudas.filter((d) => d.status !== "pagada");
@@ -26,7 +28,7 @@ export default async function DeboPage() {
       <div className="flex justify-between items-end mb-6">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2"><CreditCard size={22} strokeWidth={1.75} />Deuda</h1>
-          <p className="text-muted text-sm mt-1">Debes S/ {debes.toLocaleString("es-PE")} · te deben S/ {meDeben.toLocaleString("es-PE")}</p>
+          <p className="text-muted text-sm mt-1">Debes S/ {formatMonto(debes, decimales)} · te deben S/ {formatMonto(meDeben, decimales)}</p>
         </div>
         <div className="flex items-center gap-2">
           <DescargarCSV
@@ -69,8 +71,8 @@ export default async function DeboPage() {
         <div className="bg-accent-soft rounded-xl p-4 flex gap-2.5 items-center">
           <Shield size={18} strokeWidth={1.75} className="text-accent" />
           <p className="text-xs text-accent leading-relaxed">
-            Tu fondo de emergencia ({fondoEmergencia.name}) tiene S/ {fondoEmergencia.currentAmount.toLocaleString("es-PE")}
-            {mesesCobertura !== null ? ` — cubre ${mesesCobertura.toFixed(1)} meses de tus cuotas actuales (S/ ${cuotasMensuales.toFixed(0)}/mes).` : "."}
+            Tu fondo de emergencia ({fondoEmergencia.name}) tiene S/ {formatMonto(fondoEmergencia.currentAmount, decimales)}
+            {mesesCobertura !== null ? ` — cubre ${mesesCobertura.toFixed(1)} meses de tus cuotas actuales (S/ ${formatMonto(cuotasMensuales, decimales)}/mes).` : "."}
           </p>
         </div>
       )}

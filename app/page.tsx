@@ -19,7 +19,9 @@ import {
   getDeudas,
   getCuentas,
   getRachaData,
+  getSettings,
 } from "@/lib/queries";
+import { formatMonto } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +46,8 @@ export default async function Home({
   const deudas = await getDeudas();
   const cuentas = await getCuentas();
   const racha = await getRachaData();
+  const settings = await getSettings();
+  const decimales = settings?.decimales ?? 0;
 
   const totalBudget = budgets.reduce((s, b) => s + b.amountLimit, 0);
   const budgetPct = totalBudget > 0 ? Math.round((summary.total / totalBudget) * 100) : null;
@@ -60,7 +64,7 @@ export default async function Home({
   const chips = [
     { Icon: PieChart, label: "Presupuesto", value: budgetPct !== null ? `${budgetPct}% usado` : "sin definir" },
     { Icon: Target, label: "Metas", value: `${metasActivas} activa${metasActivas === 1 ? "" : "s"}` },
-    { Icon: CreditCard, label: "Deuda", value: `S/ ${totalDebo.toLocaleString("es-PE")}` },
+    { Icon: CreditCard, label: "Deuda", value: `S/ ${formatMonto(totalDebo, decimales)}` },
   ];
 
   return (
@@ -81,7 +85,7 @@ export default async function Home({
       <section className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
           <p className="text-xs text-muted">Gastado</p>
-          <p className="text-3xl font-bold mt-1">S/ {summary.total.toFixed(0)}</p>
+          <p className="text-3xl font-bold mt-1">S/ {formatMonto(summary.total, decimales)}</p>
         </div>
         <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
           <p className="text-xs text-muted">Transacciones</p>
@@ -89,7 +93,7 @@ export default async function Home({
         </div>
         <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
           <p className="text-xs text-muted">Promedio por gasto</p>
-          <p className="text-3xl font-bold mt-1">S/ {summary.avg.toFixed(0)}</p>
+          <p className="text-3xl font-bold mt-1">S/ {formatMonto(summary.avg, decimales)}</p>
         </div>
         <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
           <p className="text-xs text-muted">Pendientes por clasificar</p>
@@ -106,7 +110,7 @@ export default async function Home({
             <span className="font-medium">{c.value}</span>
           </div>
         ))}
-        <PatrimonioCard total={patrimonio} />
+        <PatrimonioCard total={patrimonio} decimales={decimales} />
       </section>
 
       <section className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
@@ -135,7 +139,7 @@ export default async function Home({
                   <div
                     className="w-full rounded-t"
                     style={{ height: `${(d.amount / maxSpend) * 100}%`, background: d.amount > 0 ? "var(--accent)" : "var(--border)", minHeight: 2 }}
-                    title={`${d.date}: S/ ${d.amount.toFixed(0)}`}
+                    title={`${d.date}: S/ ${formatMonto(d.amount, decimales)}`}
                   />
                   <span className="text-[9px] text-muted h-3">{mostrarEtiqueta ? dayNum : ""}</span>
                 </div>
@@ -158,7 +162,7 @@ export default async function Home({
                 <CategoryIcon icon={c.icon} size={16} />
               </div>
               <p className="text-sm mt-2">{c.name}</p>
-              <p className="text-lg font-semibold mt-0.5">S/ {(spendByCategory[c.id] || 0).toFixed(0)}</p>
+              <p className="text-lg font-semibold mt-0.5">S/ {formatMonto(spendByCategory[c.id] || 0, decimales)}</p>
             </Link>
           ))}
         </div>

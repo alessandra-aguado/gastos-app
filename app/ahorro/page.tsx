@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PiggyBank, ArrowRight } from "lucide-react";
 import { getAhorroSummary, getSavingsPlan, getSettings, currentMonthKey } from "@/lib/queries";
+import { formatMonto } from "@/lib/format";
 import SavingsPlanField from "./SavingsPlanField";
 
 export default async function AhorroPage() {
@@ -11,6 +12,7 @@ export default async function AhorroPage() {
     getSettings(),
   ]);
 
+  const decimales = settings?.decimales ?? 0;
   const ingreso = settings?.monthlyIncome ?? null;
   const pctFijos = settings?.pctFijos ?? 60;
   const pctVariable = settings?.pctVariable ?? 30;
@@ -37,7 +39,7 @@ export default async function AhorroPage() {
       <div className="bg-surface border border-border rounded-xl p-6 mb-4">
         <p className="text-xs text-muted">Ahorro total</p>
         <p className="text-3xl font-bold mt-1">
-          S/ {summary.total.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
+          S/ {formatMonto(summary.total, decimales)}
         </p>
       </div>
 
@@ -45,7 +47,7 @@ export default async function AhorroPage() {
         <div className="bg-surface border border-border rounded-xl p-4">
           <p className="text-xs text-muted">Colchón (fondo de emergencia)</p>
           <p className="text-xl font-bold mt-1">
-            S/ {summary.colchon.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
+            S/ {formatMonto(summary.colchon, decimales)}
           </p>
         </div>
         <Link
@@ -56,7 +58,7 @@ export default async function AhorroPage() {
             Inversión <ArrowRight size={12} />
           </p>
           <p className="text-xl font-bold mt-1">
-            S/ {summary.totalInversiones.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
+            S/ {formatMonto(summary.totalInversiones, decimales)}
           </p>
           <p className="text-xs text-muted mt-0.5">
             {summary.countInversiones} {summary.countInversiones === 1 ? "activo" : "activos"}
@@ -70,7 +72,7 @@ export default async function AhorroPage() {
             Metas <ArrowRight size={12} />
           </p>
           <p className="text-xl font-bold mt-1">
-            S/ {summary.totalMetas.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
+            S/ {formatMonto(summary.totalMetas, decimales)}
           </p>
           <p className="text-xs text-muted mt-0.5">
             {summary.countMetas} {summary.countMetas === 1 ? "meta activa" : "metas activas"}
@@ -84,10 +86,10 @@ export default async function AhorroPage() {
         {sugeridoAhorro !== null ? (
           <p className="text-xs text-muted mt-3">
             Con tu regla de reparto ({pctFijos}/{pctVariable}/{pctAhorro} sobre S/{" "}
-            {ingreso!.toLocaleString("es-PE")} de ingreso mensual): fijos S/{" "}
-            {sugeridoFijos!.toLocaleString("es-PE", { minimumFractionDigits: 0 })}, variable S/{" "}
-            {sugeridoVariable!.toLocaleString("es-PE", { minimumFractionDigits: 0 })}, ahorro sugerido S/{" "}
-            {sugeridoAhorro.toLocaleString("es-PE", { minimumFractionDigits: 2 })}.{" "}
+            {formatMonto(ingreso!, decimales)} de ingreso mensual): fijos S/{" "}
+            {formatMonto(sugeridoFijos!, decimales)}, variable S/{" "}
+            {formatMonto(sugeridoVariable!, decimales)}, ahorro sugerido S/{" "}
+            {formatMonto(sugeridoAhorro, decimales)}.{" "}
             <Link href="/ajustes" className="text-accent hover:underline">
               Cambiar reparto
             </Link>

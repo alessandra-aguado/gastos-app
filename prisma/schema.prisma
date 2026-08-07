@@ -262,6 +262,7 @@ model Settings {
   pctFijos      Float   @default(60) // % del ingreso destinado a fijos (regla de reparto, personalizable)
   pctVariable   Float   @default(30) // % del ingreso destinado a gastos variables
   pctAhorro     Float   @default(10) // % del ingreso destinado a ahorro
+  decimales     Int     @default(0) // cantidad de decimales al mostrar montos en soles (0-3, personalizable)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

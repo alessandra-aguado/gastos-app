@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { eliminarInversion } from "@/lib/actions";
 import RowMenu from "../components/RowMenu";
+import { useDecimales } from "../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 import ActualizarValorForm from "./ActualizarValorForm";
 import InversionModal from "./InversionModal";
 
@@ -27,6 +29,7 @@ function borrarConConfirmacion(id: string, nombre: string) {
 
 export default function InversionRow({ inv, valorActual, gananciaPct }: { inv: Inversion; valorActual: number; gananciaPct: number }) {
   const [editando, setEditando] = useState(false);
+  const decimales = useDecimales();
   const vencimiento = inv.maturityDate ? new Date(inv.maturityDate).toLocaleDateString("es-PE", { day: "numeric", month: "short", year: "numeric" }) : null;
 
   return (
@@ -39,7 +42,7 @@ export default function InversionRow({ inv, valorActual, gananciaPct }: { inv: I
           <p className="text-xs text-muted">{inv.instrumentType}{vencimiento ? ` · vence ${vencimiento}` : ""}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm">S/ {valorActual.toFixed(0)} <span className="text-muted text-xs">de S/ {inv.amountContributed.toFixed(0)}</span></p>
+          <p className="text-sm">S/ {formatMonto(valorActual, decimales)} <span className="text-muted text-xs">de S/ {formatMonto(inv.amountContributed, decimales)}</span></p>
           <p className={`text-xs ${gananciaPct >= 0 ? "text-positive" : "text-warning"}`}>{gananciaPct >= 0 ? "+" : ""}{gananciaPct.toFixed(1)}%</p>
         </div>
       </div>

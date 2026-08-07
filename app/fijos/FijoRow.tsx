@@ -4,6 +4,8 @@ import { useState } from "react";
 import { marcarFijoPagado, eliminarFijo } from "@/lib/actions";
 import RowMenu from "../components/RowMenu";
 import CategoryIcon from "../components/CategoryIcon";
+import { useDecimales } from "../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 import FijoModal from "./FijoModal";
 
 type Fijo = {
@@ -46,6 +48,7 @@ export default function FijoRow({
   medios: Medio[];
 }) {
   const [editando, setEditando] = useState(false);
+  const decimales = useDecimales();
   const pagado = fijo.lastPaidMonth === mesActual;
   const vence = fijo.dueMode === "unica" ? (fijo.dueDay ? `vence el ${fijo.dueDay}` : "sin vencimiento fijo") : `pagas entre el ${fijo.rangeStart} y el ${fijo.rangeEnd}`;
 
@@ -61,7 +64,7 @@ export default function FijoRow({
         </div>
       </div>
       <div className="flex items-center gap-2.5">
-        <span className="text-sm">S/ {fijo.amount.toFixed(0)}</span>
+        <span className="text-sm">S/ {formatMonto(fijo.amount, decimales)}</span>
         {pagado ? (
           <span className="bg-positive-soft text-positive text-[10px] font-medium px-2 py-1 rounded-md">Pagado</span>
         ) : (

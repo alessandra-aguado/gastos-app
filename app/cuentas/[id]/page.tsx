@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Users } from "lucide-react";
-import { getCuentaPorId, getFundMovements } from "@/lib/queries";
+import { getCuentaPorId, getFundMovements, getSettings } from "@/lib/queries";
+import { formatMonto } from "@/lib/format";
 import MovimientoModal from "./MovimientoModal";
 import MovimientoRow from "./MovimientoRow";
 import DescargarCSV from "../../components/DescargarCSV";
@@ -14,6 +15,8 @@ export default async function CuentaCustodiaPage({ params }: { params: Promise<{
   if (!cuenta || cuenta.type !== "custodia") notFound();
 
   const movimientos = await getFundMovements(id);
+  const settings = await getSettings();
+  const decimales = settings?.decimales ?? 0;
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
@@ -24,7 +27,7 @@ export default async function CuentaCustodiaPage({ params }: { params: Promise<{
       <div className="flex justify-between items-end mb-2">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2"><Users size={20} strokeWidth={1.75} />{cuenta.name}</h1>
-          <p className="text-muted text-sm mt-1">Saldo actual: S/ {cuenta.balance.toLocaleString("es-PE")} · plata de {cuenta.bank}, no es tuya</p>
+          <p className="text-muted text-sm mt-1">Saldo actual: S/ {formatMonto(cuenta.balance, decimales)} · plata de {cuenta.bank}, no es tuya</p>
         </div>
         <div className="flex items-center gap-2">
           <DescargarCSV

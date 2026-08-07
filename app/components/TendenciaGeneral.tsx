@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useDecimales } from "./DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 
 type Punto = { x: number; y: number } | null;
 
@@ -24,6 +26,7 @@ export default function TendenciaGeneral({
   inversion: (number | null)[];
   deuda: (number | null)[];
 }) {
+  const decimales = useDecimales();
   const series: Serie[] = [
     { key: "gasto", label: "Gasto", color: "#111111", data: gastoReal },
     { key: "ahorro", label: "Ahorro", color: "#16a34a", data: ahorro },
@@ -85,7 +88,7 @@ export default function TendenciaGeneral({
           <p className="text-xs text-muted">
             {seleccionInfo.label} · {meses[seleccion!.index]}:{" "}
             <span className="text-foreground font-medium">
-              {valorSeleccion === null ? "sin datos" : `S/ ${valorSeleccion.toLocaleString("es-PE")}`}
+              {valorSeleccion === null ? "sin datos" : `S/ ${formatMonto(valorSeleccion, decimales)}`}
             </span>
           </p>
         )}
@@ -108,7 +111,7 @@ export default function TendenciaGeneral({
             >
               <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
               {s.label}
-              <span className="font-medium">{ultimo === null ? "—" : `S/ ${ultimo.toLocaleString("es-PE")}`}</span>
+              <span className="font-medium">{ultimo === null ? "—" : `S/ ${formatMonto(ultimo, decimales)}`}</span>
             </button>
           );
         })}

@@ -1,4 +1,5 @@
-import { getIngresos } from "@/lib/queries";
+import { getIngresos, getSettings } from "@/lib/queries";
+import { formatMonto } from "@/lib/format";
 import { CircleDollarSign } from "lucide-react";
 import IngresoModal from "./IngresoModal";
 import IngresoRow from "./IngresoRow";
@@ -12,7 +13,8 @@ function mesActualKey() {
 }
 
 export default async function IngresosPage() {
-  const ingresos = await getIngresos();
+  const [ingresos, settings] = await Promise.all([getIngresos(), getSettings()]);
+  const decimales = settings?.decimales ?? 0;
   const mesActual = mesActualKey();
 
   const delMes = ingresos.filter((i) => {
@@ -30,7 +32,7 @@ export default async function IngresosPage() {
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2"><CircleDollarSign size={22} strokeWidth={1.75} />Ingresos</h1>
           <p className="text-muted text-sm mt-1">
-            S/ {totalMes.toLocaleString("es-PE")} este mes · S/ {fijoMes.toLocaleString("es-PE")} fijo · S/ {variableMes.toLocaleString("es-PE")} variable
+            S/ {formatMonto(totalMes, decimales)} este mes · S/ {formatMonto(fijoMes, decimales)} fijo · S/ {formatMonto(variableMes, decimales)} variable
           </p>
         </div>
         <div className="flex items-center gap-2">

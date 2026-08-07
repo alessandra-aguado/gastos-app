@@ -2,6 +2,7 @@ import { getTopCategories, getPaymentMethods, getActivityLog, getSettings } from
 import { Settings } from "lucide-react";
 import AjustesTabs from "./AjustesTabs";
 import ReglaIngresoField from "./ReglaIngresoField";
+import FormatoMontoField from "./FormatoMontoField";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export default async function AjustesPage() {
     <div className="max-w-3xl mx-auto px-6 py-8">
       <h1 className="text-2xl font-semibold mb-4 flex items-center gap-2"><Settings size={22} strokeWidth={1.75} />Ajustes</h1>
       <ReglaIngresoField regla={regla} />
+      <FormatoMontoField decimales={settings?.decimales ?? 0} />
       <AjustesTabs categorias={categorias} medios={medios} historial={historial} />
     </div>
   );

@@ -1,4 +1,5 @@
-import { getMetas } from "@/lib/queries";
+import { getMetas, getSettings } from "@/lib/queries";
+import { formatMonto } from "@/lib/format";
 import { Target } from "lucide-react";
 import MetaCard from "./MetaCard";
 import NuevaMetaModal from "./NuevaMetaModal";
@@ -6,7 +7,8 @@ import NuevaMetaModal from "./NuevaMetaModal";
 export const dynamic = "force-dynamic";
 
 export default async function MetasPage() {
-  const metas = await getMetas();
+  const [metas, settings] = await Promise.all([getMetas(), getSettings()]);
+  const decimales = settings?.decimales ?? 0;
   const total = metas.reduce((s, m) => s + m.currentAmount, 0);
 
   return (
@@ -14,7 +16,7 @@ export default async function MetasPage() {
       <div className="flex justify-between items-end mb-6">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2"><Target size={22} strokeWidth={1.75} />Metas</h1>
-          <p className="text-muted text-sm mt-1">S/ {total.toLocaleString("es-PE")} ahorrados en {metas.length} metas</p>
+          <p className="text-muted text-sm mt-1">S/ {formatMonto(total, decimales)} ahorrados en {metas.length} metas</p>
         </div>
         <NuevaMetaModal />
       </div>

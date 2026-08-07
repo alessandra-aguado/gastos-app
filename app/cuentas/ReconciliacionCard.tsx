@@ -2,6 +2,8 @@
 
 import { CheckCircle2, CircleDashed, TrendingDown, TrendingUp } from "lucide-react";
 import { updateSaldoCuenta } from "@/lib/actions";
+import { useDecimales } from "../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 
 type CuentaRecon = {
   id: string;
@@ -30,6 +32,7 @@ function confirmarSaldo(id: string, balance: number) {
 }
 
 export default function ReconciliacionCard({ recon }: { recon: Recon }) {
+  const decimales = useDecimales();
   const [anio, mes] = recon.month.split("-");
   const nombreMes = new Date(Number(anio), Number(mes) - 1, 1).toLocaleDateString("es-PE", {
     month: "long",
@@ -42,13 +45,13 @@ export default function ReconciliacionCard({ recon }: { recon: Recon }) {
         <div>
           <p className="text-xs text-muted capitalize">Reconciliación · {nombreMes}</p>
           <p className="text-2xl font-bold mt-1">
-            S/ {recon.totalActual.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
+            S/ {formatMonto(recon.totalActual, decimales)}
           </p>
         </div>
         {recon.delta !== null ? (
           <div className={`flex items-center gap-1 text-sm font-medium ${recon.delta >= 0 ? "text-positive" : "text-warning"}`}>
             {recon.delta >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-            S/ {Math.abs(recon.delta).toLocaleString("es-PE", { minimumFractionDigits: 2 })} vs mes anterior
+            S/ {formatMonto(Math.abs(recon.delta), decimales)} vs mes anterior
           </div>
         ) : (
           <p className="text-xs text-muted">Aún no hay historial del mes anterior para comparar.</p>
@@ -73,7 +76,7 @@ export default function ReconciliacionCard({ recon }: { recon: Recon }) {
                     onClick={() => confirmarSaldo(c.id, c.balance)}
                     className="text-xs px-2 py-1 rounded-lg border border-border hover:border-accent hover:text-accent transition-colors"
                   >
-                    Confirmar S/ {c.balance.toLocaleString("es-PE")}
+                    Confirmar S/ {formatMonto(c.balance, decimales)}
                   </button>
                 </div>
               ))}

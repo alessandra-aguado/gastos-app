@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { upsertSavingsPlan } from "@/lib/actions";
+import { useDecimales } from "../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 
 type Plan = {
   totalAmount: number;
@@ -12,6 +14,7 @@ type Plan = {
 
 export default function SavingsPlanField({ month, plan }: { month: string; plan: Plan }) {
   const [editando, setEditando] = useState(!plan);
+  const decimales = useDecimales();
 
   if (editando) {
     return (
@@ -91,16 +94,16 @@ export default function SavingsPlanField({ month, plan }: { month: string; plan:
     <div>
       <div className="flex justify-between items-center mb-2">
         <p className="text-2xl font-bold">
-          S/ {plan!.totalAmount.toLocaleString("es-PE", { minimumFractionDigits: 2 })}
+          S/ {formatMonto(plan!.totalAmount, decimales)}
         </p>
         <button onClick={() => setEditando(true)} className="text-xs text-accent font-medium">
           Editar
         </button>
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-        <span>Colchón: S/ {plan!.colchonAmount.toLocaleString("es-PE")}</span>
-        <span>Inversión: S/ {plan!.inversionAmount.toLocaleString("es-PE")}</span>
-        <span>Metas: S/ {plan!.metasAmount.toLocaleString("es-PE")}</span>
+        <span>Colchón: S/ {formatMonto(plan!.colchonAmount, decimales)}</span>
+        <span>Inversión: S/ {formatMonto(plan!.inversionAmount, decimales)}</span>
+        <span>Metas: S/ {formatMonto(plan!.metasAmount, decimales)}</span>
       </div>
     </div>
   );

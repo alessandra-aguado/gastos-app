@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { eliminarFundMovement } from "@/lib/actions";
 import RowMenu from "../../components/RowMenu";
+import { useDecimales } from "../../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 import MovimientoModal from "./MovimientoModal";
 
 type Movimiento = {
@@ -22,6 +24,7 @@ function borrarConConfirmacion(id: string, etiqueta: string) {
 
 export default function MovimientoRow({ accountId, movimiento, ultimo }: { accountId: string; movimiento: Movimiento; ultimo: boolean }) {
   const [editando, setEditando] = useState(false);
+  const decimales = useDecimales();
   const etiqueta = movimiento.description || (movimiento.type === "ingreso" ? "Entrada" : "Gasto");
   const esIngreso = movimiento.type === "ingreso";
 
@@ -35,7 +38,7 @@ export default function MovimientoRow({ accountId, movimiento, ultimo }: { accou
       </div>
       <div className="flex items-center gap-2.5">
         <span className={`text-sm font-medium ${esIngreso ? "text-positive" : ""}`}>
-          {esIngreso ? "+" : "-"} S/ {movimiento.amount.toFixed(0)}
+          {esIngreso ? "+" : "-"} S/ {formatMonto(movimiento.amount, decimales)}
         </span>
         <RowMenu onEdit={() => setEditando(true)} onDelete={() => borrarConConfirmacion(movimiento.id, etiqueta)} />
       </div>

@@ -1,4 +1,5 @@
-import { getDeseos, getTopCategories } from "@/lib/queries";
+import { getDeseos, getTopCategories, getSettings } from "@/lib/queries";
+import { formatMonto } from "@/lib/format";
 import { Gift } from "lucide-react";
 import DeseoRow from "./DeseoRow";
 import DeseoModal from "./DeseoModal";
@@ -6,7 +7,8 @@ import DeseoModal from "./DeseoModal";
 export const dynamic = "force-dynamic";
 
 export default async function DeseosPage() {
-  const [deseos, categorias] = await Promise.all([getDeseos(), getTopCategories()]);
+  const [deseos, categorias, settings] = await Promise.all([getDeseos(), getTopCategories(), getSettings()]);
+  const decimales = settings?.decimales ?? 0;
   const total = deseos.reduce((s, d) => s + d.estimatedPrice, 0);
 
   return (
@@ -14,7 +16,7 @@ export default async function DeseosPage() {
       <div className="flex justify-between items-end mb-6">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2"><Gift size={22} strokeWidth={1.75} />Deseos</h1>
-          <p className="text-muted text-sm mt-1">{deseos.length} deseo{deseos.length === 1 ? "" : "s"} · S/ {total.toLocaleString("es-PE")} en total</p>
+          <p className="text-muted text-sm mt-1">{deseos.length} deseo{deseos.length === 1 ? "" : "s"} · S/ {formatMonto(total, decimales)} en total</p>
         </div>
         <DeseoModal categorias={categorias} />
       </div>

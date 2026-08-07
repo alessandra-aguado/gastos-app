@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { addContribucion, marcarMetaCompletada, eliminarMeta } from "@/lib/actions";
 import RowMenu from "../components/RowMenu";
+import { useDecimales } from "../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 import MetaModal from "./MetaModal";
 
 type Meta = {
@@ -25,6 +27,7 @@ function borrarConConfirmacion(id: string, nombre: string) {
 export default function MetaCard({ meta }: { meta: Meta }) {
   const [abonando, setAbonando] = useState(false);
   const [editando, setEditando] = useState(false);
+  const decimales = useDecimales();
   const pct = Math.min(100, Math.round((meta.currentAmount / meta.targetAmount) * 100));
   const cumplida = meta.status === "completada" || meta.currentAmount >= meta.targetAmount;
 
@@ -49,7 +52,7 @@ export default function MetaCard({ meta }: { meta: Meta }) {
       </div>
       <div className="flex justify-between text-xs text-muted mb-2.5">
         <span>
-          <span className="text-foreground font-medium">S/ {meta.currentAmount.toLocaleString("es-PE")}</span> de S/ {meta.targetAmount.toLocaleString("es-PE")}
+          <span className="text-foreground font-medium">S/ {formatMonto(meta.currentAmount, decimales)}</span> de S/ {formatMonto(meta.targetAmount, decimales)}
         </span>
         <span>{pct}%</span>
       </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
-import { getTopCategories, getSpendByTopCategory, listTransactionsByCategory, getMonthlyTrend, getPaymentMethods } from "@/lib/queries";
+import { getTopCategories, getSpendByTopCategory, listTransactionsByCategory, getMonthlyTrend, getPaymentMethods, getSettings } from "@/lib/queries";
+import { formatMonto } from "@/lib/format";
 import CategoryIcon from "../components/CategoryIcon";
 import { colorForIndex } from "@/lib/categoryColors";
 import RangoSelector from "../components/RangoSelector";
@@ -22,6 +23,8 @@ export default async function GastosPage({
 
   const categories = await getTopCategories();
   const spendByCategory = await getSpendByTopCategory(range);
+  const settings = await getSettings();
+  const decimales = settings?.decimales ?? 0;
 
   if (cat) {
     const category = categories.find((c) => c.id === cat);
@@ -40,7 +43,7 @@ export default async function GastosPage({
               {category?.name}
             </h1>
             <p className="text-muted text-sm mt-1">
-              S/ {(spendByCategory[cat] || 0).toFixed(0)} en {rangeLabel.toLowerCase()} · {transactions.length} transacciones
+              S/ {formatMonto(spendByCategory[cat] || 0, decimales)} en {rangeLabel.toLowerCase()} · {transactions.length} transacciones
             </p>
           </div>
           <DescargarCSV
@@ -123,7 +126,7 @@ export default async function GastosPage({
             >
               <div className="absolute inset-4 bg-surface rounded-full flex flex-col items-center justify-center">
                 <span className="text-xs text-muted">Total</span>
-                <span className="text-base font-semibold">S/ {totalRango.toFixed(0)}</span>
+                <span className="text-base font-semibold">S/ {formatMonto(totalRango, decimales)}</span>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 flex-1 min-w-0">
@@ -149,7 +152,7 @@ export default async function GastosPage({
               <div
                 className="w-full rounded-t"
                 style={{ height: `${(m.total / maxTrend) * 100}%`, background: m.total > 0 ? "var(--accent)" : "var(--border)", minHeight: 2 }}
-                title={`${m.label}: S/ ${m.total.toFixed(0)}`}
+                title={`${m.label}: S/ ${formatMonto(m.total, decimales)}`}
               />
               <span className="text-[10px] text-muted">{m.label}</span>
             </div>
@@ -168,7 +171,7 @@ export default async function GastosPage({
               <CategoryIcon icon={c.icon} size={16} />
             </div>
             <p className="text-sm mt-2">{c.name}</p>
-            <p className="text-lg font-semibold mt-0.5">S/ {(spendByCategory[c.id] || 0).toFixed(0)}</p>
+            <p className="text-lg font-semibold mt-0.5">S/ {formatMonto(spendByCategory[c.id] || 0, decimales)}</p>
           </Link>
         ))}
       </div>

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { eliminarTransaccion } from "@/lib/actions";
 import RowMenu from "../components/RowMenu";
+import { useDecimales } from "../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 import TransactionModal from "./TransactionModal";
 
 type Categoria = { id: string; name: string };
@@ -36,6 +38,7 @@ export default function TransactionRow({
   medios: Medio[];
 }) {
   const [editando, setEditando] = useState(false);
+  const decimales = useDecimales();
   const etiqueta = transaccion.merchant || transaccion.category?.name || "gasto";
 
   return (
@@ -48,7 +51,7 @@ export default function TransactionRow({
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <p className="font-semibold">S/ {transaccion.amount.toFixed(0)}</p>
+        <p className="font-semibold">S/ {formatMonto(transaccion.amount, decimales)}</p>
         <RowMenu onEdit={() => setEditando(true)} onDelete={() => borrarConConfirmacion(transaccion.id, etiqueta)} />
       </div>
       {editando && (

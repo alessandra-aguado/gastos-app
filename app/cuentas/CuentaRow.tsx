@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { updateSaldoCuenta, eliminarCuenta } from "@/lib/actions";
 import RowMenu from "../components/RowMenu";
+import { useDecimales } from "../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 import CuentaModal from "./CuentaModal";
 
 type Cuenta = { id: string; name: string; bank: string; type: string; balance: number; lastCheckIn: Date | null };
@@ -18,6 +20,7 @@ function borrarConConfirmacion(id: string, nombre: string) {
 export default function CuentaRow({ cuenta, ultimo, dias }: { cuenta: Cuenta; ultimo: boolean; dias: number | null }) {
   const [editando, setEditando] = useState(false);
   const [editandoDatos, setEditandoDatos] = useState(false);
+  const decimales = useDecimales();
 
   return (
     <div className={`flex justify-between items-center px-4 py-3 ${!ultimo ? "border-b border-border" : ""}`}>
@@ -47,11 +50,11 @@ export default function CuentaRow({ cuenta, ultimo, dias }: { cuenta: Cuenta; ul
         <div className="flex items-center gap-2">
           {cuenta.type === "custodia" ? (
             <span className="text-sm" title="El saldo de un fondo de terceros se ajusta solo registrando movimientos, para dejar registro de en qué se usó.">
-              S/ {cuenta.balance.toLocaleString("es-PE")}
+              S/ {formatMonto(cuenta.balance, decimales)}
             </span>
           ) : (
             <button onClick={() => setEditando(true)} className="text-sm hover:text-accent transition-colors">
-              S/ {cuenta.balance.toLocaleString("es-PE")}
+              S/ {formatMonto(cuenta.balance, decimales)}
             </button>
           )}
           <RowMenu onEdit={() => setEditandoDatos(true)} onDelete={() => borrarConConfirmacion(cuenta.id, cuenta.name)} />

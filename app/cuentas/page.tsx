@@ -1,4 +1,5 @@
-import { getCuentas, getReconciliacionCuentas } from "@/lib/queries";
+import { getCuentas, getReconciliacionCuentas, getSettings } from "@/lib/queries";
+import { formatMonto } from "@/lib/format";
 import { Wallet, Users } from "lucide-react";
 import CuentaRow from "./CuentaRow";
 import NuevaCuentaModal from "./NuevaCuentaModal";
@@ -37,7 +38,8 @@ function ListaCuentas({ cuentas }: { cuentas: CuentaConDatos[] }) {
 }
 
 export default async function CuentasPage() {
-  const [cuentas, recon] = await Promise.all([getCuentas(), getReconciliacionCuentas()]);
+  const [cuentas, recon, settings] = await Promise.all([getCuentas(), getReconciliacionCuentas(), getSettings()]);
+  const decimales = settings?.decimales ?? 0;
   const propias = cuentas.filter((c) => c.type !== "custodia");
   const custodia = cuentas.filter((c) => c.type === "custodia");
   const total = propias.filter((c) => c.type !== "puntos").reduce((s, c) => s + c.balance, 0);
@@ -47,7 +49,7 @@ export default async function CuentasPage() {
       <div className="flex justify-between items-end mb-6">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2"><Wallet size={22} strokeWidth={1.75} />Cuentas</h1>
-          <p className="text-muted text-sm mt-1">S/ {total.toLocaleString("es-PE")} en total · sin contar deudas</p>
+          <p className="text-muted text-sm mt-1">S/ {formatMonto(total, decimales)} en total · sin contar deudas</p>
         </div>
         <NuevaCuentaModal />
       </div>

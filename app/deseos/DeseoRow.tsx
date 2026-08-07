@@ -4,6 +4,8 @@ import { useState } from "react";
 import { convertirDeseoEnMeta, marcarDeseoComprado, eliminarDeseo } from "@/lib/actions";
 import RowMenu from "../components/RowMenu";
 import CategoryIcon from "../components/CategoryIcon";
+import { useDecimales } from "../components/DecimalesProvider";
+import { formatMonto } from "@/lib/format";
 import DeseoModal from "./DeseoModal";
 
 type Deseo = {
@@ -30,6 +32,7 @@ function borrarConConfirmacion(id: string, nombre: string) {
 export default function DeseoRow({ deseo, categorias }: { deseo: Deseo; categorias: Categoria[] }) {
   const [convirtiendo, setConvirtiendo] = useState(false);
   const [editando, setEditando] = useState(false);
+  const decimales = useDecimales();
 
   return (
     <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] px-4 py-3">
@@ -50,7 +53,7 @@ export default function DeseoRow({ deseo, categorias }: { deseo: Deseo; categori
           <span className="bg-positive-soft text-positive text-[10px] font-medium px-2 py-1 rounded-md">Comprado</span>
         ) : (
           <div className="flex items-center gap-2">
-            <span className="text-sm">S/ {deseo.estimatedPrice.toFixed(0)}</span>
+            <span className="text-sm">S/ {formatMonto(deseo.estimatedPrice, decimales)}</span>
             <button onClick={() => setConvirtiendo(!convirtiendo)} className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">
               Convertir en meta
             </button>
