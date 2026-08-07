@@ -253,6 +253,11 @@ export async function getCuentas() {
   return prisma.account.findMany({ orderBy: [{ bank: "asc" }, { createdAt: "asc" }] });
 }
 
+// ---------- Historial de cambios ----------
+export async function getActivityLog(limit = 150) {
+  return prisma.activityLog.findMany({ orderBy: { createdAt: "desc" }, take: limit });
+}
+
 // ---------- Reconciliacion de cuentas ----------
 export async function getReconciliacionCuentas() {
   const cuentas = await getCuentas();

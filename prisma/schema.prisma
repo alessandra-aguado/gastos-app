@@ -259,6 +259,14 @@ model SavingsPlan {
   updatedAt       DateTime @updatedAt
 }
 
+model ActivityLog {
+  id        String   @id @default(cuid())
+  entity    String   // "Meta" | "Cuenta" | "Deuda" | "Fijo" | "Deseo" | "Inversion" | "Ingreso" | "Presupuesto" | "Ahorro" | "Categoria" | "Medio de pago"
+  action    String   // crear | editar | eliminar
+  label     String
+  createdAt DateTime @default(now())
+}
+
 model EmailAccount {
   id              String @id @default(cuid())
   provider        String // gmail

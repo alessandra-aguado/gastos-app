@@ -6,12 +6,17 @@ import CategoryIcon from "../components/CategoryIcon";
 import RowMenu from "../components/RowMenu";
 import CategoriaModal from "./CategoriaModal";
 import MedioModal from "./MedioModal";
+import { Plus, Pencil, Trash2, History } from "lucide-react";
 
 type Categoria = { id: string; name: string; icon: string | null; color: string | null; description: string | null };
 type Medio = { id: string; name: string; type: string; bankOrIssuer: string | null };
+type Evento = { id: string; entity: string; action: string; label: string; createdAt: Date };
 
-export default function AjustesTabs({ categorias, medios }: { categorias: Categoria[]; medios: Medio[] }) {
-  const [tab, setTab] = useState<"categorias" | "medios">("categorias");
+const ACCION_ICONO: Record<string, typeof Plus> = { crear: Plus, editar: Pencil, eliminar: Trash2 };
+const ACCION_COLOR: Record<string, string> = { crear: "text-positive", editar: "text-accent", eliminar: "text-warning" };
+
+export default function AjustesTabs({ categorias, medios, historial }: { categorias: Categoria[]; medios: Medio[]; historial: Evento[] }) {
+  const [tab, setTab] = useState<"categorias" | "medios" | "historial">("categorias");
 
   const [seleccionCat, setSeleccionCat] = useState<Set<string>>(new Set());
   const [seleccionMedio, setSeleccionMedio] = useState<Set<string>>(new Set());
@@ -89,6 +94,12 @@ export default function AjustesTabs({ categorias, medios }: { categorias: Catego
         >
           Medios de pago
         </button>
+        <button
+          onClick={() => { setTab("historial"); setError(null); }}
+          className={`px-3.5 py-2 text-sm ${tab === "historial" ? "text-accent font-medium border-b-2 border-accent" : "text-muted"}`}
+        >
+          Historial
+        </button>
       </div>
 
       {error && (
@@ -145,7 +156,7 @@ export default function AjustesTabs({ categorias, medios }: { categorias: Catego
             ))}
           </div>
         </>
-      ) : (
+      ) : tab === "medios" ? (
         <>
           <div className="flex justify-between items-center mb-3">
             {seleccionMedio.size > 0 ? (
@@ -186,6 +197,40 @@ export default function AjustesTabs({ categorias, medios }: { categorias: Catego
             ))}
           </div>
 
+        </>
+      ) : (
+        <>
+          {historial.length === 0 ? (
+            <div className="border border-dashed border-border rounded-xl p-10 text-center text-muted text-sm">
+              Aún no hay cambios registrados.
+            </div>
+          ) : (
+            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] overflow-hidden">
+              {historial.map((e, i) => {
+                const Icon = ACCION_ICONO[e.action] ?? History;
+                return (
+                  <div
+                    key={e.id}
+                    className={`flex items-start gap-3 px-4 py-3 ${i < historial.length - 1 ? "border-b border-border" : ""}`}
+                  >
+                    <Icon size={15} strokeWidth={2} className={`mt-0.5 shrink-0 ${ACCION_COLOR[e.action] ?? "text-muted"}`} />
+                    <div className="min-w-0">
+                      <p className="text-sm">{e.label}</p>
+                      <p className="text-xs text-muted mt-0.5">
+                        {e.entity} ·{" "}
+                        {new Date(e.createdAt).toLocaleString("es-PE", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
 

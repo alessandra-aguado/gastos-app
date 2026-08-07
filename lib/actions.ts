@@ -4,6 +4,10 @@ import { prisma, ensureSeeded } from "./db";
 import { revalidatePath } from "next/cache";
 import { currentMonthKey } from "./queries";
 
+async function registrarActividad(entity: string, action: "crear" | "editar" | "eliminar", label: string) {
+  await prisma.activityLog.create({ data: { entity, action, label } });
+}
+
 // Si el gasto se paga con una tarjeta de credito vinculada a una Deuda, ese
 // gasto tambien incrementa el saldo que debes en esa tarjeta.
 async function sincronizarDeudaTarjeta(paymentMethodId: string | null, monto: number) {
@@ -64,6 +68,9 @@ export async function setBudget(formData: FormData) {
     create: { categoryId, month, amountLimit },
   });
 
+  const categoriaBudget = await prisma.category.findUnique({ where: { id: categoryId } });
+  await registrarActividad("Presupuesto", "editar", `Límite de "${categoriaBudget?.name ?? "categoría"}" fijado en S/ ${amountLimit.toFixed(0)}`);
+
   revalidatePath("/presupuesto");
   revalidatePath("/");
 }
@@ -111,6 +118,8 @@ export async function createMeta(formData: FormData) {
     },
   });
 
+  await registrarActividad("Meta", "crear", `Meta "${name}" creada (objetivo S/ ${targetAmount.toFixed(0)})`);
+
   revalidatePath("/metas");
   revalidatePath("/debo");
 }
@@ -123,17 +132,20 @@ export async function addContribucion(formData: FormData) {
   await prisma.savingsContribution.create({
     data: { savingsGoalId, amount, date: new Date() },
   });
-  await prisma.savingsGoal.update({
+  const metaAporte = await prisma.savingsGoal.update({
     where: { id: savingsGoalId },
     data: { currentAmount: { increment: amount } },
   });
+
+  await registrarActividad("Meta", "editar", `Aporte de S/ ${amount.toFixed(0)} a "${metaAporte.name}"`);
 
   revalidatePath("/metas");
 }
 
 export async function marcarMetaCompletada(formData: FormData) {
   const id = String(formData.get("id"));
-  await prisma.savingsGoal.update({ where: { id }, data: { status: "completada" } });
+  const metaCompletada = await prisma.savingsGoal.update({ where: { id }, data: { status: "completada" } });
+  await registrarActividad("Meta", "editar", `Meta "${metaCompletada.name}" marcada como completada`);
   revalidatePath("/metas");
 }
 
@@ -150,6 +162,8 @@ export async function updateMeta(formData: FormData) {
     where: { id },
     data: { name, motivo, targetAmount, targetDate: targetDateRaw ? new Date(targetDateRaw) : null },
   });
+
+  await registrarActividad("Meta", "editar", `Meta "${name}" editada`);
 
   revalidatePath("/metas");
 }
@@ -186,13 +200,16 @@ export async function createInversion(formData: FormData) {
     },
   });
 
+  await registrarActividad("Inversión", "crear", `Inversión en "${platform}" registrada (S/ ${amountContributed.toFixed(0)})`);
+
   revalidatePath("/inversiones");
 }
 
 export async function updateValorInversion(formData: FormData) {
   const id = String(formData.get("id"));
   const currentValue = parseFloat(String(formData.get("currentValue") || "0"));
-  await prisma.investment.update({ where: { id }, data: { currentValue } });
+  const invValor = await prisma.investment.update({ where: { id }, data: { currentValue } });
+  await registrarActividad("Inversión", "editar", `Valor actual de "${invValor.platform}" actualizado a S/ ${currentValue.toFixed(0)}`);
   revalidatePath("/inversiones");
 }
 
@@ -215,6 +232,8 @@ export async function updateInversion(formData: FormData) {
     },
   });
 
+  await registrarActividad("Inversión", "editar", `Inversión "${platform}" editada`);
+
   revalidatePath("/inversiones");
 }
 
@@ -232,6 +251,8 @@ export async function createCuenta(formData: FormData) {
     data: { name, bank, type, balance: balance || 0, lastCheckIn: new Date() },
   });
 
+  await registrarActividad("Cuenta", "crear", `Cuenta "${name}" creada (${bank}, saldo inicial S/ ${(balance || 0).toFixed(0)})`);
+
   revalidatePath("/cuentas");
   revalidatePath("/");
 }
@@ -240,12 +261,20 @@ export async function updateSaldoCuenta(formData: FormData) {
   const id = String(formData.get("id"));
   const balance = parseFloat(String(formData.get("balance") || "0"));
   const month = currentMonthKey();
+  const cuentaAnterior = await prisma.account.findUnique({ where: { id } });
   await prisma.account.update({ where: { id }, data: { balance, lastCheckIn: new Date() } });
   await prisma.accountCheckIn.upsert({
     where: { accountId_month: { accountId: id, month } },
     update: { balance, date: new Date() },
     create: { accountId: id, month, balance },
   });
+  if (cuentaAnterior && cuentaAnterior.balance !== balance) {
+    await registrarActividad(
+      "Cuenta",
+      "editar",
+      `Saldo de "${cuentaAnterior.name}" actualizado: S/ ${cuentaAnterior.balance.toFixed(0)} → S/ ${balance.toFixed(0)}`
+    );
+  }
   revalidatePath("/cuentas");
   revalidatePath("/");
 }
@@ -259,6 +288,8 @@ export async function updateCuenta(formData: FormData) {
   if (!id || !name || !bank) throw new Error("Faltan datos de la cuenta");
 
   await prisma.account.update({ where: { id }, data: { name, bank, type } });
+
+  await registrarActividad("Cuenta", "editar", `Datos de cuenta actualizados: "${name}" (${bank})`);
 
   revalidatePath("/cuentas");
   revalidatePath("/");
@@ -289,7 +320,7 @@ export async function createDeuda(formData: FormData) {
     if (yaVinculada) throw new Error("Ese medio de pago ya está vinculado a otra deuda.");
   }
 
-  await prisma.debt.create({
+  const deudaCreada = await prisma.debt.create({
     data: {
       type,
       counterpartName,
@@ -304,6 +335,12 @@ export async function createDeuda(formData: FormData) {
       paymentMethodId,
     },
   });
+
+  await registrarActividad(
+    "Deuda",
+    "crear",
+    `Deuda ${deudaCreada.type === "tarjeta_credito" ? "de tarjeta" : `con "${deudaCreada.counterpartName ?? "alguien"}"`} creada (S/ ${balance.toFixed(0)})`
+  );
 
   revalidatePath("/debo");
   revalidatePath("/");
@@ -347,6 +384,13 @@ export async function updateDeuda(formData: FormData) {
     },
   });
 
+  const etiquetaDeuda = deuda.counterpartName ? ` con "${deuda.counterpartName}"` : "";
+  if (deuda.balance !== balance) {
+    await registrarActividad("Deuda", "editar", `Saldo de deuda${etiquetaDeuda} actualizado: S/ ${deuda.balance.toFixed(0)} → S/ ${balance.toFixed(0)}`);
+  } else {
+    await registrarActividad("Deuda", "editar", `Datos de deuda${etiquetaDeuda} editados`);
+  }
+
   revalidatePath("/debo");
   revalidatePath("/");
   revalidatePath("/cuentas");
@@ -368,13 +412,20 @@ export async function registrarPagoDeuda(formData: FormData) {
     data: { balance: nuevoBalance, status: nuevoBalance === 0 ? "pagada" : "activa" },
   });
 
+  await registrarActividad(
+    "Deuda",
+    "editar",
+    `Pago de S/ ${amount.toFixed(0)} registrado${debt.counterpartName ? ` (${debt.counterpartName})` : ""}, saldo restante S/ ${nuevoBalance.toFixed(0)}`
+  );
+
   revalidatePath("/debo");
   revalidatePath("/");
 }
 
 export async function marcarCobrado(formData: FormData) {
   const id = String(formData.get("id"));
-  await prisma.debt.update({ where: { id }, data: { balance: 0, status: "pagada" } });
+  const deudaCobrada = await prisma.debt.update({ where: { id }, data: { balance: 0, status: "pagada" } });
+  await registrarActividad("Deuda", "editar", `Deuda${deudaCobrada.counterpartName ? ` con "${deudaCobrada.counterpartName}"` : ""} marcada como cobrada/pagada`);
   revalidatePath("/debo");
   revalidatePath("/");
 }
@@ -411,6 +462,8 @@ export async function createFijo(formData: FormData) {
     },
   });
 
+  await registrarActividad("Fijo", "crear", `Fijo "${name}" creado (S/ ${amount.toFixed(0)}/mes)`);
+
   revalidatePath("/fijos");
 }
 
@@ -445,6 +498,8 @@ export async function updateFijo(formData: FormData) {
     },
   });
 
+  await registrarActividad("Fijo", "editar", `Fijo "${name}" editado`);
+
   revalidatePath("/fijos");
 }
 
@@ -471,6 +526,8 @@ export async function marcarFijoPagado(formData: FormData) {
   await prisma.fixedExpense.update({ where: { id }, data: { lastPaidMonth: month } });
   await sincronizarDeudaTarjeta(fijo.paymentMethodId, fijo.amount);
 
+  await registrarActividad("Fijo", "editar", `Fijo "${fijo.name}" marcado como pagado este mes (S/ ${fijo.amount.toFixed(0)})`);
+
   revalidatePath("/fijos");
   revalidatePath("/");
   revalidatePath("/gastos");
@@ -492,6 +549,8 @@ export async function createDeseo(formData: FormData) {
     data: { name, estimatedPrice, categoryId, isNecessary, link, notes },
   });
 
+  await registrarActividad("Deseo", "crear", `Deseo "${name}" agregado (S/ ${estimatedPrice.toFixed(0)})`);
+
   revalidatePath("/deseos");
 }
 
@@ -510,6 +569,8 @@ export async function updateDeseo(formData: FormData) {
     where: { id },
     data: { name, estimatedPrice, categoryId, isNecessary, link, notes },
   });
+
+  await registrarActividad("Deseo", "editar", `Deseo "${name}" editado`);
 
   revalidatePath("/deseos");
 }
@@ -531,13 +592,16 @@ export async function convertirDeseoEnMeta(formData: FormData) {
 
   await prisma.wishlistItem.update({ where: { id: item.id }, data: { status: "convertido_a_meta" } });
 
+  await registrarActividad("Deseo", "editar", `Deseo "${item.name}" convertido en meta de ahorro`);
+
   revalidatePath("/deseos");
   revalidatePath("/metas");
 }
 
 export async function marcarDeseoComprado(formData: FormData) {
   const id = String(formData.get("id"));
-  await prisma.wishlistItem.update({ where: { id }, data: { status: "comprado" } });
+  const deseoComprado = await prisma.wishlistItem.update({ where: { id }, data: { status: "comprado" } });
+  await registrarActividad("Deseo", "editar", `Deseo "${deseoComprado.name}" marcado como comprado`);
   revalidatePath("/deseos");
 }
 
@@ -555,6 +619,8 @@ export async function createIngreso(formData: FormData) {
   await prisma.income.create({
     data: { amount, date: new Date(date), type, source, notes },
   });
+
+  await registrarActividad("Ingreso", "crear", `Ingreso registrado: S/ ${amount.toFixed(0)}${source ? ` (${source})` : ""}`);
 
   revalidatePath("/ingresos");
 }
@@ -574,12 +640,15 @@ export async function updateIngreso(formData: FormData) {
     data: { amount, date: new Date(date), type, source, notes },
   });
 
+  await registrarActividad("Ingreso", "editar", `Ingreso editado: S/ ${amount.toFixed(0)}${source ? ` (${source})` : ""}`);
+
   revalidatePath("/ingresos");
 }
 
 export async function eliminarIngreso(formData: FormData) {
   const id = String(formData.get("id"));
-  await prisma.income.delete({ where: { id } });
+  const ingresoEliminado = await prisma.income.delete({ where: { id } });
+  await registrarActividad("Ingreso", "eliminar", `Ingreso de S/ ${ingresoEliminado.amount.toFixed(0)} eliminado`);
   revalidatePath("/ingresos");
 }
 
@@ -597,6 +666,7 @@ export async function upsertSavingsPlan(formData: FormData) {
     update: { totalAmount, colchonAmount, inversionAmount, metasAmount },
     create: { month, totalAmount, colchonAmount, inversionAmount, metasAmount },
   });
+  await registrarActividad("Ahorro", "editar", `Plan de ahorro de ${month} actualizado: S/ ${totalAmount.toFixed(0)}`);
   revalidatePath("/ahorro");
 }
 
@@ -609,6 +679,7 @@ export async function updateIngresoMensual(formData: FormData) {
     update: { monthlyIncome },
     create: { id: "singleton", monthlyIncome },
   });
+  await registrarActividad("Presupuesto", "editar", `Ingreso mensual actualizado a S/ ${monthlyIncome.toFixed(0)}`);
   revalidatePath("/presupuesto");
 }
 
@@ -623,6 +694,8 @@ export async function createCategoria(formData: FormData) {
   if (!name) throw new Error("Falta el nombre de la categoría");
 
   await prisma.category.create({ data: { name, icon, color, description } });
+
+  await registrarActividad("Categoría", "crear", `Categoría "${name}" creada`);
 
   revalidatePath("/ajustes");
   revalidatePath("/presupuesto");
@@ -664,6 +737,8 @@ export async function createMedioDePago(formData: FormData) {
     });
   }
 
+  await registrarActividad("Medio de pago", "crear", `Medio de pago "${name}" creado (${type})`);
+
   revalidatePath("/ajustes");
   revalidatePath("/cuentas");
   revalidatePath("/");
@@ -673,40 +748,46 @@ export async function createMedioDePago(formData: FormData) {
 
 export async function eliminarMeta(formData: FormData) {
   const id = String(formData.get("id"));
-  await prisma.savingsGoal.delete({ where: { id } });
+  const metaEliminada = await prisma.savingsGoal.delete({ where: { id } });
+  await registrarActividad("Meta", "eliminar", `Meta "${metaEliminada.name}" eliminada`);
   revalidatePath("/metas");
   revalidatePath("/debo");
 }
 
 export async function eliminarInversion(formData: FormData) {
   const id = String(formData.get("id"));
-  await prisma.investment.delete({ where: { id } });
+  const inversionEliminada = await prisma.investment.delete({ where: { id } });
+  await registrarActividad("Inversión", "eliminar", `Inversión "${inversionEliminada.platform}" eliminada`);
   revalidatePath("/inversiones");
 }
 
 export async function eliminarCuenta(formData: FormData) {
   const id = String(formData.get("id"));
-  await prisma.account.delete({ where: { id } });
+  const cuentaEliminada = await prisma.account.delete({ where: { id } });
+  await registrarActividad("Cuenta", "eliminar", `Cuenta "${cuentaEliminada.name}" eliminada`);
   revalidatePath("/cuentas");
   revalidatePath("/");
 }
 
 export async function eliminarDeuda(formData: FormData) {
   const id = String(formData.get("id"));
-  await prisma.debt.delete({ where: { id } });
+  const deudaEliminada = await prisma.debt.delete({ where: { id } });
+  await registrarActividad("Deuda", "eliminar", `Deuda${deudaEliminada.counterpartName ? ` con "${deudaEliminada.counterpartName}"` : ""} eliminada`);
   revalidatePath("/debo");
   revalidatePath("/");
 }
 
 export async function eliminarFijo(formData: FormData) {
   const id = String(formData.get("id"));
-  await prisma.fixedExpense.delete({ where: { id } });
+  const fijoEliminado = await prisma.fixedExpense.delete({ where: { id } });
+  await registrarActividad("Fijo", "eliminar", `Fijo "${fijoEliminado.name}" eliminado`);
   revalidatePath("/fijos");
 }
 
 export async function eliminarDeseo(formData: FormData) {
   const id = String(formData.get("id"));
-  await prisma.wishlistItem.delete({ where: { id } });
+  const deseoEliminado = await prisma.wishlistItem.delete({ where: { id } });
+  await registrarActividad("Deseo", "eliminar", `Deseo "${deseoEliminado.name}" eliminado`);
   revalidatePath("/deseos");
 }
 
@@ -721,6 +802,8 @@ export async function updateCategoria(formData: FormData) {
 
   await prisma.category.update({ where: { id }, data: { name, icon, color, description } });
 
+  await registrarActividad("Categoría", "editar", `Categoría "${name}" editada`);
+
   revalidatePath("/ajustes");
   revalidatePath("/presupuesto");
   revalidatePath("/gastos");
@@ -733,7 +816,8 @@ export async function eliminarCategoria(id: string): Promise<{ ok: boolean; erro
     return { ok: false, error: `No se puede eliminar: tiene ${enUso} gasto${enUso === 1 ? "" : "s"} asociado${enUso === 1 ? "" : "s"}.` };
   }
 
-  await prisma.category.delete({ where: { id } });
+  const categoriaEliminada = await prisma.category.delete({ where: { id } });
+  await registrarActividad("Categoría", "eliminar", `Categoría "${categoriaEliminada.name}" eliminada`);
 
   revalidatePath("/ajustes");
   revalidatePath("/presupuesto");
@@ -748,7 +832,13 @@ export async function eliminarCategoriasBulk(ids: string[]): Promise<{ ok: boole
   const idsEliminables = ids.filter((id) => !idsConGastos.has(id));
 
   if (idsEliminables.length > 0) {
+    const categoriasEliminadas = await prisma.category.findMany({ where: { id: { in: idsEliminables } }, select: { name: true } });
     await prisma.category.deleteMany({ where: { id: { in: idsEliminables } } });
+    await registrarActividad(
+      "Categoría",
+      "eliminar",
+      `${idsEliminables.length} categoría${idsEliminables.length === 1 ? "" : "s"} eliminada${idsEliminables.length === 1 ? "" : "s"}: ${categoriasEliminadas.map((c) => c.name).join(", ")}`
+    );
   }
 
   revalidatePath("/ajustes");
@@ -806,6 +896,8 @@ export async function updateMedioDePago(formData: FormData) {
     await prisma.account.update({ where: { id: cuentaVinculada.id }, data: { paymentMethodId: null } });
   }
 
+  await registrarActividad("Medio de pago", "editar", `Medio de pago "${name}" editado`);
+
   revalidatePath("/ajustes");
   revalidatePath("/cuentas");
   revalidatePath("/");
@@ -823,7 +915,8 @@ export async function eliminarMedioDePago(id: string): Promise<{ ok: boolean; er
 
   // desvincula la cuenta asociada (si la hay) para no perder el saldo ya registrado
   await prisma.account.updateMany({ where: { paymentMethodId: id }, data: { paymentMethodId: null } });
-  await prisma.paymentMethod.delete({ where: { id } });
+  const medioEliminado = await prisma.paymentMethod.delete({ where: { id } });
+  await registrarActividad("Medio de pago", "eliminar", `Medio de pago "${medioEliminado.name}" eliminado`);
 
   revalidatePath("/ajustes");
   revalidatePath("/cuentas");
@@ -842,8 +935,14 @@ export async function eliminarMediosDePagoBulk(ids: string[]): Promise<{ ok: boo
   const idsEliminables = ids.filter((id) => !idsEnUso.has(id));
 
   if (idsEliminables.length > 0) {
+    const mediosEliminados = await prisma.paymentMethod.findMany({ where: { id: { in: idsEliminables } }, select: { name: true } });
     await prisma.account.updateMany({ where: { paymentMethodId: { in: idsEliminables } }, data: { paymentMethodId: null } });
     await prisma.paymentMethod.deleteMany({ where: { id: { in: idsEliminables } } });
+    await registrarActividad(
+      "Medio de pago",
+      "eliminar",
+      `${idsEliminables.length} medio${idsEliminables.length === 1 ? "" : "s"} de pago eliminado${idsEliminables.length === 1 ? "" : "s"}: ${mediosEliminados.map((m) => m.name).join(", ")}`
+    );
   }
 
   revalidatePath("/ajustes");
