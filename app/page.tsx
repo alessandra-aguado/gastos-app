@@ -78,10 +78,9 @@ export default async function Home() {
             <span className="font-medium">{c.value}</span>
           </div>
         ))}
+        <PatrimonioCard />
         <RachaChip />
       </section>
-
-      <PatrimonioCard />
 
       <section className="bg-surface border border-border rounded-2xl p-6">
         <TendenciaGeneral meses={trend.map((m) => m.label)} gastoReal={trend.map((m) => m.total)} />

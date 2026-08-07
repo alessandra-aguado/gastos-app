@@ -4,16 +4,11 @@ export default function PatrimonioCard() {
   return (
     <Link
       href="/cuentas"
-      className="flex items-center justify-between bg-surface border border-border rounded-2xl px-4 py-3 hover:border-accent transition-colors max-w-sm"
+      className="flex items-center gap-2 bg-surface border border-border rounded-full px-4 py-2 text-sm hover:border-accent transition-colors"
     >
-      <div className="flex items-center gap-3">
-        <span className="text-lg">👛</span>
-        <div>
-          <p className="text-sm font-medium">Patrimonio: S/ 4,750</p>
-          <p className="text-xs text-muted">En 5 cuentas · actualizado hace 5 días</p>
-        </div>
-      </div>
-      <span className="text-muted">→</span>
+      <span>👛</span>
+      <span className="text-muted">Patrimonio</span>
+      <span className="font-medium">S/ 4,750</span>
     </Link>
   );
 }
