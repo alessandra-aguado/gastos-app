@@ -18,7 +18,7 @@ export default function TendenciaGeneral({
   gastoReal: number[];
 }) {
   const series: Serie[] = [
-    { key: "gasto", label: "Gasto", color: "#6d4aff", data: gastoReal, esReal: true },
+    { key: "gasto", label: "Gasto", color: "#111111", data: gastoReal, esReal: true },
     { key: "ahorro", label: "Ahorro", color: "#16a34a", data: [8200, 8900, 9600, 10300, 11000, 11720], esReal: false },
     { key: "inversion", label: "Inversión", color: "#5b6cff", data: [3200, 3500, 3800, 4000, 4300, 4570], esReal: false },
     { key: "deuda", label: "Deuda", color: "#f97316", data: [3400, 3300, 3150, 3050, 2950, 2890], esReal: false },
