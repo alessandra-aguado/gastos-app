@@ -106,6 +106,65 @@ export async function getBudgets(range?: DateRange) {
   return prisma.budget.findMany({ where: { month: { in: Array.from(meses) } } });
 }
 
+// Racha de días consecutivos con al menos un gasto registrado.
+export async function getRachaData() {
+  const txs = await prisma.transaction.findMany({ select: { date: true }, orderBy: { date: "asc" } });
+  const dias = new Set<string>();
+  for (const t of txs) {
+    const d = new Date(t.date);
+    dias.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+  }
+  const diasOrdenados = Array.from(dias).sort();
+
+  let mejorRacha = 0;
+  let corrida = 0;
+  let anterior: Date | null = null;
+  for (const key of diasOrdenados) {
+    const [y, m, d] = key.split("-").map(Number);
+    const fecha = new Date(y, m - 1, d);
+    if (anterior) {
+      const diff = Math.round((fecha.getTime() - anterior.getTime()) / 86400000);
+      corrida = diff === 1 ? corrida + 1 : 1;
+    } else {
+      corrida = 1;
+    }
+    mejorRacha = Math.max(mejorRacha, corrida);
+    anterior = fecha;
+  }
+
+  const hoy = new Date();
+  const hoyKey = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
+  const cursor = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  // si hoy aún no tiene gasto registrado, no rompemos la racha todavía: contamos desde ayer.
+  if (!dias.has(hoyKey)) cursor.setDate(cursor.getDate() - 1);
+  let rachaActual = 0;
+  while (true) {
+    const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
+    if (!dias.has(key)) break;
+    rachaActual += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return { diasConGasto: diasOrdenados, rachaActual, mejorRacha };
+}
+
+// Días del mes (1-31) en que hay algún fijo o cuota de tarjeta por vencer, para marcarlos en el calendario de racha.
+export async function getDiasVencimiento() {
+  const [fijos, deudas] = await Promise.all([
+    prisma.fixedExpense.findMany({ select: { dueMode: true, dueDay: true, rangeEnd: true } }),
+    prisma.debt.findMany({ where: { status: "activa", type: "tarjeta_credito" }, select: { dueDay: true } }),
+  ]);
+  const dias = new Set<number>();
+  for (const f of fijos) {
+    const day = f.dueMode === "unica" ? f.dueDay : f.rangeEnd;
+    if (day) dias.add(day);
+  }
+  for (const d of deudas) {
+    if (d.dueDay) dias.add(d.dueDay);
+  }
+  return Array.from(dias).sort((a, b) => a - b);
+}
+
 // Total gastado por mes, los últimos 6 meses (incluye el actual).
 export async function getMonthlyTrend() {
   const now = new Date();

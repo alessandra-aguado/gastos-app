@@ -17,6 +17,8 @@ import {
   getMetas,
   getDeudas,
   getCuentas,
+  getRachaData,
+  getDiasVencimiento,
 } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +42,8 @@ export default async function Home({
   const metas = await getMetas();
   const deudas = await getDeudas();
   const cuentas = await getCuentas();
+  const racha = await getRachaData();
+  const diasVencimiento = await getDiasVencimiento();
 
   const totalBudget = budgets.reduce((s, b) => s + b.amountLimit, 0);
   const budgetPct = totalBudget > 0 ? Math.round((summary.total / totalBudget) * 100) : null;
@@ -74,7 +78,7 @@ export default async function Home({
         </Link>
       </header>
 
-      <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <section className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
           <p className="text-xs text-muted">Gastado</p>
           <p className="text-3xl font-bold mt-1">S/ {summary.total.toFixed(0)}</p>
@@ -91,6 +95,12 @@ export default async function Home({
           <p className="text-xs text-muted">Pendientes por clasificar</p>
           <p className="text-3xl font-bold mt-1 text-positive">{summary.pending}</p>
         </div>
+        <RachaChip
+          rachaActual={racha.rachaActual}
+          mejorRacha={racha.mejorRacha}
+          diasConGasto={racha.diasConGasto}
+          diasVencimiento={diasVencimiento}
+        />
       </section>
 
       <section className="flex flex-wrap items-start gap-3">
@@ -102,7 +112,6 @@ export default async function Home({
           </div>
         ))}
         <PatrimonioCard total={patrimonio} />
-        <RachaChip />
       </section>
 
       <section className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
