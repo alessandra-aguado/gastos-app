@@ -1,4 +1,5 @@
 import { getTopCategories, getSpendByTopCategory, getBudgets } from "@/lib/queries";
+import { PieChart } from "lucide-react";
 import CategoryIcon from "../components/CategoryIcon";
 import { setBudget } from "@/lib/actions";
 import PresupuestoTabs from "../components/PresupuestoTabs";
@@ -14,7 +15,7 @@ export default async function PresupuestoPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-semibold">📊 Presupuesto</h1>
+      <h1 className="text-2xl font-semibold flex items-center gap-2"><PieChart size={22} strokeWidth={1.75} />Presupuesto</h1>
       <p className="text-muted text-sm mt-2">
         Define un límite mensual por categoría, o revisa cuánto tienes disponible este mes.
       </p>

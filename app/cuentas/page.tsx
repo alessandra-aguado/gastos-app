@@ -1,4 +1,5 @@
 import { getCuentas } from "@/lib/queries";
+import { Wallet } from "lucide-react";
 import CuentaRow from "./CuentaRow";
 import NuevaCuentaModal from "./NuevaCuentaModal";
 
@@ -18,7 +19,7 @@ export default async function CuentasPage() {
     <div className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h1 className="text-2xl font-semibold">👛 Cuentas</h1>
+          <h1 className="text-2xl font-semibold flex items-center gap-2"><Wallet size={22} strokeWidth={1.75} />Cuentas</h1>
           <p className="text-muted text-sm mt-1">S/ {total.toLocaleString("es-PE")} en total · sin contar deudas</p>
         </div>
         <NuevaCuentaModal />

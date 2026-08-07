@@ -1,4 +1,5 @@
 "use client";
+import { Sparkles } from "lucide-react";
 
 import { useState } from "react";
 
@@ -22,7 +23,7 @@ export default function AsistenciaIaPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col" style={{ minHeight: "calc(100vh - 4rem)" }}>
-      <h1 className="text-2xl font-semibold">🤖 Asistencia IA</h1>
+      <h1 className="text-2xl font-semibold flex items-center gap-2"><Sparkles size={22} strokeWidth={1.75} />Asistencia IA</h1>
       <p className="text-muted text-sm mt-1 mb-6">Pregúntale sobre tu dinero. Solo sabe de lo que ya registraste.</p>
 
       <div className="flex-1 space-y-3 mb-4">

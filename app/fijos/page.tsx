@@ -1,4 +1,5 @@
 import { getFijos, currentMonthKey, getTopCategories, getPaymentMethods } from "@/lib/queries";
+import { Repeat } from "lucide-react";
 import FijoRow from "./FijoRow";
 import NuevoFijoModal from "./NuevoFijoModal";
 
@@ -15,7 +16,7 @@ export default async function FijosPage() {
     <div className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h1 className="text-2xl font-semibold">🔁 Fijos</h1>
+          <h1 className="text-2xl font-semibold flex items-center gap-2"><Repeat size={22} strokeWidth={1.75} />Fijos</h1>
           <p className="text-muted text-sm mt-1">S/ {total.toFixed(0)} comprometidos este mes · {pagados} de {fijos.length} pagados</p>
         </div>
         <NuevoFijoModal categorias={categorias} medios={medios} />

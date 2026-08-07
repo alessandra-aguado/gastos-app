@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
 import { getTopCategories, getSpendByTopCategory, listTransactionsByCategory, getMonthlyTrend } from "@/lib/queries";
 import CategoryIcon from "../components/CategoryIcon";
 import { colorForIndex } from "@/lib/categoryColors";
@@ -79,7 +80,7 @@ export default async function GastosPage({
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-semibold">🛒 Gastos</h1>
+      <h1 className="text-2xl font-semibold flex items-center gap-2"><ShoppingCart size={22} strokeWidth={1.75} />Gastos</h1>
       <p className="text-muted text-sm mt-2">Detalle de tus gastos por categoría este mes.</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">

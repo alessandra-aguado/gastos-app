@@ -1,4 +1,5 @@
 import { getInversiones } from "@/lib/queries";
+import { TrendingUp } from "lucide-react";
 import NuevoAporteForm from "./NuevoAporteForm";
 import ActualizarValorForm from "./ActualizarValorForm";
 import DeleteButton from "../components/DeleteButton";
@@ -26,7 +27,7 @@ export default async function InversionesPage() {
     <div className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h1 className="text-2xl font-semibold">📈 Inversiones</h1>
+          <h1 className="text-2xl font-semibold flex items-center gap-2"><TrendingUp size={22} strokeWidth={1.75} />Inversiones</h1>
           <p className="text-muted text-sm mt-1">
             S/ {invertido.toFixed(0)} invertido · valor actual S/ {actual.toFixed(0)} · {rentabilidad >= 0 ? "+" : ""}{rentabilidad.toFixed(1)}%
           </p>

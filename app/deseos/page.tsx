@@ -1,4 +1,5 @@
 import { getDeseos, getTopCategories } from "@/lib/queries";
+import { Gift } from "lucide-react";
 import DeseoRow from "./DeseoRow";
 import NuevoDeseoModal from "./NuevoDeseoModal";
 
@@ -12,7 +13,7 @@ export default async function DeseosPage() {
     <div className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h1 className="text-2xl font-semibold">✨ Deseos</h1>
+          <h1 className="text-2xl font-semibold flex items-center gap-2"><Gift size={22} strokeWidth={1.75} />Deseos</h1>
           <p className="text-muted text-sm mt-1">{deseos.length} deseo{deseos.length === 1 ? "" : "s"} · S/ {total.toLocaleString("es-PE")} en total</p>
         </div>
         <NuevoDeseoModal categorias={categorias} />

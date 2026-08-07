@@ -1,4 +1,5 @@
 import { getMetas } from "@/lib/queries";
+import { Target } from "lucide-react";
 import MetaCard from "./MetaCard";
 import NuevaMetaModal from "./NuevaMetaModal";
 
@@ -12,7 +13,7 @@ export default async function MetasPage() {
     <div className="max-w-5xl mx-auto px-6 py-8">
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h1 className="text-2xl font-semibold">🎯 Metas</h1>
+          <h1 className="text-2xl font-semibold flex items-center gap-2"><Target size={22} strokeWidth={1.75} />Metas</h1>
           <p className="text-muted text-sm mt-1">S/ {total.toLocaleString("es-PE")} ahorrados en {metas.length} metas</p>
         </div>
         <NuevaMetaModal />
