@@ -27,7 +27,15 @@ export default async function PresupuestoPage() {
   const budgetMap: Record<string, number> = {};
   for (const b of budgets) budgetMap[b.categoryId] = b.amountLimit;
 
-  const totalFijos = fijos.reduce((s, f) => s + f.amount, 0);
+  // Fijos pagados con tarjeta de crédito no salen de tu bolsillo este mes: se suman
+  // a la deuda de esa tarjeta, y es la cuota de esa tarjeta la que sí te toca pagar.
+  // Por eso no se restan del disponible junto con los fijos de débito/efectivo — eso
+  // sería contarlos dos veces (una como Fijo, otra escondidos en la cuota de la tarjeta).
+  const fijosConTarjeta = fijos.filter((f) => f.paymentMethod?.type === "credito");
+  const fijosSinTarjeta = fijos.filter((f) => f.paymentMethod?.type !== "credito");
+  const totalFijos = fijosSinTarjeta.reduce((s, f) => s + f.amount, 0);
+  const totalFijosTarjeta = fijosConTarjeta.reduce((s, f) => s + f.amount, 0);
+
   const cuotasTarjetas = deudas
     .filter((d) => d.type === "tarjeta_credito" && d.status !== "pagada")
     .reduce((s, d) => s + (d.minPayment || 0), 0);
@@ -124,49 +132,8 @@ export default async function PresupuestoPage() {
         })}
       </div>
         }
-        proyeccion={
+        planificados={
           <div className="space-y-3">
-            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
-              <IngresoMensualField monthlyIncome={settings?.monthlyIncome ?? null} />
-              <div className="flex justify-between items-center text-sm text-muted py-1.5">
-                <span>
-                  Fijos <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
-                </span>
-                <span className="text-foreground">− S/ {formatMonto(totalFijos, decimales)}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm text-muted py-1.5">
-                <span>
-                  Deuda, cuotas de tarjetas <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
-                </span>
-                <span className="text-foreground">− S/ {formatMonto(cuotasTarjetas, decimales)}</span>
-              </div>
-              <div className="flex justify-between items-center pt-2.5 mt-1.5 border-t border-border">
-                <span className="text-sm text-muted">Disponible antes de planes</span>
-                <span className="text-base font-medium">S/ {formatMonto(disponibleAntesDePlanes, decimales)}</span>
-              </div>
-              {!settings?.monthlyIncome && (
-                <p className="text-xs text-muted mt-2.5">Define tu ingreso mensual arriba para ver el disponible real.</p>
-              )}
-            </div>
-
-            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
-              <div className="flex justify-between items-center text-sm text-muted py-1.5">
-                <span>
-                  Gastos variables planificados <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
-                </span>
-                <span className="text-foreground">− S/ {formatMonto(totalPlanVariable, decimales)}</span>
-              </div>
-              <div className="flex justify-between items-center pt-2.5 mt-1.5 border-t border-border">
-                <span className="text-sm text-muted">Disponible después de planes</span>
-                <span className="text-base font-medium">S/ {formatMonto(disponibleDespuesDePlanes, decimales)}</span>
-              </div>
-              {totalPlanVariable === 0 && (
-                <p className="text-xs text-muted mt-2.5">
-                  Define límites por categoría en la pestaña &quot;Límites&quot; para planificar tus gastos variables.
-                </p>
-              )}
-            </div>
-
             <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
               <div className="flex justify-between items-center mb-3">
                 <p className="text-sm font-medium">
@@ -216,6 +183,56 @@ export default async function PresupuestoPage() {
                 </div>
               </div>
             )}
+          </div>
+        }
+        proyeccion={
+          <div className="space-y-3">
+            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
+              <IngresoMensualField monthlyIncome={settings?.monthlyIncome ?? null} />
+              <div className="flex justify-between items-center text-sm text-muted py-1.5">
+                <span>
+                  Fijos <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
+                </span>
+                <span className="text-foreground">− S/ {formatMonto(totalFijos, decimales)}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm text-muted py-1.5">
+                <span>
+                  Deuda, cuotas de tarjetas <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
+                </span>
+                <span className="text-foreground">− S/ {formatMonto(cuotasTarjetas, decimales)}</span>
+              </div>
+              {totalFijosTarjeta > 0 && (
+                <div className="flex justify-between items-center text-xs text-muted py-1">
+                  <span>Fijos con tarjeta (ya en tu deuda, no se resta aparte)</span>
+                  <span>S/ {formatMonto(totalFijosTarjeta, decimales)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2.5 mt-1.5 border-t border-border">
+                <span className="text-sm text-muted">Disponible antes de planes</span>
+                <span className="text-base font-medium">S/ {formatMonto(disponibleAntesDePlanes, decimales)}</span>
+              </div>
+              {!settings?.monthlyIncome && (
+                <p className="text-xs text-muted mt-2.5">Define tu ingreso mensual arriba para ver el disponible real.</p>
+              )}
+            </div>
+
+            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
+              <div className="flex justify-between items-center text-sm text-muted py-1.5">
+                <span>
+                  Gastos variables planificados <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
+                </span>
+                <span className="text-foreground">− S/ {formatMonto(totalPlanVariable, decimales)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-2.5 mt-1.5 border-t border-border">
+                <span className="text-sm text-muted">Disponible después de planes</span>
+                <span className="text-base font-medium">S/ {formatMonto(disponibleDespuesDePlanes, decimales)}</span>
+              </div>
+              {totalPlanVariable === 0 && (
+                <p className="text-xs text-muted mt-2.5">
+                  Define límites por categoría en la pestaña &quot;Límites&quot; para planificar tus gastos variables.
+                </p>
+              )}
+            </div>
 
             <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
               <p className="text-sm font-medium mb-3">Planificado vs. real este mes</p>

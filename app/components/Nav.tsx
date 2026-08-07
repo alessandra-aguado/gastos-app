@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   CircleDollarSign,
   PieChart,
+  Calculator,
   PiggyBank,
   Target,
   TrendingUp,
@@ -25,6 +26,7 @@ const topSections: { href: string; icon: LucideIcon; label: string }[] = [
   { href: "/gastos", icon: ShoppingCart, label: "Gastos" },
   { href: "/ingresos", icon: CircleDollarSign, label: "Ingresos" },
   { href: "/presupuesto", icon: PieChart, label: "Presupuesto" },
+  { href: "/simulador", icon: Calculator, label: "Simulador" },
 ];
 
 const ahorroGroup = {

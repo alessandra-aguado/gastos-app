@@ -977,6 +977,69 @@ export async function eliminarFundMovement(formData: FormData) {
   revalidatePath(`/cuentas/${mov.accountId}`);
 }
 
+// ================= Simulador (varios meses, hipotético) =================
+
+export async function createSimulationItem(formData: FormData) {
+  const month = String(formData.get("month") || "").trim();
+  const type = String(formData.get("type") || "gasto");
+  const description = String(formData.get("description") || "").trim();
+  const amount = parseFloat(String(formData.get("amount")));
+  const categoryId = String(formData.get("categoryId") || "").trim();
+  const paymentMethodId = String(formData.get("paymentMethodId") || "").trim();
+  const debtId = String(formData.get("debtId") || "").trim();
+
+  if (!month || !description || !amount || !["ingreso", "gasto", "pago_deuda"].includes(type)) {
+    throw new Error("Faltan campos requeridos");
+  }
+  if (type === "pago_deuda" && !debtId) throw new Error("Elige a qué deuda aplica el pago extra");
+
+  await prisma.simulationItem.create({
+    data: {
+      month,
+      type,
+      description,
+      amount,
+      categoryId: categoryId || null,
+      paymentMethodId: paymentMethodId || null,
+      debtId: debtId || null,
+    },
+  });
+
+  revalidatePath("/simulador");
+}
+
+export async function updateSimulationItem(formData: FormData) {
+  const id = String(formData.get("id"));
+  const type = String(formData.get("type") || "gasto");
+  const description = String(formData.get("description") || "").trim();
+  const amount = parseFloat(String(formData.get("amount")));
+  const categoryId = String(formData.get("categoryId") || "").trim();
+  const paymentMethodId = String(formData.get("paymentMethodId") || "").trim();
+  const debtId = String(formData.get("debtId") || "").trim();
+
+  if (!id || !description || !amount) throw new Error("Faltan campos requeridos");
+
+  await prisma.simulationItem.update({
+    where: { id },
+    data: {
+      type,
+      description,
+      amount,
+      categoryId: categoryId || null,
+      paymentMethodId: paymentMethodId || null,
+      debtId: debtId || null,
+    },
+  });
+
+  revalidatePath("/simulador");
+}
+
+export async function eliminarSimulationItem(formData: FormData) {
+  const id = String(formData.get("id"));
+  await prisma.simulationItem.delete({ where: { id } });
+  revalidatePath("/simulador");
+}
+
 // ================= Gastos planificados (proyección) =================
 
 export async function createPlannedExpense(formData: FormData) {

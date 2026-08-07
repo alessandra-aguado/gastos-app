@@ -151,6 +151,24 @@ export async function getGastoDelMesPorMedio(range?: DateRange) {
   return map;
 }
 
+// ---------- Simulador (varios meses, 100% hipotético) ----------
+export function nextMonthKeys(n: number, base = new Date()) {
+  const keys: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
+    keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  }
+  return keys;
+}
+
+export async function getSimulationItems(months: string[]) {
+  return prisma.simulationItem.findMany({
+    where: { month: { in: months } },
+    include: { category: true, paymentMethod: true, debt: true },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
 // Racha de días consecutivos con al menos un gasto registrado.
 export async function getRachaData() {
   const txs = await prisma.transaction.findMany({ select: { date: true }, orderBy: { date: "asc" } });

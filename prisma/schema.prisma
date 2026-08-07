@@ -32,6 +32,7 @@ model Category {
   fixedExpenses    FixedExpense[]
   wishlistItems    WishlistItem[]
   plannedExpenses  PlannedExpense[]
+  simulationItems  SimulationItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -49,6 +50,7 @@ model PaymentMethod {
   account       Account?
   debt          Debt?
   plannedExpenses PlannedExpense[]
+  simulationItems SimulationItem[]
   createdAt     DateTime @default(now())
 }
 
@@ -182,6 +184,7 @@ model Debt {
   paymentMethodId String?        @unique // vincula esta deuda a la tarjeta (PaymentMethod tipo credito) para sincronizar gastos automaticamente
   paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   payments        DebtPayment[]
+  simulationItems SimulationItem[]
   createdAt       DateTime @default(now())
 }
 
@@ -247,6 +250,24 @@ model AccountCheckIn {
   date      DateTime @default(now())
 
   @@unique([accountId, month])
+}
+
+// Ítem 100% hipotético para el Simulador de varios meses: nunca se convierte en un
+// Gasto, Deuda ni Fijo real. Vive aparte para poder "jugar" con escenarios futuros
+// (ingresos extra, gastos que evalúas, pagos extra a una tarjeta) sin tocar tus datos.
+model SimulationItem {
+  id              String   @id @default(cuid())
+  month           String   // "2026-09"
+  type            String   // ingreso | gasto | pago_deuda
+  description     String
+  amount          Float
+  categoryId      String?
+  category        Category?      @relation(fields: [categoryId], references: [id])
+  paymentMethodId String?
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  debtId          String?
+  debt            Debt?          @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
 }
 
 // Gasto (o préstamo dado) que aún no sucede pero que Ale quiere proyectar
