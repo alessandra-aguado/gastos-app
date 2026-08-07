@@ -18,7 +18,6 @@ import {
   getDeudas,
   getCuentas,
   getRachaData,
-  getDiasVencimiento,
 } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +42,6 @@ export default async function Home({
   const deudas = await getDeudas();
   const cuentas = await getCuentas();
   const racha = await getRachaData();
-  const diasVencimiento = await getDiasVencimiento();
 
   const totalBudget = budgets.reduce((s, b) => s + b.amountLimit, 0);
   const budgetPct = totalBudget > 0 ? Math.round((summary.total / totalBudget) * 100) : null;
@@ -95,12 +93,7 @@ export default async function Home({
           <p className="text-xs text-muted">Pendientes por clasificar</p>
           <p className="text-3xl font-bold mt-1 text-positive">{summary.pending}</p>
         </div>
-        <RachaChip
-          rachaActual={racha.rachaActual}
-          mejorRacha={racha.mejorRacha}
-          diasConGasto={racha.diasConGasto}
-          diasVencimiento={diasVencimiento}
-        />
+        <RachaChip rachaActual={racha.rachaActual} />
       </section>
 
       <section className="flex flex-wrap items-start gap-3">

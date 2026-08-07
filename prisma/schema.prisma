@@ -46,6 +46,7 @@ model PaymentMethod {
   transactions  Transaction[]
   fixedExpenses FixedExpense[]
   account       Account?
+  debt          Debt?
   createdAt     DateTime @default(now())
 }
 
@@ -176,6 +177,8 @@ model Debt {
   startDate       DateTime? // desde cuando existe la deuda
   status          String   @default("activa") // activa | pagada
   dueDate         DateTime?
+  paymentMethodId String?        @unique // vincula esta deuda a la tarjeta (PaymentMethod tipo credito) para sincronizar gastos automaticamente
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   payments        DebtPayment[]
   createdAt       DateTime @default(now())
 }

@@ -4,6 +4,21 @@ import { prisma, ensureSeeded } from "./db";
 import { revalidatePath } from "next/cache";
 import { currentMonthKey } from "./queries";
 
+// Si el gasto se paga con una tarjeta de credito vinculada a una Deuda, ese
+// gasto tambien incrementa el saldo que debes en esa tarjeta.
+async function sincronizarDeudaTarjeta(paymentMethodId: string | null, monto: number) {
+  if (!paymentMethodId || !monto) return;
+  const medio = await prisma.paymentMethod.findUnique({ where: { id: paymentMethodId } });
+  if (!medio || medio.type !== "credito") return;
+  const deuda = await prisma.debt.findUnique({ where: { paymentMethodId } });
+  if (!deuda) return;
+  await prisma.debt.update({
+    where: { id: deuda.id },
+    data: { balance: deuda.balance + monto, status: "activa" },
+  });
+  revalidatePath("/debo");
+}
+
 export async function createTransaction(formData: FormData) {
   await ensureSeeded();
 
@@ -30,6 +45,8 @@ export async function createTransaction(formData: FormData) {
       paymentMethodId,
     },
   });
+
+  await sincronizarDeudaTarjeta(paymentMethodId, amount);
 
   revalidatePath("/");
   revalidatePath("/gastos");
@@ -258,6 +275,13 @@ export async function createDeuda(formData: FormData) {
 
   const startDateRaw = String(formData.get("startDate") || "");
   const interestRateRaw = formData.get("interestRate");
+  const paymentMethodIdRaw = String(formData.get("paymentMethodId") || "").trim() || null;
+  const paymentMethodId = type === "tarjeta_credito" ? paymentMethodIdRaw : null;
+
+  if (paymentMethodId) {
+    const yaVinculada = await prisma.debt.findUnique({ where: { paymentMethodId } });
+    if (yaVinculada) throw new Error("Ese medio de pago ya está vinculado a otra deuda.");
+  }
 
   await prisma.debt.create({
     data: {
@@ -271,11 +295,13 @@ export async function createDeuda(formData: FormData) {
       dueDay: dueDayRaw ? parseInt(String(dueDayRaw), 10) : null,
       startDate: startDateRaw ? new Date(startDateRaw) : new Date(),
       interestRate: type === "prestamo_personal" && interestRateRaw ? parseFloat(String(interestRateRaw)) : null,
+      paymentMethodId,
     },
   });
 
   revalidatePath("/debo");
   revalidatePath("/");
+  revalidatePath("/cuentas");
 }
 
 export async function updateDeuda(formData: FormData) {
@@ -293,6 +319,14 @@ export async function updateDeuda(formData: FormData) {
   const deuda = await prisma.debt.findUnique({ where: { id } });
   if (!deuda) throw new Error("Deuda no encontrada");
 
+  const paymentMethodIdRaw = String(formData.get("paymentMethodId") || "").trim() || null;
+  const paymentMethodId = deuda.type === "tarjeta_credito" ? paymentMethodIdRaw : deuda.paymentMethodId;
+
+  if (paymentMethodId && paymentMethodId !== deuda.paymentMethodId) {
+    const yaVinculada = await prisma.debt.findUnique({ where: { paymentMethodId } });
+    if (yaVinculada && yaVinculada.id !== id) throw new Error("Ese medio de pago ya está vinculado a otra deuda.");
+  }
+
   await prisma.debt.update({
     where: { id },
     data: {
@@ -303,11 +337,13 @@ export async function updateDeuda(formData: FormData) {
       dueDay: dueDayRaw ? parseInt(String(dueDayRaw), 10) : deuda.dueDay,
       startDate: startDateRaw ? new Date(startDateRaw) : deuda.startDate,
       interestRate: deuda.type === "prestamo_personal" && interestRateRaw ? parseFloat(String(interestRateRaw)) : deuda.interestRate,
+      paymentMethodId,
     },
   });
 
   revalidatePath("/debo");
   revalidatePath("/");
+  revalidatePath("/cuentas");
 }
 
 export async function registrarPagoDeuda(formData: FormData) {
@@ -427,6 +463,7 @@ export async function marcarFijoPagado(formData: FormData) {
   });
 
   await prisma.fixedExpense.update({ where: { id }, data: { lastPaidMonth: month } });
+  await sincronizarDeudaTarjeta(fijo.paymentMethodId, fijo.amount);
 
   revalidatePath("/fijos");
   revalidatePath("/");

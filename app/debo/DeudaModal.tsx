@@ -14,7 +14,10 @@ type Deuda = {
   dueDay: number | null;
   interestRate: number | null;
   startDate: Date | null;
+  paymentMethodId: string | null;
 };
+
+type Medio = { id: string; name: string };
 
 function toDateInput(d: Date | null) {
   if (!d) return "";
@@ -22,7 +25,7 @@ function toDateInput(d: Date | null) {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
 }
 
-export default function DeudaModal({ deuda, onClose }: { deuda?: Deuda; onClose?: () => void }) {
+export default function DeudaModal({ deuda, medios, onClose }: { deuda?: Deuda; medios?: Medio[]; onClose?: () => void }) {
   const esEdicion = !!deuda;
   const [abierto, setAbierto] = useState(esEdicion);
   const [tipo, setTipo] = useState<"tarjeta_credito" | "prestamo_personal">(
@@ -111,6 +114,15 @@ export default function DeudaModal({ deuda, onClose }: { deuda?: Deuda; onClose?
                 </div>
                 <label className="text-xs text-muted block mb-1">Día de vencimiento</label>
                 <input name="dueDay" type="number" defaultValue={deuda?.dueDay ?? undefined} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" placeholder="20" />
+
+                <label className="text-xs text-muted block mb-1">Medio de pago vinculado (opcional)</label>
+                <select name="paymentMethodId" defaultValue={deuda?.paymentMethodId || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-1">
+                  <option value="">Sin vincular</option>
+                  {(medios || []).map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted mb-3">Si la vinculas, los gastos que registres con esta tarjeta van a sumar automáticamente al saldo de esta deuda.</p>
               </>
             )}
 

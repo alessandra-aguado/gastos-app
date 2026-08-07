@@ -1,4 +1,4 @@
-import { getDeudas, getMetas } from "@/lib/queries";
+import { getDeudas, getMetas, getPaymentMethods } from "@/lib/queries";
 import { CreditCard, Shield } from "lucide-react";
 import { TarjetaCredito, PrestamoPersonal } from "./DeudaCard";
 import DeudaModal from "./DeudaModal";
@@ -6,7 +6,8 @@ import DeudaModal from "./DeudaModal";
 export const dynamic = "force-dynamic";
 
 export default async function DeboPage() {
-  const [deudas, metas] = await Promise.all([getDeudas(), getMetas()]);
+  const [deudas, metas, medios] = await Promise.all([getDeudas(), getMetas(), getPaymentMethods()]);
+  const mediosCredito = medios.filter((m) => m.type === "credito");
 
   const activas = deudas.filter((d) => d.status !== "pagada");
   const tarjetas = activas.filter((d) => d.type === "tarjeta_credito");
@@ -26,7 +27,7 @@ export default async function DeboPage() {
           <h1 className="text-2xl font-semibold flex items-center gap-2"><CreditCard size={22} strokeWidth={1.75} />Deuda</h1>
           <p className="text-muted text-sm mt-1">Debes S/ {debes.toLocaleString("es-PE")} · te deben S/ {meDeben.toLocaleString("es-PE")}</p>
         </div>
-        <DeudaModal />
+        <DeudaModal medios={mediosCredito} />
       </div>
 
       <p className="text-xs text-muted mb-2">Tarjetas de crédito</p>
@@ -34,7 +35,7 @@ export default async function DeboPage() {
         {tarjetas.length === 0 ? (
           <div className="border border-dashed border-border rounded-xl p-6 text-center text-muted text-xs">Sin tarjetas registradas.</div>
         ) : (
-          tarjetas.map((d) => <TarjetaCredito key={d.id} deuda={d} />)
+          tarjetas.map((d) => <TarjetaCredito key={d.id} deuda={d} medios={mediosCredito} />)
         )}
       </div>
 

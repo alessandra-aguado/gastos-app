@@ -16,7 +16,10 @@ type Deuda = {
   dueDay: number | null;
   interestRate: number | null;
   startDate: Date | null;
+  paymentMethodId: string | null;
 };
+
+type Medio = { id: string; name: string };
 
 function formatFecha(d: Date | null) {
   if (!d) return null;
@@ -30,10 +33,11 @@ function borrarConConfirmacion(id: string, nombre: string) {
   void eliminarDeuda(fd);
 }
 
-export function TarjetaCredito({ deuda }: { deuda: Deuda }) {
+export function TarjetaCredito({ deuda, medios }: { deuda: Deuda; medios?: Medio[] }) {
   const [pagando, setPagando] = useState(false);
   const [editando, setEditando] = useState(false);
   const pct = deuda.creditLimit ? Math.min(100, Math.round((deuda.balance / deuda.creditLimit) * 100)) : 0;
+  const medioVinculado = medios?.find((m) => m.id === deuda.paymentMethodId);
 
   return (
     <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4">
@@ -45,6 +49,11 @@ export function TarjetaCredito({ deuda }: { deuda: Deuda }) {
             {deuda.dueDay ? ` · vence el ${deuda.dueDay}` : ""}
             {formatFecha(deuda.startDate) ? ` · desde ${formatFecha(deuda.startDate)}` : ""}
           </p>
+          {medioVinculado ? (
+            <p className="text-[11px] text-positive mt-0.5">Sincronizada con gastos en &quot;{medioVinculado.name}&quot;</p>
+          ) : (
+            <p className="text-[11px] text-muted mt-0.5">Sin vincular a un medio de pago</p>
+          )}
         </div>
         {!pagando && (
           <div className="flex items-center gap-1.5">
@@ -80,7 +89,7 @@ export function TarjetaCredito({ deuda }: { deuda: Deuda }) {
           </div>
         </>
       )}
-      {editando && <DeudaModal deuda={deuda} onClose={() => setEditando(false)} />}
+      {editando && <DeudaModal deuda={deuda} medios={medios} onClose={() => setEditando(false)} />}
     </div>
   );
 }
