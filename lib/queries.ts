@@ -29,6 +29,11 @@ export async function getSettings() {
   return prisma.settings.findUnique({ where: { id: "singleton" } });
 }
 
+// ---------- Ingresos ----------
+export async function getIngresos() {
+  return prisma.income.findMany({ orderBy: { date: "desc" } });
+}
+
 export type DateRange = { start: Date; end: Date };
 
 export async function getMonthSummary(range?: DateRange) {

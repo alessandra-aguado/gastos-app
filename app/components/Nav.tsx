@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   ShoppingCart,
+  CircleDollarSign,
   PieChart,
   Target,
   TrendingUp,
@@ -21,6 +22,7 @@ import {
 const sections: { href: string; icon: LucideIcon; label: string }[] = [
   { href: "/", icon: Home, label: "Inicio" },
   { href: "/gastos", icon: ShoppingCart, label: "Gastos" },
+  { href: "/ingresos", icon: CircleDollarSign, label: "Ingresos" },
   { href: "/presupuesto", icon: PieChart, label: "Presupuesto" },
   { href: "/metas", icon: Target, label: "Metas" },
   { href: "/inversiones", icon: TrendingUp, label: "Inversiones" },

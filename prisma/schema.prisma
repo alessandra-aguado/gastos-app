@@ -218,6 +218,16 @@ model Account {
   createdAt       DateTime  @default(now())
 }
 
+model Income {
+  id        String   @id @default(cuid())
+  amount    Float
+  date      DateTime
+  type      String   // fijo | variable
+  source    String?  // "Sueldo", "Cobro de deuda", "Regalo"...
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
 model Settings {
   id            String  @id @default("singleton")
   monthlyIncome Float?

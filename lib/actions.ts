@@ -535,6 +535,48 @@ export async function marcarDeseoComprado(formData: FormData) {
   revalidatePath("/deseos");
 }
 
+// ================= Ingresos =================
+
+export async function createIngreso(formData: FormData) {
+  const amount = parseFloat(String(formData.get("amount") || "0"));
+  const date = String(formData.get("date") || "");
+  const type = String(formData.get("type") || "variable");
+  const source = String(formData.get("source") || "").trim() || null;
+  const notes = String(formData.get("notes") || "").trim() || null;
+
+  if (!amount || !date) throw new Error("Faltan datos del ingreso");
+
+  await prisma.income.create({
+    data: { amount, date: new Date(date), type, source, notes },
+  });
+
+  revalidatePath("/ingresos");
+}
+
+export async function updateIngreso(formData: FormData) {
+  const id = String(formData.get("id"));
+  const amount = parseFloat(String(formData.get("amount") || "0"));
+  const date = String(formData.get("date") || "");
+  const type = String(formData.get("type") || "variable");
+  const source = String(formData.get("source") || "").trim() || null;
+  const notes = String(formData.get("notes") || "").trim() || null;
+
+  if (!id || !amount || !date) throw new Error("Faltan datos del ingreso");
+
+  await prisma.income.update({
+    where: { id },
+    data: { amount, date: new Date(date), type, source, notes },
+  });
+
+  revalidatePath("/ingresos");
+}
+
+export async function eliminarIngreso(formData: FormData) {
+  const id = String(formData.get("id"));
+  await prisma.income.delete({ where: { id } });
+  revalidatePath("/ingresos");
+}
+
 // ================= Ajustes generales =================
 
 export async function updateIngresoMensual(formData: FormData) {
