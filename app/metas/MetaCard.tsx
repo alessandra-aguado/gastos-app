@@ -76,7 +76,7 @@ export default function MetaCard({ meta }: { meta: Meta }) {
           <input
             name="amount"
             type="number"
-            step="1"
+            step="any"
             autoFocus
             placeholder="Monto"
             className="flex-1 border border-border rounded-lg px-2 py-1.5 bg-background text-xs"

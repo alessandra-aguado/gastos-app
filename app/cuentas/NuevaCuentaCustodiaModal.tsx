@@ -37,7 +37,7 @@ export default function NuevaCuentaCustodiaModal() {
             <label className="text-xs text-muted block mb-1">Banco o emisor donde está la plata</label>
             <input name="bank" required className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="BBVA, efectivo..." />
             <label className="text-xs text-muted block mb-1">Saldo actual</label>
-            <input name="balance" type="number" placeholder="1000" className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" />
+            <input name="balance" type="number" step="any" placeholder="1000" className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" />
 
             <button className="w-full py-2.5 bg-accent text-white rounded-lg text-sm font-medium">Guardar cuenta</button>
           </form>

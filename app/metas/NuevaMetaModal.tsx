@@ -74,7 +74,7 @@ export default function NuevaMetaModal() {
                         <label className="text-xs text-muted block mb-1">Valor total</label>
                         <input
                           name="totalValue"
-                          type="number"
+                          type="number" step="any"
                           value={valorTotal}
                           onChange={(e) => setValorTotal(Number(e.target.value))}
                           className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm"
@@ -102,7 +102,7 @@ export default function NuevaMetaModal() {
                 ) : (
                   <div className="mb-3">
                     <label className="text-xs text-muted block mb-1">¿Cuánto necesitas en total?</label>
-                    <input name="targetAmount" type="number" placeholder="1200" className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm" />
+                    <input name="targetAmount" type="number" step="any" placeholder="1200" className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm" />
                   </div>
                 )}
 

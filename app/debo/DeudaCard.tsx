@@ -77,7 +77,7 @@ export function TarjetaCredito({ deuda, medios }: { deuda: Deuda; medios?: Medio
           className="flex gap-1.5 mb-1"
         >
           <input type="hidden" name="debtId" value={deuda.id} />
-          <input name="amount" type="number" autoFocus placeholder="Monto pagado" className="flex-1 border border-border rounded-lg px-2 py-1.5 bg-background text-xs" />
+          <input name="amount" type="number" step="any" autoFocus placeholder="Monto pagado" className="flex-1 border border-border rounded-lg px-2 py-1.5 bg-background text-xs" />
           <button className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white">Pagar</button>
           <button type="button" onClick={() => setPagando(false)} className="text-xs px-2 py-1.5 rounded-lg border border-border">✕</button>
         </form>
@@ -122,7 +122,7 @@ export function PrestamoPersonal({ deuda }: { deuda: Deuda }) {
           className="flex gap-1.5 items-center"
         >
           <input type="hidden" name="debtId" value={deuda.id} />
-          <input name="amount" type="number" autoFocus defaultValue={deuda.balance} className="w-20 border border-border rounded-lg px-2 py-1 bg-background text-xs" />
+          <input name="amount" type="number" step="any" autoFocus defaultValue={deuda.balance} className="w-20 border border-border rounded-lg px-2 py-1 bg-background text-xs" />
           <button className="text-xs px-2.5 py-1.5 rounded-lg bg-accent text-white">Confirmar</button>
         </form>
       ) : (

@@ -23,6 +23,7 @@ export default function IngresoMensualField({ monthlyIncome }: { monthlyIncome: 
           <input
             name="monthlyIncome"
             type="number"
+            step="any"
             defaultValue={monthlyIncome ?? undefined}
             autoFocus
             placeholder="3500"

@@ -79,7 +79,7 @@ export default function InversionModal({ inversion, onClose }: { inversion?: Inv
             </select>
 
             <label className="text-xs text-muted block mb-1">Monto aportado</label>
-            <input name="amountContributed" type="number" required defaultValue={inversion?.amountContributed} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="500" />
+            <input name="amountContributed" type="number" step="any" required defaultValue={inversion?.amountContributed} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="500" />
 
             {!esEdicion && (
               <>

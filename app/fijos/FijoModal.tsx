@@ -81,7 +81,7 @@ export default function FijoModal({
               </div>
               <div className="flex-1">
                 <label className="text-xs text-muted block mb-1">Monto</label>
-                <input name="amount" type="number" required defaultValue={fijo?.amount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm" placeholder="90" />
+                <input name="amount" type="number" step="any" required defaultValue={fijo?.amount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm" placeholder="90" />
               </div>
             </div>
 

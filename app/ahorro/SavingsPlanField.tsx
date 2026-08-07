@@ -31,7 +31,7 @@ export default function SavingsPlanField({ month, plan }: { month: string; plan:
           <input
             name="totalAmount"
             type="number"
-            step="0.01"
+            step="any"
             defaultValue={plan?.totalAmount ?? undefined}
             placeholder="500"
             autoFocus
@@ -45,7 +45,7 @@ export default function SavingsPlanField({ month, plan }: { month: string; plan:
             <input
               name="colchonAmount"
               type="number"
-              step="0.01"
+              step="any"
               defaultValue={plan?.colchonAmount ?? undefined}
               placeholder="0"
               className="w-full border border-border rounded-lg px-2 py-1.5 bg-background text-sm"
@@ -56,7 +56,7 @@ export default function SavingsPlanField({ month, plan }: { month: string; plan:
             <input
               name="inversionAmount"
               type="number"
-              step="0.01"
+              step="any"
               defaultValue={plan?.inversionAmount ?? undefined}
               placeholder="0"
               className="w-full border border-border rounded-lg px-2 py-1.5 bg-background text-sm"
@@ -67,7 +67,7 @@ export default function SavingsPlanField({ month, plan }: { month: string; plan:
             <input
               name="metasAmount"
               type="number"
-              step="0.01"
+              step="any"
               defaultValue={plan?.metasAmount ?? undefined}
               placeholder="0"
               className="w-full border border-border rounded-lg px-2 py-1.5 bg-background text-sm"

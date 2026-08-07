@@ -66,7 +66,7 @@ export default function NuevaCuentaModal() {
                   <option value="custodia">Fondo de terceros (plata que administras para alguien más)</option>
                 </select>
                 <label className="text-xs text-muted block mb-1">Saldo actual</label>
-                <input name="balance" type="number" placeholder="1200" className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" />
+                <input name="balance" type="number" step="any" placeholder="1200" className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" />
                 <button className="w-full py-2.5 bg-accent text-white rounded-lg text-sm font-medium">Guardar cuenta</button>
               </form>
             )}

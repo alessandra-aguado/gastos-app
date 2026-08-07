@@ -49,7 +49,7 @@ export default function TransactionModal({
         <input
           name="amount"
           type="number"
-          step="0.01"
+          step="any"
           required
           defaultValue={transaccion.amount}
           className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5"

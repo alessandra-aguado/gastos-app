@@ -114,7 +114,7 @@ export default function DeudaModal({ deuda, medios, onClose }: { deuda?: Deuda; 
             {!sinMedios && (
               <>
                 <label className="text-xs text-muted block mb-1">{tipo === "tarjeta_credito" ? "Deuda actual" : "Monto"}</label>
-                <input name="balance" type="number" required defaultValue={deuda?.balance} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="230" />
+                <input name="balance" type="number" step="any" required defaultValue={deuda?.balance} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="230" />
                 <input type="hidden" name="principalAmount" value="" />
 
                 <label className="text-xs text-muted block mb-1">¿Desde cuándo?</label>

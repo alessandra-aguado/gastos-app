@@ -31,7 +31,7 @@ export default async function RegistrarPage() {
           <input
             name="amount"
             type="number"
-            step="0.01"
+            step="any"
             required
             className="w-full border border-border rounded-xl px-4 py-2.5 bg-surface"
             placeholder="45.00"

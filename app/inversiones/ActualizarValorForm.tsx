@@ -26,6 +26,7 @@ export default function ActualizarValorForm({ id, valorActual }: { id: string; v
       <input
         name="currentValue"
         type="number"
+        step="any"
         defaultValue={valorActual}
         autoFocus
         className="w-24 border border-border rounded-lg px-2 py-1 bg-background text-xs"

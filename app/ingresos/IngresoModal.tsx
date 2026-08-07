@@ -67,7 +67,7 @@ export default function IngresoModal({ ingreso, onClose }: { ingreso?: Ingreso; 
             <input type="hidden" name="type" value={tipo} />
 
             <label className="text-xs text-muted block mb-1">Monto</label>
-            <input name="amount" type="number" required defaultValue={ingreso?.amount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="3500" />
+            <input name="amount" type="number" step="any" required defaultValue={ingreso?.amount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="3500" />
 
             <label className="text-xs text-muted block mb-1">Fecha</label>
             <input name="date" type="date" required defaultValue={ingreso ? toDateInput(ingreso.date) : hoy()} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" />

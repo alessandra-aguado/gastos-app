@@ -79,7 +79,7 @@ export default function MovimientoModal({
             <input type="hidden" name="type" value={tipo} />
 
             <label className="text-xs text-muted block mb-1">Monto</label>
-            <input name="amount" type="number" step="0.01" required defaultValue={movimiento?.amount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="45" />
+            <input name="amount" type="number" step="any" required defaultValue={movimiento?.amount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="45" />
 
             <label className="text-xs text-muted block mb-1">Fecha</label>
             <input name="date" type="date" required defaultValue={movimiento ? toDateInput(movimiento.date) : hoy()} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" />

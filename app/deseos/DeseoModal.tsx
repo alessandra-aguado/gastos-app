@@ -61,7 +61,7 @@ export default function DeseoModal({
             <label className="text-xs text-muted block mb-1">¿Qué quieres comprar?</label>
             <input name="name" required defaultValue={deseo?.name || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="Laptop nueva" />
             <label className="text-xs text-muted block mb-1">Precio estimado</label>
-            <input name="estimatedPrice" type="number" required defaultValue={deseo?.estimatedPrice} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="3500" />
+            <input name="estimatedPrice" type="number" step="any" required defaultValue={deseo?.estimatedPrice} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="3500" />
             <label className="text-xs text-muted block mb-1">Categoría</label>
             <select name="categoryId" defaultValue={deseo?.categoryId || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5">
               <option value="">Sin definir</option>

@@ -43,7 +43,7 @@ export default function CuentaRow({ cuenta, ultimo, dias }: { cuenta: Cuenta; ul
           className="flex gap-1.5 items-center"
         >
           <input type="hidden" name="id" value={cuenta.id} />
-          <input name="balance" type="number" defaultValue={cuenta.balance} autoFocus className="w-24 border border-border rounded-lg px-2 py-1 bg-background text-xs" />
+          <input name="balance" type="number" step="any" defaultValue={cuenta.balance} autoFocus className="w-24 border border-border rounded-lg px-2 py-1 bg-background text-xs" />
           <button className="text-xs px-2 py-1 rounded-lg bg-accent text-white">Guardar</button>
         </form>
       ) : (

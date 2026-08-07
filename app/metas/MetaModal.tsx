@@ -41,7 +41,7 @@ export default function MetaModal({ meta, onClose }: { meta: Meta; onClose: () =
         <input name="name" required defaultValue={meta.name} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" />
 
         <label className="text-xs text-muted block mb-1">¿Cuánto necesitas en total?</label>
-        <input name="targetAmount" type="number" required defaultValue={meta.targetAmount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" />
+        <input name="targetAmount" type="number" step="any" required defaultValue={meta.targetAmount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" />
 
         <label className="text-xs text-muted block mb-1">¿Para cuándo te gustaría lograrlo?</label>
         <input name="targetDate" type="date" defaultValue={toDateInput(meta.targetDate)} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" />

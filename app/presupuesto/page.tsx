@@ -80,7 +80,7 @@ export default async function PresupuestoPage() {
                 <input
                   name="amountLimit"
                   type="number"
-                  step="1"
+                  step="any"
                   placeholder="Límite mensual (S/)"
                   defaultValue={limit || undefined}
                   className="flex-1 border border-border rounded-lg px-3 py-1.5 text-sm bg-background"
