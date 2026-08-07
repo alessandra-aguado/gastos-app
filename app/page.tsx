@@ -56,7 +56,7 @@ export default async function Home({
   const chips = [
     { Icon: PieChart, label: "Presupuesto", value: budgetPct !== null ? `${budgetPct}% usado` : "sin definir" },
     { Icon: Target, label: "Metas", value: `${metasActivas} activa${metasActivas === 1 ? "" : "s"}` },
-    { Icon: CreditCard, label: "Debo", value: `S/ ${totalDebo.toLocaleString("es-PE")}` },
+    { Icon: CreditCard, label: "Deuda", value: `S/ ${totalDebo.toLocaleString("es-PE")}` },
   ];
 
   return (

@@ -25,12 +25,14 @@ export default function TendenciaGeneral({
   ];
 
   const [activas, setActivas] = useState<Set<string>>(new Set(["gasto"]));
+  const [seleccion, setSeleccion] = useState<{ serieKey: string; index: number } | null>(null);
 
   const toggle = (key: string) => {
     const next = new Set(activas);
     if (next.has(key)) next.delete(key);
     else next.add(key);
     if (next.size > 0) setActivas(next);
+    setSeleccion(null);
   };
 
   const W = 600;
@@ -55,11 +57,19 @@ export default function TendenciaGeneral({
     });
   };
 
+  const seleccionInfo = seleccion
+    ? series.find((s) => s.key === seleccion.serieKey)
+    : null;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-medium">Tendencia general</p>
-        <p className="text-xs text-muted">Gasto es real · el resto es referencia</p>
+        {seleccionInfo && (
+          <p className="text-xs text-muted">
+            {seleccionInfo.label} · {meses[seleccion!.index]}: <span className="text-foreground font-medium">S/ {seleccionInfo.data[seleccion!.index].toLocaleString("es-PE")}</span>
+          </p>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
@@ -107,9 +117,20 @@ export default function TendenciaGeneral({
             return (
               <g key={s.key}>
                 <path d={path} fill="none" stroke={s.color} strokeWidth={2.5} strokeDasharray={s.esReal ? undefined : "5 4"} />
-                {pts.map((p, i) => (
-                  <circle key={i} cx={p.x} cy={p.y} r={3} fill={s.color} />
-                ))}
+                {pts.map((p, i) => {
+                  const activo = seleccion?.serieKey === s.key && seleccion?.index === i;
+                  return (
+                    <circle
+                      key={i}
+                      cx={p.x}
+                      cy={p.y}
+                      r={activo ? 5 : 3}
+                      fill={s.color}
+                      className="cursor-pointer"
+                      onClick={() => setSeleccion({ serieKey: s.key, index: i })}
+                    />
+                  );
+                })}
               </g>
             );
           })}

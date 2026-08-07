@@ -1,9 +1,7 @@
 import { getInversiones } from "@/lib/queries";
 import { TrendingUp } from "lucide-react";
-import NuevoAporteForm from "./NuevoAporteForm";
-import ActualizarValorForm from "./ActualizarValorForm";
-import DeleteButton from "../components/DeleteButton";
-import { eliminarInversion } from "@/lib/actions";
+import InversionModal from "./InversionModal";
+import InversionRow from "./InversionRow";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +30,7 @@ export default async function InversionesPage() {
             S/ {invertido.toFixed(0)} invertido · valor actual S/ {actual.toFixed(0)} · {rentabilidad >= 0 ? "+" : ""}{rentabilidad.toFixed(1)}%
           </p>
         </div>
+        <InversionModal />
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-5">
@@ -58,33 +57,10 @@ export default async function InversionesPage() {
           inversiones.map((inv) => {
             const va = valorActual(inv);
             const gananciaPct = inv.amountContributed > 0 ? ((va - inv.amountContributed) / inv.amountContributed) * 100 : 0;
-            return (
-              <div key={inv.id} className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-sm font-medium">
-                      {inv.platform} <span className="text-xs text-muted font-normal">· {inv.kind === "fija" ? `renta fija, TEA ${inv.tea ?? 0}%` : "variable"}</span>
-                    </p>
-                    <p className="text-xs text-muted">{inv.instrumentType}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm">S/ {va.toFixed(0)} <span className="text-muted text-xs">de S/ {inv.amountContributed.toFixed(0)}</span></p>
-                    <p className={`text-xs ${gananciaPct >= 0 ? "text-positive" : "text-warning"}`}>{gananciaPct >= 0 ? "+" : ""}{gananciaPct.toFixed(1)}%</p>
-                  </div>
-                </div>
-                <div className="mt-2 pt-2 border-t border-border flex justify-between items-center">
-                  {inv.kind === "variable" ? (
-                    <ActualizarValorForm id={inv.id} valorActual={inv.currentValue ?? inv.amountContributed} />
-                  ) : <span />}
-                  <DeleteButton id={inv.id} action={eliminarInversion} label="✕" confirmText={`¿Eliminar el aporte en "${inv.platform}"?`} />
-                </div>
-              </div>
-            );
+            return <InversionRow key={inv.id} inv={inv} valorActual={va} gananciaPct={gananciaPct} />;
           })
         )}
       </div>
-
-      <NuevoAporteForm />
     </div>
   );
 }

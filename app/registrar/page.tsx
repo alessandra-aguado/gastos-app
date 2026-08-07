@@ -73,7 +73,7 @@ export default async function RegistrarPage() {
           >
             {paymentMethods.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.name}
+                {p.name} · {p.type.replace("_", " ")}
               </option>
             ))}
           </select>

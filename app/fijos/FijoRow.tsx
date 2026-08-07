@@ -1,22 +1,51 @@
 "use client";
 
+import { useState } from "react";
 import { marcarFijoPagado, eliminarFijo } from "@/lib/actions";
-import DeleteButton from "../components/DeleteButton";
+import RowMenu from "../components/RowMenu";
 import CategoryIcon from "../components/CategoryIcon";
+import FijoModal from "./FijoModal";
 
 type Fijo = {
   id: string;
   name: string;
   amount: number;
+  categoryId: string;
+  paymentMethodId: string | null;
   dueMode: string;
   dueDay: number | null;
   rangeStart: number | null;
   rangeEnd: number | null;
+  reminderDays: number;
+  syncCalendar: boolean;
   lastPaidMonth: string | null;
   category: { name: string; icon: string | null; color: string | null };
 };
 
-export default function FijoRow({ fijo, ultimo, mesActual }: { fijo: Fijo; ultimo: boolean; mesActual: string }) {
+type Categoria = { id: string; name: string };
+type Medio = { id: string; name: string };
+
+function borrarConConfirmacion(id: string, nombre: string) {
+  if (!window.confirm(`¿Eliminar el fijo "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  const fd = new FormData();
+  fd.set("id", id);
+  void eliminarFijo(fd);
+}
+
+export default function FijoRow({
+  fijo,
+  ultimo,
+  mesActual,
+  categorias,
+  medios,
+}: {
+  fijo: Fijo;
+  ultimo: boolean;
+  mesActual: string;
+  categorias: Categoria[];
+  medios: Medio[];
+}) {
+  const [editando, setEditando] = useState(false);
   const pagado = fijo.lastPaidMonth === mesActual;
   const vence = fijo.dueMode === "unica" ? (fijo.dueDay ? `vence el ${fijo.dueDay}` : "sin vencimiento fijo") : `pagas entre el ${fijo.rangeStart} y el ${fijo.rangeEnd}`;
 
@@ -41,8 +70,9 @@ export default function FijoRow({ fijo, ultimo, mesActual }: { fijo: Fijo; ultim
             <button className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">Marcar pagado</button>
           </form>
         )}
-        <DeleteButton id={fijo.id} action={eliminarFijo} label="✕" confirmText={`¿Eliminar el fijo "${fijo.name}"?`} />
+        <RowMenu onEdit={() => setEditando(true)} onDelete={() => borrarConConfirmacion(fijo.id, fijo.name)} />
       </div>
+      {editando && <FijoModal categorias={categorias} medios={medios} fijo={fijo} onClose={() => setEditando(false)} />}
     </div>
   );
 }

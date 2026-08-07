@@ -41,6 +41,8 @@ model PaymentMethod {
   name          String
   type          String // debito | credito | billetera_digital | efectivo
   bankOrIssuer  String?
+  closingDay    Int?    // fecha de corte, solo credito
+  billingDay    Int?    // fecha de facturacion, solo credito
   transactions  Transaction[]
   fixedExpenses FixedExpense[]
   account       Account?
@@ -155,6 +157,8 @@ model Investment {
   date              DateTime
   currentValue      Float?
   tea               Float?   // tasa efectiva anual, solo renta fija
+  termMonths        Int?     // plazo en meses, solo renta fija
+  maturityDate      DateTime? // fecha de vencimiento, solo renta fija
   createdAt         DateTime @default(now())
 }
 
@@ -168,6 +172,8 @@ model Debt {
   creditLimit     Float?  // solo tarjeta_credito
   minPayment      Float?  // cuota mínima mensual, solo tarjeta_credito
   dueDay          Int?    // día del mes en que vence
+  interestRate    Float?  // tasa de interes, solo prestamo_personal
+  startDate       DateTime? // desde cuando existe la deuda
   status          String   @default("activa") // activa | pagada
   dueDate         DateTime?
   payments        DebtPayment[]
@@ -187,6 +193,8 @@ model WishlistItem {
   id             String   @id @default(cuid())
   name           String
   estimatedPrice Float
+  link           String?
+  notes          String?
   categoryId     String?
   category       Category? @relation(fields: [categoryId], references: [id])
   isNecessary    Boolean  @default(false)
@@ -205,6 +213,13 @@ model Account {
   paymentMethodId String?        @unique
   paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   createdAt       DateTime  @default(now())
+}
+
+model Settings {
+  id            String  @id @default("singleton")
+  monthlyIncome Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model EmailAccount {

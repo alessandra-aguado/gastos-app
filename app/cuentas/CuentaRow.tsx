@@ -2,12 +2,21 @@
 
 import { useState } from "react";
 import { updateSaldoCuenta, eliminarCuenta } from "@/lib/actions";
-import DeleteButton from "../components/DeleteButton";
+import RowMenu from "../components/RowMenu";
+import CuentaModal from "./CuentaModal";
 
-type Cuenta = { id: string; name: string; balance: number; lastCheckIn: Date | null };
+type Cuenta = { id: string; name: string; bank: string; type: string; balance: number; lastCheckIn: Date | null };
+
+function borrarConConfirmacion(id: string, nombre: string) {
+  if (!window.confirm(`¿Eliminar la cuenta "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  const fd = new FormData();
+  fd.set("id", id);
+  void eliminarCuenta(fd);
+}
 
 export default function CuentaRow({ cuenta, ultimo, dias }: { cuenta: Cuenta; ultimo: boolean; dias: number | null }) {
   const [editando, setEditando] = useState(false);
+  const [editandoDatos, setEditandoDatos] = useState(false);
 
   return (
     <div className={`flex justify-between items-center px-4 py-3 ${!ultimo ? "border-b border-border" : ""}`}>
@@ -32,9 +41,10 @@ export default function CuentaRow({ cuenta, ultimo, dias }: { cuenta: Cuenta; ul
           <button onClick={() => setEditando(true)} className="text-sm hover:text-accent transition-colors">
             S/ {cuenta.balance.toLocaleString("es-PE")}
           </button>
-          <DeleteButton id={cuenta.id} action={eliminarCuenta} label="✕" confirmText={`¿Eliminar la cuenta "${cuenta.name}"?`} />
+          <RowMenu onEdit={() => setEditandoDatos(true)} onDelete={() => borrarConConfirmacion(cuenta.id, cuenta.name)} />
         </div>
       )}
+      {editandoDatos && <CuentaModal cuenta={cuenta} onClose={() => setEditandoDatos(false)} />}
     </div>
   );
 }

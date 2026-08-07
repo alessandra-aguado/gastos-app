@@ -2,20 +2,34 @@
 
 import { useState } from "react";
 import { convertirDeseoEnMeta, marcarDeseoComprado, eliminarDeseo } from "@/lib/actions";
-import DeleteButton from "../components/DeleteButton";
+import RowMenu from "../components/RowMenu";
 import CategoryIcon from "../components/CategoryIcon";
+import DeseoModal from "./DeseoModal";
 
 type Deseo = {
   id: string;
   name: string;
   estimatedPrice: number;
+  categoryId: string | null;
   isNecessary: boolean;
   status: string;
+  link?: string | null;
+  notes?: string | null;
   category: { name: string; icon: string | null; color: string | null } | null;
 };
 
-export default function DeseoRow({ deseo }: { deseo: Deseo }) {
+type Categoria = { id: string; name: string };
+
+function borrarConConfirmacion(id: string, nombre: string) {
+  if (!window.confirm(`¿Eliminar el deseo "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  const fd = new FormData();
+  fd.set("id", id);
+  void eliminarDeseo(fd);
+}
+
+export default function DeseoRow({ deseo, categorias }: { deseo: Deseo; categorias: Categoria[] }) {
   const [convirtiendo, setConvirtiendo] = useState(false);
+  const [editando, setEditando] = useState(false);
 
   return (
     <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] px-4 py-3">
@@ -44,10 +58,16 @@ export default function DeseoRow({ deseo }: { deseo: Deseo }) {
               <input type="hidden" name="id" value={deseo.id} />
               <button className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">Comprado</button>
             </form>
-            <DeleteButton id={deseo.id} action={eliminarDeseo} label="✕" confirmText={`¿Eliminar el deseo "${deseo.name}"?`} />
+            <RowMenu onEdit={() => setEditando(true)} onDelete={() => borrarConConfirmacion(deseo.id, deseo.name)} />
           </div>
         )}
       </div>
+      {deseo.link && deseo.status === "pendiente" && (
+        <a href={deseo.link} target="_blank" rel="noopener noreferrer" className="text-xs text-accent underline underline-offset-2 mt-1 inline-block">
+          Ver link
+        </a>
+      )}
+      {deseo.notes && <p className="text-xs text-muted mt-1">{deseo.notes}</p>}
 
       {convirtiendo && (
         <form
@@ -68,6 +88,7 @@ export default function DeseoRow({ deseo }: { deseo: Deseo }) {
           <button className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white shrink-0">Crear meta</button>
         </form>
       )}
+      {editando && <DeseoModal categorias={categorias} deseo={deseo} onClose={() => setEditando(false)} />}
     </div>
   );
 }

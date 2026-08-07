@@ -3,21 +3,27 @@ import { ShoppingCart } from "lucide-react";
 import { getTopCategories, getSpendByTopCategory, listTransactionsByCategory, getMonthlyTrend } from "@/lib/queries";
 import CategoryIcon from "../components/CategoryIcon";
 import { colorForIndex } from "@/lib/categoryColors";
+import RangoSelector from "../components/RangoSelector";
+import { rangeForPreset, parsePreset, formatRangeLabel, toDateInputValue } from "@/lib/dateRanges";
 
 export const dynamic = "force-dynamic";
 
 export default async function GastosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cat?: string }>;
+  searchParams: Promise<{ cat?: string; rango?: string; desde?: string; hasta?: string }>;
 }) {
-  const { cat } = await searchParams;
+  const { cat, rango, desde, hasta } = await searchParams;
+  const preset = parsePreset(rango);
+  const range = rangeForPreset(preset, desde, hasta);
+  const rangeLabel = formatRangeLabel(preset, range.start, range.end);
+
   const categories = await getTopCategories();
-  const spendByCategory = await getSpendByTopCategory();
+  const spendByCategory = await getSpendByTopCategory(range);
 
   if (cat) {
     const category = categories.find((c) => c.id === cat);
-    const transactions = await listTransactionsByCategory(cat);
+    const transactions = await listTransactionsByCategory(cat, range);
 
     return (
       <div className="max-w-3xl mx-auto px-6 py-8">
@@ -29,12 +35,12 @@ export default async function GastosPage({
           {category?.name}
         </h1>
         <p className="text-muted text-sm mt-1">
-          S/ {(spendByCategory[cat] || 0).toFixed(0)} este mes · {transactions.length} transacciones
+          S/ {(spendByCategory[cat] || 0).toFixed(0)} en {rangeLabel.toLowerCase()} · {transactions.length} transacciones
         </p>
 
         <div className="mt-6 space-y-2">
           {transactions.length === 0 && (
-            <p className="text-sm text-muted">Sin gastos registrados en esta categoría este mes.</p>
+            <p className="text-sm text-muted">Sin gastos registrados en esta categoría en este período.</p>
           )}
           {transactions.map((t) => (
             <div
@@ -63,15 +69,15 @@ export default async function GastosPage({
     .map((c, i) => ({ ...c, monto: spendByCategory[c.id] || 0, color: c.color || colorForIndex(i) }))
     .filter((c) => c.monto > 0)
     .sort((a, b) => b.monto - a.monto);
-  const totalMes = conCategoriasConGasto.reduce((s, c) => s + c.monto, 0);
+  const totalRango = conCategoriasConGasto.reduce((s, c) => s + c.monto, 0);
 
   const gradientStops = conCategoriasConGasto
     .reduce<{ acumulado: number; stops: string[] }>(
       (acc, c) => {
-        const desde = (acc.acumulado / totalMes) * 100;
+        const desdePct = (acc.acumulado / totalRango) * 100;
         const nuevoAcumulado = acc.acumulado + c.monto;
-        const hasta = (nuevoAcumulado / totalMes) * 100;
-        acc.stops.push(`${c.color} ${desde}% ${hasta}%`);
+        const hastaPct = (nuevoAcumulado / totalRango) * 100;
+        acc.stops.push(`${c.color} ${desdePct}% ${hastaPct}%`);
         return { acumulado: nuevoAcumulado, stops: acc.stops };
       },
       { acumulado: 0, stops: [] }
@@ -80,54 +86,68 @@ export default async function GastosPage({
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-semibold flex items-center gap-2"><ShoppingCart size={22} strokeWidth={1.75} />Gastos</h1>
-      <p className="text-muted text-sm mt-2">Detalle de tus gastos por categoría este mes.</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-semibold flex items-center gap-2"><ShoppingCart size={22} strokeWidth={1.75} />Gastos</h1>
+          <RangoSelector
+            preset={preset}
+            label={rangeLabel}
+            desde={desde || toDateInputValue(range.start)}
+            hasta={hasta || toDateInputValue(new Date(range.end.getTime() - 86400000))}
+            basePath="/gastos"
+          />
+        </div>
+        <Link
+          href="/registrar"
+          className="bg-accent text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
+        >
+          + Registrar gasto
+        </Link>
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-        <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
-          <p className="text-sm font-medium mb-4">Por categoría</p>
-          {totalMes === 0 ? (
-            <p className="text-sm text-muted">Aún no hay gastos este mes para graficar.</p>
-          ) : (
-            <div className="flex items-center gap-5">
-              <div
-                className="w-32 h-32 rounded-full shrink-0 relative"
-                style={{ background: `conic-gradient(${gradientStops})` }}
-              >
-                <div className="absolute inset-3 bg-surface rounded-full flex flex-col items-center justify-center">
-                  <span className="text-xs text-muted">Total</span>
-                  <span className="text-sm font-semibold">S/ {totalMes.toFixed(0)}</span>
-                </div>
-              </div>
-              <div className="space-y-1.5 flex-1 min-w-0">
-                {conCategoriasConGasto.slice(0, 5).map((c) => (
-                  <div key={c.id} className="flex items-center gap-2 text-xs">
-                    <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style={{ background: c.color }}>
-                      <CategoryIcon icon={c.icon} size={11} />
-                    </div>
-                    <span className="text-muted truncate flex-1">{c.name}</span>
-                    <span className="font-medium">{Math.round((c.monto / totalMes) * 100)}%</span>
-                  </div>
-                ))}
+      <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5 mt-6">
+        <p className="text-sm font-medium mb-4">Por categoría</p>
+        {totalRango === 0 ? (
+          <p className="text-sm text-muted">Aún no hay gastos en este período para graficar.</p>
+        ) : (
+          <div className="flex items-center gap-8">
+            <div
+              className="w-44 h-44 rounded-full shrink-0 relative"
+              style={{ background: `conic-gradient(${gradientStops})` }}
+            >
+              <div className="absolute inset-4 bg-surface rounded-full flex flex-col items-center justify-center">
+                <span className="text-xs text-muted">Total</span>
+                <span className="text-base font-semibold">S/ {totalRango.toFixed(0)}</span>
               </div>
             </div>
-          )}
-        </div>
-
-        <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
-          <p className="text-sm font-medium mb-4">Tendencia, últimos 6 meses</p>
-          <div className="flex items-end gap-2 h-32">
-            {trend.map((m) => (
-              <div key={m.key} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                <div
-                  className="w-full rounded-t"
-                  style={{ height: `${(m.total / maxTrend) * 100}%`, background: m.total > 0 ? "var(--accent)" : "var(--border)", minHeight: 2 }}
-                  title={`${m.label}: S/ ${m.total.toFixed(0)}`}
-                />
-                <span className="text-[10px] text-muted">{m.label}</span>
-              </div>
-            ))}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 flex-1 min-w-0">
+              {conCategoriasConGasto.map((c) => (
+                <div key={c.id} className="flex items-center gap-2 text-xs">
+                  <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style={{ background: c.color }}>
+                    <CategoryIcon icon={c.icon} size={11} />
+                  </div>
+                  <span className="text-muted truncate flex-1">{c.name}</span>
+                  <span className="font-medium">{Math.round((c.monto / totalRango) * 100)}%</span>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
+      </div>
+
+      <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5 mt-4">
+        <p className="text-sm font-medium mb-4">Tendencia, últimos 6 meses</p>
+        <div className="flex items-end gap-2 h-32">
+          {trend.map((m) => (
+            <div key={m.key} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+              <div
+                className="w-full rounded-t"
+                style={{ height: `${(m.total / maxTrend) * 100}%`, background: m.total > 0 ? "var(--accent)" : "var(--border)", minHeight: 2 }}
+                title={`${m.label}: S/ ${m.total.toFixed(0)}`}
+              />
+              <span className="text-[10px] text-muted">{m.label}</span>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -135,7 +155,7 @@ export default async function GastosPage({
         {categories.map((c, i) => (
           <Link
             key={c.id}
-            href={`/gastos?cat=${c.id}`}
+            href={`/gastos?cat=${c.id}&rango=${preset}${desde ? `&desde=${desde}` : ""}${hasta ? `&hasta=${hasta}` : ""}`}
             className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4 hover:border-accent transition-colors"
           >
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: c.color || colorForIndex(i) }}>

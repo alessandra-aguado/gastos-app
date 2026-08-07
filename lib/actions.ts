@@ -120,6 +120,23 @@ export async function marcarMetaCompletada(formData: FormData) {
   revalidatePath("/metas");
 }
 
+export async function updateMeta(formData: FormData) {
+  const id = String(formData.get("id"));
+  const name = String(formData.get("name") || "").trim();
+  const motivo = String(formData.get("motivo") || "") || null;
+  const targetDateRaw = String(formData.get("targetDate") || "");
+  const targetAmount = parseFloat(String(formData.get("targetAmount") || "0"));
+
+  if (!id || !name || !targetAmount) throw new Error("Faltan datos de la meta");
+
+  await prisma.savingsGoal.update({
+    where: { id },
+    data: { name, motivo, targetAmount, targetDate: targetDateRaw ? new Date(targetDateRaw) : null },
+  });
+
+  revalidatePath("/metas");
+}
+
 // ================= Inversiones =================
 
 export async function createInversion(formData: FormData) {
@@ -129,8 +146,14 @@ export async function createInversion(formData: FormData) {
   const amountContributed = parseFloat(String(formData.get("amountContributed") || "0"));
   const currentValueRaw = formData.get("currentValue");
   const teaRaw = formData.get("tea");
+  const dateRaw = String(formData.get("date") || "");
+  const termMonthsRaw = formData.get("termMonths");
 
   if (!platform || !amountContributed) throw new Error("Faltan datos de la inversión");
+
+  const fecha = dateRaw ? new Date(dateRaw) : new Date();
+  const termMonths = kind === "fija" && termMonthsRaw ? parseInt(String(termMonthsRaw), 10) : null;
+  const maturityDate = termMonths ? new Date(fecha.getFullYear(), fecha.getMonth() + termMonths, fecha.getDate()) : null;
 
   await prisma.investment.create({
     data: {
@@ -138,9 +161,11 @@ export async function createInversion(formData: FormData) {
       instrumentType: instrumentType || "General",
       kind,
       amountContributed,
-      date: new Date(),
+      date: fecha,
       currentValue: currentValueRaw ? parseFloat(String(currentValueRaw)) : null,
       tea: kind === "fija" && teaRaw ? parseFloat(String(teaRaw)) : null,
+      termMonths,
+      maturityDate,
     },
   });
 
@@ -151,6 +176,28 @@ export async function updateValorInversion(formData: FormData) {
   const id = String(formData.get("id"));
   const currentValue = parseFloat(String(formData.get("currentValue") || "0"));
   await prisma.investment.update({ where: { id }, data: { currentValue } });
+  revalidatePath("/inversiones");
+}
+
+export async function updateInversion(formData: FormData) {
+  const id = String(formData.get("id"));
+  const platform = String(formData.get("platform") || "").trim();
+  const instrumentType = String(formData.get("instrumentType") || "").trim();
+  const amountContributed = parseFloat(String(formData.get("amountContributed") || "0"));
+  const teaRaw = formData.get("tea");
+
+  if (!id || !platform || !amountContributed) throw new Error("Faltan datos de la inversión");
+
+  await prisma.investment.update({
+    where: { id },
+    data: {
+      platform,
+      instrumentType: instrumentType || "General",
+      amountContributed,
+      tea: teaRaw ? parseFloat(String(teaRaw)) : null,
+    },
+  });
+
   revalidatePath("/inversiones");
 }
 
@@ -180,6 +227,20 @@ export async function updateSaldoCuenta(formData: FormData) {
   revalidatePath("/");
 }
 
+export async function updateCuenta(formData: FormData) {
+  const id = String(formData.get("id"));
+  const name = String(formData.get("name") || "").trim();
+  const bank = String(formData.get("bank") || "").trim();
+  const type = String(formData.get("type") || "corriente");
+
+  if (!id || !name || !bank) throw new Error("Faltan datos de la cuenta");
+
+  await prisma.account.update({ where: { id }, data: { name, bank, type } });
+
+  revalidatePath("/cuentas");
+  revalidatePath("/");
+}
+
 // ================= Debo =================
 
 export async function createDeuda(formData: FormData) {
@@ -195,6 +256,9 @@ export async function createDeuda(formData: FormData) {
 
   if (!balance) throw new Error("Falta el monto de la deuda");
 
+  const startDateRaw = String(formData.get("startDate") || "");
+  const interestRateRaw = formData.get("interestRate");
+
   await prisma.debt.create({
     data: {
       type,
@@ -205,6 +269,40 @@ export async function createDeuda(formData: FormData) {
       creditLimit: type === "tarjeta_credito" && creditLimitRaw ? parseFloat(String(creditLimitRaw)) : null,
       minPayment: type === "tarjeta_credito" && minPaymentRaw ? parseFloat(String(minPaymentRaw)) : null,
       dueDay: dueDayRaw ? parseInt(String(dueDayRaw), 10) : null,
+      startDate: startDateRaw ? new Date(startDateRaw) : new Date(),
+      interestRate: type === "prestamo_personal" && interestRateRaw ? parseFloat(String(interestRateRaw)) : null,
+    },
+  });
+
+  revalidatePath("/debo");
+  revalidatePath("/");
+}
+
+export async function updateDeuda(formData: FormData) {
+  const id = String(formData.get("id"));
+  const counterpartName = String(formData.get("counterpartName") || "").trim() || null;
+  const balance = parseFloat(String(formData.get("balance") || "0"));
+  const creditLimitRaw = formData.get("creditLimit");
+  const minPaymentRaw = formData.get("minPayment");
+  const dueDayRaw = formData.get("dueDay");
+  const startDateRaw = String(formData.get("startDate") || "");
+  const interestRateRaw = formData.get("interestRate");
+
+  if (!id || !balance) throw new Error("Faltan datos de la deuda");
+
+  const deuda = await prisma.debt.findUnique({ where: { id } });
+  if (!deuda) throw new Error("Deuda no encontrada");
+
+  await prisma.debt.update({
+    where: { id },
+    data: {
+      counterpartName,
+      balance,
+      creditLimit: deuda.type === "tarjeta_credito" && creditLimitRaw ? parseFloat(String(creditLimitRaw)) : deuda.creditLimit,
+      minPayment: deuda.type === "tarjeta_credito" && minPaymentRaw ? parseFloat(String(minPaymentRaw)) : deuda.minPayment,
+      dueDay: dueDayRaw ? parseInt(String(dueDayRaw), 10) : deuda.dueDay,
+      startDate: startDateRaw ? new Date(startDateRaw) : deuda.startDate,
+      interestRate: deuda.type === "prestamo_personal" && interestRateRaw ? parseFloat(String(interestRateRaw)) : deuda.interestRate,
     },
   });
 
@@ -274,6 +372,40 @@ export async function createFijo(formData: FormData) {
   revalidatePath("/fijos");
 }
 
+export async function updateFijo(formData: FormData) {
+  const id = String(formData.get("id"));
+  const name = String(formData.get("name") || "").trim();
+  const categoryId = String(formData.get("categoryId"));
+  const amount = parseFloat(String(formData.get("amount") || "0"));
+  const paymentMethodId = String(formData.get("paymentMethodId") || "") || null;
+  const dueMode = String(formData.get("dueMode") || "unica");
+  const dueDayRaw = formData.get("dueDay");
+  const rangeStartRaw = formData.get("rangeStart");
+  const rangeEndRaw = formData.get("rangeEnd");
+  const reminderDaysRaw = formData.get("reminderDays");
+  const syncCalendar = String(formData.get("syncCalendar") || "") === "on";
+
+  if (!id || !name || !categoryId || !amount) throw new Error("Faltan datos del fijo");
+
+  await prisma.fixedExpense.update({
+    where: { id },
+    data: {
+      name,
+      categoryId,
+      amount,
+      paymentMethodId,
+      dueMode,
+      dueDay: dueMode === "unica" && dueDayRaw ? parseInt(String(dueDayRaw), 10) : null,
+      rangeStart: dueMode === "rango" && rangeStartRaw ? parseInt(String(rangeStartRaw), 10) : null,
+      rangeEnd: dueMode === "rango" && rangeEndRaw ? parseInt(String(rangeEndRaw), 10) : null,
+      reminderDays: reminderDaysRaw ? parseInt(String(reminderDaysRaw), 10) : 3,
+      syncCalendar,
+    },
+  });
+
+  revalidatePath("/fijos");
+}
+
 export async function marcarFijoPagado(formData: FormData) {
   const id = String(formData.get("id"));
   const fijo = await prisma.fixedExpense.findUnique({ where: { id } });
@@ -308,11 +440,32 @@ export async function createDeseo(formData: FormData) {
   const estimatedPrice = parseFloat(String(formData.get("estimatedPrice") || "0"));
   const categoryId = String(formData.get("categoryId") || "") || null;
   const isNecessary = String(formData.get("isNecessary") || "") === "on";
+  const link = String(formData.get("link") || "").trim() || null;
+  const notes = String(formData.get("notes") || "").trim() || null;
 
   if (!name || !estimatedPrice) throw new Error("Faltan datos del deseo");
 
   await prisma.wishlistItem.create({
-    data: { name, estimatedPrice, categoryId, isNecessary },
+    data: { name, estimatedPrice, categoryId, isNecessary, link, notes },
+  });
+
+  revalidatePath("/deseos");
+}
+
+export async function updateDeseo(formData: FormData) {
+  const id = String(formData.get("id"));
+  const name = String(formData.get("name") || "").trim();
+  const estimatedPrice = parseFloat(String(formData.get("estimatedPrice") || "0"));
+  const categoryId = String(formData.get("categoryId") || "") || null;
+  const isNecessary = String(formData.get("isNecessary") || "") === "on";
+  const link = String(formData.get("link") || "").trim() || null;
+  const notes = String(formData.get("notes") || "").trim() || null;
+
+  if (!id || !name || !estimatedPrice) throw new Error("Faltan datos del deseo");
+
+  await prisma.wishlistItem.update({
+    where: { id },
+    data: { name, estimatedPrice, categoryId, isNecessary, link, notes },
   });
 
   revalidatePath("/deseos");
@@ -345,6 +498,18 @@ export async function marcarDeseoComprado(formData: FormData) {
   revalidatePath("/deseos");
 }
 
+// ================= Ajustes generales =================
+
+export async function updateIngresoMensual(formData: FormData) {
+  const monthlyIncome = parseFloat(String(formData.get("monthlyIncome") || "0"));
+  await prisma.settings.upsert({
+    where: { id: "singleton" },
+    update: { monthlyIncome },
+    create: { id: "singleton", monthlyIncome },
+  });
+  revalidatePath("/presupuesto");
+}
+
 // ================= Ajustes =================
 
 export async function createCategoria(formData: FormData) {
@@ -367,10 +532,20 @@ export async function createMedioDePago(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   const type = String(formData.get("type") || "debito");
   const bankOrIssuer = String(formData.get("bankOrIssuer") || "").trim() || null;
+  const closingDayRaw = formData.get("closingDay");
+  const billingDayRaw = formData.get("billingDay");
 
   if (!name) throw new Error("Falta el nombre del medio de pago");
 
-  const medio = await prisma.paymentMethod.create({ data: { name, type, bankOrIssuer } });
+  const medio = await prisma.paymentMethod.create({
+    data: {
+      name,
+      type,
+      bankOrIssuer,
+      closingDay: type === "credito" && closingDayRaw ? parseInt(String(closingDayRaw), 10) : null,
+      billingDay: type === "credito" && billingDayRaw ? parseInt(String(billingDayRaw), 10) : null,
+    },
+  });
 
   // Débito y billetera digital representan plata real en algún lado: se refleja
   // como Cuenta para que aparezca en Cuentas y sume al patrimonio.
@@ -494,10 +669,21 @@ export async function updateMedioDePago(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   const type = String(formData.get("type") || "debito");
   const bankOrIssuer = String(formData.get("bankOrIssuer") || "").trim() || null;
+  const closingDayRaw = formData.get("closingDay");
+  const billingDayRaw = formData.get("billingDay");
 
   if (!id || !name) throw new Error("Faltan datos del medio de pago");
 
-  await prisma.paymentMethod.update({ where: { id }, data: { name, type, bankOrIssuer } });
+  await prisma.paymentMethod.update({
+    where: { id },
+    data: {
+      name,
+      type,
+      bankOrIssuer,
+      closingDay: type === "credito" && closingDayRaw ? parseInt(String(closingDayRaw), 10) : null,
+      billingDay: type === "credito" && billingDayRaw ? parseInt(String(billingDayRaw), 10) : null,
+    },
+  });
 
   const cuentaVinculada = await prisma.account.findUnique({ where: { paymentMethodId: id } });
   const debeTenerCuenta = type === "debito" || type === "billetera_digital";

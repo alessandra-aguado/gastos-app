@@ -42,9 +42,9 @@ export default function NuevaCuentaModal() {
             {esCredito ? (
               <div className="bg-accent-soft rounded-xl p-3.5">
                 <p className="text-xs text-accent mb-2.5 leading-relaxed">
-                  Una tarjeta de crédito es una deuda, no una cuenta con saldo propio. Regístrala en Debo para llevar el control de cuánto debes.
+                  Una tarjeta de crédito es una deuda, no una cuenta con saldo propio. Regístrala en Deuda para llevar el control de cuánto debes.
                 </p>
-                <a href="/debo" className="block text-center text-xs py-2 rounded-lg border border-border">Ir a Debo →</a>
+                <a href="/debo" className="block text-center text-xs py-2 rounded-lg border border-border">Ir a Deuda →</a>
               </div>
             ) : (
               <form

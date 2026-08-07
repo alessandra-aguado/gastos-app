@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { registrarPagoDeuda, marcarCobrado, eliminarDeuda } from "@/lib/actions";
-import DeleteButton from "../components/DeleteButton";
+import RowMenu from "../components/RowMenu";
+import DeudaModal from "./DeudaModal";
 
 type Deuda = {
   id: string;
@@ -13,10 +14,25 @@ type Deuda = {
   creditLimit: number | null;
   minPayment: number | null;
   dueDay: number | null;
+  interestRate: number | null;
+  startDate: Date | null;
 };
+
+function formatFecha(d: Date | null) {
+  if (!d) return null;
+  return new Date(d).toLocaleDateString("es-PE", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function borrarConConfirmacion(id: string, nombre: string) {
+  if (!window.confirm(`¿Eliminar la deuda de "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  const fd = new FormData();
+  fd.set("id", id);
+  void eliminarDeuda(fd);
+}
 
 export function TarjetaCredito({ deuda }: { deuda: Deuda }) {
   const [pagando, setPagando] = useState(false);
+  const [editando, setEditando] = useState(false);
   const pct = deuda.creditLimit ? Math.min(100, Math.round((deuda.balance / deuda.creditLimit) * 100)) : 0;
 
   return (
@@ -27,14 +43,15 @@ export function TarjetaCredito({ deuda }: { deuda: Deuda }) {
           <p className="text-xs text-muted">
             {deuda.minPayment ? `Cuota S/ ${deuda.minPayment.toFixed(0)}` : ""}
             {deuda.dueDay ? ` · vence el ${deuda.dueDay}` : ""}
+            {formatFecha(deuda.startDate) ? ` · desde ${formatFecha(deuda.startDate)}` : ""}
           </p>
         </div>
         {!pagando && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button onClick={() => setPagando(true)} className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">
               Registrar pago
             </button>
-            <DeleteButton id={deuda.id} action={eliminarDeuda} label="✕" confirmText={`¿Eliminar la deuda de "${deuda.counterpartName}"?`} />
+            <RowMenu onEdit={() => setEditando(true)} onDelete={() => borrarConConfirmacion(deuda.id, deuda.counterpartName || "")} />
           </div>
         )}
       </div>
@@ -63,19 +80,25 @@ export function TarjetaCredito({ deuda }: { deuda: Deuda }) {
           </div>
         </>
       )}
+      {editando && <DeudaModal deuda={deuda} onClose={() => setEditando(false)} />}
     </div>
   );
 }
 
 export function PrestamoPersonal({ deuda }: { deuda: Deuda }) {
   const [pagando, setPagando] = useState(false);
+  const [editando, setEditando] = useState(false);
   const meDeben = deuda.direction === "me_deben";
 
   return (
     <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4 flex justify-between items-center">
       <div>
         <p className="text-sm font-medium">{deuda.counterpartName}</p>
-        <p className={`text-xs ${meDeben ? "text-positive" : "text-muted"}`}>{meDeben ? "Me deben" : "Yo debo"}</p>
+        <p className={`text-xs ${meDeben ? "text-positive" : "text-muted"}`}>
+          {meDeben ? "Me deben" : "Yo debo"}
+          {formatFecha(deuda.startDate) ? ` · desde ${formatFecha(deuda.startDate)}` : ""}
+          {deuda.interestRate ? ` · ${deuda.interestRate}% interés` : ""}
+        </p>
       </div>
       {pagando ? (
         <form
@@ -102,9 +125,10 @@ export function PrestamoPersonal({ deuda }: { deuda: Deuda }) {
               Pagar
             </button>
           )}
-          <DeleteButton id={deuda.id} action={eliminarDeuda} label="✕" confirmText={`¿Eliminar el registro de "${deuda.counterpartName}"?`} />
+          <RowMenu onEdit={() => setEditando(true)} onDelete={() => borrarConConfirmacion(deuda.id, deuda.counterpartName || "")} />
         </div>
       )}
+      {editando && <DeudaModal deuda={deuda} onClose={() => setEditando(false)} />}
     </div>
   );
 }

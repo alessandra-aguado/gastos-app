@@ -10,11 +10,13 @@ export default function RangoSelector({
   label,
   desde,
   hasta,
+  basePath = "/",
 }: {
   preset: Preset;
   label: string;
   desde: string;
   hasta: string;
+  basePath?: string;
 }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
@@ -23,14 +25,14 @@ export default function RangoSelector({
   const [h, setH] = useState(hasta);
 
   function elegir(p: Preset) {
-    router.push(`/?rango=${p}`);
+    router.push(`${basePath}?rango=${p}`);
     setAbierto(false);
     setPersonalizado(false);
   }
 
   function aplicarPersonalizado() {
     if (!d || !h) return;
-    router.push(`/?rango=personalizado&desde=${d}&hasta=${h}`);
+    router.push(`${basePath}?rango=personalizado&desde=${d}&hasta=${h}`);
     setAbierto(false);
     setPersonalizado(false);
   }

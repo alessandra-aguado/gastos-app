@@ -119,9 +119,9 @@ export default function NuevaMetaModal() {
             ) : (
               <div className="bg-accent-soft rounded-xl p-3.5">
                 <p className="text-xs text-accent mb-2.5 leading-relaxed">
-                  Esto es una deuda con pagos fijos, no una meta de ahorro. Regístrala en Debo y la vamos a reflejar como gasto fijo cada mes en tu Proyección.
+                  Esto es una deuda con pagos fijos, no una meta de ahorro. Regístrala en Deuda y la vamos a reflejar como gasto fijo cada mes en tu Proyección.
                 </p>
-                <a href="/debo" className="block text-center text-xs py-2 rounded-lg border border-border">Ir a Debo →</a>
+                <a href="/debo" className="block text-center text-xs py-2 rounded-lg border border-border">Ir a Deuda →</a>
               </div>
             )}
           </form>

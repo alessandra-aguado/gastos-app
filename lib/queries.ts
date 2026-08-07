@@ -25,6 +25,10 @@ export async function getPaymentMethods() {
   return prisma.paymentMethod.findMany({ orderBy: { name: "asc" } });
 }
 
+export async function getSettings() {
+  return prisma.settings.findUnique({ where: { id: "singleton" } });
+}
+
 export type DateRange = { start: Date; end: Date };
 
 export async function getMonthSummary(range?: DateRange) {
@@ -77,8 +81,8 @@ export async function getSpendByTopCategory(range?: DateRange): Promise<Record<s
   return map;
 }
 
-export async function listTransactionsByCategory(topCategoryId: string) {
-  const { start, end } = currentMonthRange();
+export async function listTransactionsByCategory(topCategoryId: string, range?: DateRange) {
+  const { start, end } = range ?? currentMonthRange();
   return prisma.transaction.findMany({
     where: {
       date: { gte: start, lt: end },

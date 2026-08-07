@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { addContribucion, marcarMetaCompletada, eliminarMeta } from "@/lib/actions";
-import DeleteButton from "../components/DeleteButton";
+import RowMenu from "../components/RowMenu";
+import MetaModal from "./MetaModal";
 
 type Meta = {
   id: string;
@@ -11,10 +12,19 @@ type Meta = {
   currentAmount: number;
   targetDate: Date | null;
   status: string;
+  motivo?: string | null;
 };
+
+function borrarConConfirmacion(id: string, nombre: string) {
+  if (!window.confirm(`¿Eliminar la meta "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  const fd = new FormData();
+  fd.set("id", id);
+  void eliminarMeta(fd);
+}
 
 export default function MetaCard({ meta }: { meta: Meta }) {
   const [abonando, setAbonando] = useState(false);
+  const [editando, setEditando] = useState(false);
   const pct = Math.min(100, Math.round((meta.currentAmount / meta.targetAmount) * 100));
   const cumplida = meta.status === "completada" || meta.currentAmount >= meta.targetAmount;
 
@@ -31,7 +41,7 @@ export default function MetaCard({ meta }: { meta: Meta }) {
           {cumplida && (
             <span className="text-[10px] font-medium px-2 py-1 rounded-md bg-positive-soft text-positive">Cumplida</span>
           )}
-          <DeleteButton id={meta.id} action={eliminarMeta} label="✕" confirmText={`¿Eliminar la meta "${meta.name}"?`} />
+          <RowMenu onEdit={() => setEditando(true)} onDelete={() => borrarConConfirmacion(meta.id, meta.name)} />
         </div>
       </div>
       <div className="h-1.5 rounded-full bg-background overflow-hidden mb-2">
@@ -78,6 +88,7 @@ export default function MetaCard({ meta }: { meta: Meta }) {
           + Abonar
         </button>
       )}
+      {editando && <MetaModal meta={meta} onClose={() => setEditando(false)} />}
     </div>
   );
 }

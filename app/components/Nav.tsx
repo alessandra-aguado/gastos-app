@@ -25,7 +25,7 @@ const sections: { href: string; icon: LucideIcon; label: string }[] = [
   { href: "/metas", icon: Target, label: "Metas" },
   { href: "/inversiones", icon: TrendingUp, label: "Inversiones" },
   { href: "/cuentas", icon: Wallet, label: "Cuentas" },
-  { href: "/debo", icon: CreditCard, label: "Debo" },
+  { href: "/debo", icon: CreditCard, label: "Deuda" },
   { href: "/fijos", icon: Repeat, label: "Fijos" },
   { href: "/asistencia-ia", icon: Sparkles, label: "Asistencia IA" },
   { href: "/deseos", icon: Gift, label: "Deseos" },

@@ -1,17 +1,30 @@
-import { getTopCategories, getSpendByTopCategory, getBudgets } from "@/lib/queries";
+import { getTopCategories, getSpendByTopCategory, getBudgets, getFijos, getDeudas, getSettings } from "@/lib/queries";
 import { PieChart } from "lucide-react";
 import CategoryIcon from "../components/CategoryIcon";
 import { setBudget } from "@/lib/actions";
 import PresupuestoTabs from "../components/PresupuestoTabs";
+import IngresoMensualField from "./IngresoMensualField";
 
 export const dynamic = "force-dynamic";
 
 export default async function PresupuestoPage() {
-  const categories = await getTopCategories();
-  const spendByCategory = await getSpendByTopCategory();
-  const budgets = await getBudgets();
+  const [categories, spendByCategory, budgets, fijos, deudas, settings] = await Promise.all([
+    getTopCategories(),
+    getSpendByTopCategory(),
+    getBudgets(),
+    getFijos(),
+    getDeudas(),
+    getSettings(),
+  ]);
   const budgetMap: Record<string, number> = {};
   for (const b of budgets) budgetMap[b.categoryId] = b.amountLimit;
+
+  const totalFijos = fijos.reduce((s, f) => s + f.amount, 0);
+  const cuotasTarjetas = deudas
+    .filter((d) => d.type === "tarjeta_credito" && d.status !== "pagada")
+    .reduce((s, d) => s + (d.minPayment || 0), 0);
+  const ingresoMensual = settings?.monthlyIncome || 0;
+  const disponibleAntesDePlanes = ingresoMensual - totalFijos - cuotasTarjetas;
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
@@ -81,66 +94,30 @@ export default async function PresupuestoPage() {
         proyeccion={
           <div className="space-y-3">
             <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
-              <div className="flex justify-between items-center text-sm text-muted mb-2.5">
-                <span>Ingreso mensual</span>
-                <span className="text-foreground font-medium">S/ 3,500</span>
-              </div>
+              <IngresoMensualField monthlyIncome={settings?.monthlyIncome ?? null} />
               <div className="flex justify-between items-center text-sm text-muted py-1.5">
                 <span>
                   Fijos <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
                 </span>
-                <span className="text-foreground">− S/ 800</span>
+                <span className="text-foreground">− S/ {totalFijos.toFixed(0)}</span>
               </div>
               <div className="flex justify-between items-center text-sm text-muted py-1.5">
                 <span>
-                  Debo, cuotas de agosto <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
+                  Deuda, cuotas de tarjetas <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
                 </span>
-                <span className="text-foreground">− S/ 450</span>
+                <span className="text-foreground">− S/ {cuotasTarjetas.toFixed(0)}</span>
               </div>
               <div className="flex justify-between items-center pt-2.5 mt-1.5 border-t border-border">
                 <span className="text-sm text-muted">Disponible antes de planes</span>
-                <span className="text-base font-medium">S/ 2,250</span>
+                <span className="text-base font-medium">S/ {disponibleAntesDePlanes.toFixed(0)}</span>
               </div>
+              {!settings?.monthlyIncome && (
+                <p className="text-xs text-muted mt-2.5">Define tu ingreso mensual arriba para ver el disponible real.</p>
+              )}
             </div>
 
-            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
-              <div className="flex justify-between items-center mb-2.5">
-                <span className="text-sm text-muted">Gastos planeados</span>
-                <button className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">+ Agregar plan</button>
-              </div>
-              <div className="flex justify-between items-center text-sm py-1.5">
-                <span>Concierto <span className="text-muted">· Entretenimiento</span></span>
-                <span>S/ 80</span>
-              </div>
-              <div className="flex justify-between items-center text-sm py-1.5">
-                <span>Taxi al concierto <span className="text-muted">· Transporte</span></span>
-                <span>S/ 20</span>
-              </div>
-              <div className="flex justify-between items-center text-sm py-1.5">
-                <span>Salida con Marco <span className="text-muted">· Amigos</span></span>
-                <span>S/ 50</span>
-              </div>
-              <div className="flex justify-between items-center pt-2.5 mt-1.5 border-t border-border">
-                <span className="text-sm text-muted">Subtotal planeado</span>
-                <span className="text-sm font-medium">S/ 150</span>
-              </div>
-            </div>
-
-            <div className="bg-accent-soft rounded-xl p-5">
-              <p className="text-xs text-accent">Disponible real este mes</p>
-              <p className="text-2xl font-bold text-accent">S/ 2,100</p>
-              <p className="text-[11px] text-accent mt-0.5">3,500 − 800 fijos − 450 debo − 150 planeado</p>
-            </div>
-
-            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
-              <div className="flex justify-between text-sm text-muted mb-2">
-                <span>Real vs proyectado, planes de agosto</span>
-                <span className="text-foreground">S/ 62 de S/ 150</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-background overflow-hidden">
-                <div className="h-full rounded-full bg-accent" style={{ width: "41%" }} />
-              </div>
-              <p className="text-xs text-muted mt-2.5">Al cerrar el mes verás aquí el contraste final entre lo proyectado y lo que gastaste de verdad.</p>
+            <div className="border border-dashed border-border rounded-xl p-5 text-center text-muted text-sm">
+              Los gastos variables planeados (y su contraste con lo que termines gastando de verdad) llegan en la próxima actualización.
             </div>
           </div>
         }
