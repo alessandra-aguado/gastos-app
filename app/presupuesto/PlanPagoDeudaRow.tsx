@@ -9,8 +9,11 @@ import { formatMonto } from "@/lib/format";
 type Plan = { id: string; month: string; amount: number };
 type Deuda = { id: string; counterpartName: string | null; balance: number };
 
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
 function labelMes(mes: string) {
-  return new Date(`${mes}-01T00:00:00`).toLocaleDateString("es-PE", { month: "long", year: "numeric" });
+  const [y, m] = mes.split("-").map(Number);
+  return `${MESES[m - 1]} ${y}`;
 }
 
 export default function PlanPagoDeudaRow({ deuda, planes, mesesDisponibles }: { deuda: Deuda; planes: Plan[]; mesesDisponibles: string[] }) {
