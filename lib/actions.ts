@@ -577,6 +577,23 @@ export async function eliminarIngreso(formData: FormData) {
   revalidatePath("/ingresos");
 }
 
+// ================= Ahorro =================
+
+export async function upsertSavingsPlan(formData: FormData) {
+  const month = String(formData.get("month") || "").trim();
+  if (!month) throw new Error("Falta el mes del plan de ahorro");
+  const totalAmount = parseFloat(String(formData.get("totalAmount") || "0")) || 0;
+  const colchonAmount = parseFloat(String(formData.get("colchonAmount") || "0")) || 0;
+  const inversionAmount = parseFloat(String(formData.get("inversionAmount") || "0")) || 0;
+  const metasAmount = parseFloat(String(formData.get("metasAmount") || "0")) || 0;
+  await prisma.savingsPlan.upsert({
+    where: { month },
+    update: { totalAmount, colchonAmount, inversionAmount, metasAmount },
+    create: { month, totalAmount, colchonAmount, inversionAmount, metasAmount },
+  });
+  revalidatePath("/ahorro");
+}
+
 // ================= Ajustes generales =================
 
 export async function updateIngresoMensual(formData: FormData) {

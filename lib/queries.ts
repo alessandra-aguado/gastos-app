@@ -206,6 +206,32 @@ export async function getInversiones() {
   return prisma.investment.findMany({ orderBy: { createdAt: "desc" } });
 }
 
+// ---------- Ahorro ----------
+export async function getSavingsPlan(month: string) {
+  return prisma.savingsPlan.findUnique({ where: { month } });
+}
+
+export async function getAhorroSummary() {
+  const [metas, inversiones] = await Promise.all([
+    prisma.savingsGoal.findMany({ where: { status: "activa" } }),
+    prisma.investment.findMany(),
+  ]);
+  const colchon = metas
+    .filter((m) => m.isEmergencyFund)
+    .reduce((s, m) => s + m.currentAmount, 0);
+  const metasSinColchon = metas.filter((m) => !m.isEmergencyFund);
+  const totalMetas = metasSinColchon.reduce((s, m) => s + m.currentAmount, 0);
+  const totalInversiones = inversiones.reduce((s, i) => s + (i.currentValue ?? i.amountContributed), 0);
+  return {
+    total: colchon + totalMetas + totalInversiones,
+    colchon,
+    totalMetas,
+    countMetas: metasSinColchon.length,
+    totalInversiones,
+    countInversiones: inversiones.length,
+  };
+}
+
 // ---------- Cuentas ----------
 export async function getCuentas() {
   return prisma.account.findMany({ orderBy: [{ bank: "asc" }, { createdAt: "asc" }] });

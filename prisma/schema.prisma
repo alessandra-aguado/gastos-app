@@ -235,6 +235,17 @@ model Settings {
   updatedAt     DateTime @updatedAt
 }
 
+model SavingsPlan {
+  id              String   @id @default(cuid())
+  month           String   @unique // "2026-08"
+  totalAmount     Float
+  colchonAmount   Float    @default(0)
+  inversionAmount Float    @default(0)
+  metasAmount     Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
 model EmailAccount {
   id              String @id @default(cuid())
   provider        String // gmail
