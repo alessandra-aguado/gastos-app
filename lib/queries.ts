@@ -187,6 +187,54 @@ export async function getDiasVencimiento() {
 }
 
 // Total gastado por mes, los últimos 6 meses (incluye el actual).
+// Actualiza (o crea) el snapshot del mes actual con los totales reales de
+// ahorro (metas activas), inversion y deuda. Los meses pasados quedan
+// congelados tal como estaban la ultima vez que se visito Inicio en ese mes:
+// no hay forma de reconstruir su valor exacto retroactivamente.
+async function actualizarSnapshotMesActual() {
+  const month = currentMonthKey();
+  const [metas, inversiones, deudas] = await Promise.all([
+    prisma.savingsGoal.findMany({ where: { status: "activa" } }),
+    prisma.investment.findMany(),
+    prisma.debt.findMany({ where: { status: "activa" } }),
+  ]);
+  const ahorro = metas.reduce((s, m) => s + m.currentAmount, 0);
+  const inversion = inversiones.reduce((s, i) => s + (i.currentValue ?? i.amountContributed), 0);
+  const deuda = deudas.reduce((s, d) => s + d.balance, 0);
+
+  await prisma.monthlySnapshot.upsert({
+    where: { month },
+    update: { ahorro, inversion, deuda },
+    create: { month, ahorro, inversion, deuda },
+  });
+}
+
+// Serie de los ultimos 6 meses (mismo rango que getMonthlyTrend) con datos
+// reales de ahorro/inversion/deuda. Los meses sin snapshot guardado quedan
+// en null (no se inventan valores).
+export async function getTendenciaFinanciera() {
+  await actualizarSnapshotMesActual();
+
+  const now = new Date();
+  const meses: string[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    meses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  }
+
+  const snapshots = await prisma.monthlySnapshot.findMany({ where: { month: { in: meses } } });
+  const porMes: Record<string, { ahorro: number; inversion: number; deuda: number }> = {};
+  for (const s of snapshots) {
+    porMes[s.month] = { ahorro: s.ahorro, inversion: s.inversion, deuda: s.deuda };
+  }
+
+  return {
+    ahorro: meses.map((m) => porMes[m]?.ahorro ?? null),
+    inversion: meses.map((m) => porMes[m]?.inversion ?? null),
+    deuda: meses.map((m) => porMes[m]?.deuda ?? null),
+  };
+}
+
 export async function getMonthlyTrend() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth() - 5, 1);

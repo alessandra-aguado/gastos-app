@@ -2,27 +2,36 @@
 
 import { useState } from "react";
 
+type Punto = { x: number; y: number } | null;
+
 type Serie = {
   key: string;
   label: string;
   color: string;
-  data: number[];
-  esReal: boolean;
+  data: (number | null)[];
 };
 
 export default function TendenciaGeneral({
   meses,
   gastoReal,
+  ahorro,
+  inversion,
+  deuda,
 }: {
   meses: string[];
   gastoReal: number[];
+  ahorro: (number | null)[];
+  inversion: (number | null)[];
+  deuda: (number | null)[];
 }) {
   const series: Serie[] = [
-    { key: "gasto", label: "Gasto", color: "#111111", data: gastoReal, esReal: true },
-    { key: "ahorro", label: "Ahorro", color: "#16a34a", data: [8200, 8900, 9600, 10300, 11000, 11720], esReal: false },
-    { key: "inversion", label: "Inversión", color: "#5b6cff", data: [3200, 3500, 3800, 4000, 4300, 4570], esReal: false },
-    { key: "deuda", label: "Deuda", color: "#f97316", data: [3400, 3300, 3150, 3050, 2950, 2890], esReal: false },
+    { key: "gasto", label: "Gasto", color: "#111111", data: gastoReal },
+    { key: "ahorro", label: "Ahorro", color: "#16a34a", data: ahorro },
+    { key: "inversion", label: "Inversión", color: "#5b6cff", data: inversion },
+    { key: "deuda", label: "Deuda", color: "#f97316", data: deuda },
   ];
+
+  const hayHistorialParcial = [ahorro, inversion, deuda].some((s) => s.some((v) => v === null));
 
   const [activas, setActivas] = useState<Set<string>>(new Set(["gasto"]));
   const [seleccion, setSeleccion] = useState<{ serieKey: string; index: number } | null>(null);
@@ -45,11 +54,14 @@ export default function TendenciaGeneral({
   const innerH = H - padT - padB;
   const n = meses.length;
 
-  const puntos = (data: number[]) => {
-    const min = Math.min(...data);
-    const max = Math.max(...data);
+  const puntos = (data: (number | null)[]): Punto[] => {
+    const valores = data.filter((v): v is number => v !== null);
+    if (valores.length === 0) return data.map(() => null);
+    const min = Math.min(...valores);
+    const max = Math.max(...valores);
     const rango = max - min || 1;
     return data.map((v, i) => {
+      if (v === null) return null;
       const x = padL + (i / Math.max(1, n - 1)) * innerW;
       const norm = (v - min) / rango;
       const y = padT + innerH - norm * innerH;
@@ -57,9 +69,13 @@ export default function TendenciaGeneral({
     });
   };
 
-  const seleccionInfo = seleccion
-    ? series.find((s) => s.key === seleccion.serieKey)
-    : null;
+  const ultimoValor = (data: (number | null)[]) => {
+    const valores = data.filter((v): v is number => v !== null);
+    return valores.length > 0 ? valores[valores.length - 1] : null;
+  };
+
+  const seleccionInfo = seleccion ? series.find((s) => s.key === seleccion.serieKey) : null;
+  const valorSeleccion = seleccionInfo ? seleccionInfo.data[seleccion!.index] : null;
 
   return (
     <div>
@@ -67,7 +83,10 @@ export default function TendenciaGeneral({
         <p className="text-sm font-medium">Tendencia general</p>
         {seleccionInfo && (
           <p className="text-xs text-muted">
-            {seleccionInfo.label} · {meses[seleccion!.index]}: <span className="text-foreground font-medium">S/ {seleccionInfo.data[seleccion!.index].toLocaleString("es-PE")}</span>
+            {seleccionInfo.label} · {meses[seleccion!.index]}:{" "}
+            <span className="text-foreground font-medium">
+              {valorSeleccion === null ? "sin datos" : `S/ ${valorSeleccion.toLocaleString("es-PE")}`}
+            </span>
           </p>
         )}
       </div>
@@ -75,7 +94,7 @@ export default function TendenciaGeneral({
       <div className="flex flex-wrap gap-2 mb-4">
         {series.map((s) => {
           const activo = activas.has(s.key);
-          const ultimo = s.data[s.data.length - 1];
+          const ultimo = ultimoValor(s.data);
           return (
             <button
               key={s.key}
@@ -89,8 +108,7 @@ export default function TendenciaGeneral({
             >
               <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
               {s.label}
-              <span className="font-medium">S/ {ultimo.toLocaleString("es-PE")}</span>
-              {!s.esReal && <span className="opacity-60">ref.</span>}
+              <span className="font-medium">{ultimo === null ? "—" : `S/ ${ultimo.toLocaleString("es-PE")}`}</span>
             </button>
           );
         })}
@@ -113,11 +131,17 @@ export default function TendenciaGeneral({
           .filter((s) => activas.has(s.key))
           .map((s) => {
             const pts = puntos(s.data);
-            const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+            let path = "";
+            pts.forEach((p, i) => {
+              if (!p) return;
+              const anterior = i > 0 ? pts[i - 1] : null;
+              path += `${anterior ? "L" : "M"}${p.x},${p.y} `;
+            });
             return (
               <g key={s.key}>
-                <path d={path} fill="none" stroke={s.color} strokeWidth={2.5} strokeDasharray={s.esReal ? undefined : "5 4"} />
+                <path d={path} fill="none" stroke={s.color} strokeWidth={2.5} />
                 {pts.map((p, i) => {
+                  if (!p) return null;
                   const activo = seleccion?.serieKey === s.key && seleccion?.index === i;
                   return (
                     <circle
@@ -144,6 +168,12 @@ export default function TendenciaGeneral({
           );
         })}
       </svg>
+
+      {hayHistorialParcial && (
+        <p className="text-xs text-muted mt-3">
+          El historial de ahorro, inversión y deuda se completa mes a mes a partir de agosto de 2026.
+        </p>
+      )}
     </div>
   );
 }

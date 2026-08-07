@@ -14,6 +14,7 @@ import {
   getTopCategories,
   getBudgets,
   getMonthlyTrend,
+  getTendenciaFinanciera,
   getMetas,
   getDeudas,
   getCuentas,
@@ -38,6 +39,7 @@ export default async function Home({
   const categories = await getTopCategories();
   const budgets = await getBudgets(range);
   const trend = await getMonthlyTrend();
+  const tendenciaFinanciera = await getTendenciaFinanciera();
   const metas = await getMetas();
   const deudas = await getDeudas();
   const cuentas = await getCuentas();
@@ -108,7 +110,13 @@ export default async function Home({
       </section>
 
       <section className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
-        <TendenciaGeneral meses={trend.map((m) => m.label)} gastoReal={trend.map((m) => m.total)} />
+        <TendenciaGeneral
+          meses={trend.map((m) => m.label)}
+          gastoReal={trend.map((m) => m.total)}
+          ahorro={tendenciaFinanciera.ahorro}
+          inversion={tendenciaFinanciera.inversion}
+          deuda={tendenciaFinanciera.deuda}
+        />
       </section>
 
       <section className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6">
