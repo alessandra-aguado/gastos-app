@@ -25,8 +25,10 @@ export async function getPaymentMethods() {
   return prisma.paymentMethod.findMany({ orderBy: { name: "asc" } });
 }
 
-export async function getMonthSummary(base?: Date) {
-  const { start, end } = currentMonthRange(base);
+export type DateRange = { start: Date; end: Date };
+
+export async function getMonthSummary(range?: DateRange) {
+  const { start, end } = range ?? currentMonthRange();
   const txs = await prisma.transaction.findMany({
     where: { date: { gte: start, lt: end } },
     select: { amount: true, status: true },
@@ -38,23 +40,30 @@ export async function getMonthSummary(base?: Date) {
   return { total, count, avg, pending };
 }
 
-// Devuelve un mapa { "06": 137.5, "07": 20 } con el día del mes como llave.
-export async function getDailySpend(base?: Date): Promise<Record<string, number>> {
-  const { start, end } = currentMonthRange(base);
+// Devuelve la lista de días del rango con su gasto: [{ date: "2026-08-06", amount: 137.5 }, ...]
+export async function getDailySpend(range?: DateRange): Promise<{ date: string; amount: number }[]> {
+  const { start, end } = range ?? currentMonthRange();
   const txs = await prisma.transaction.findMany({
     where: { date: { gte: start, lt: end } },
     select: { date: true, amount: true },
   });
   const map: Record<string, number> = {};
   for (const t of txs) {
-    const day = t.date.toISOString().slice(8, 10);
-    map[day] = (map[day] || 0) + t.amount;
+    const key = t.date.toISOString().slice(0, 10);
+    map[key] = (map[key] || 0) + t.amount;
   }
-  return map;
+  const dias: { date: string; amount: number }[] = [];
+  const cursor = new Date(start);
+  while (cursor < end) {
+    const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
+    dias.push({ date: key, amount: map[key] || 0 });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dias;
 }
 
-export async function getSpendByTopCategory(base?: Date): Promise<Record<string, number>> {
-  const { start, end } = currentMonthRange(base);
+export async function getSpendByTopCategory(range?: DateRange): Promise<Record<string, number>> {
+  const { start, end } = range ?? currentMonthRange();
   const txs = await prisma.transaction.findMany({
     where: { date: { gte: start, lt: end } },
     select: { amount: true, category: { select: { id: true, parentId: true } } },
@@ -80,8 +89,17 @@ export async function listTransactionsByCategory(topCategoryId: string) {
   });
 }
 
-export async function getBudgets(base?: Date) {
-  return prisma.budget.findMany({ where: { month: currentMonthKey(base) } });
+export async function getBudgets(range?: DateRange) {
+  if (!range) return prisma.budget.findMany({ where: { month: currentMonthKey() } });
+  // Suma los presupuestos de todos los meses que toca el rango.
+  const meses = new Set<string>();
+  const cursor = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
+  const fin = new Date(range.end.getFullYear(), range.end.getMonth(), 1);
+  while (cursor <= fin) {
+    meses.add(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+  return prisma.budget.findMany({ where: { month: { in: Array.from(meses) } } });
 }
 
 // Total gastado por mes, los últimos 6 meses (incluye el actual).
