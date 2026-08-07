@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { registrarPagoDeuda, marcarCobrado } from "@/lib/actions";
+import { registrarPagoDeuda, marcarCobrado, eliminarDeuda } from "@/lib/actions";
+import DeleteButton from "../components/DeleteButton";
 
 type Deuda = {
   id: string;
@@ -29,9 +30,12 @@ export function TarjetaCredito({ deuda }: { deuda: Deuda }) {
           </p>
         </div>
         {!pagando && (
-          <button onClick={() => setPagando(true)} className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">
-            Registrar pago
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setPagando(true)} className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">
+              Registrar pago
+            </button>
+            <DeleteButton id={deuda.id} action={eliminarDeuda} label="✕" confirmText={`¿Eliminar la deuda de "${deuda.counterpartName}"?`} />
+          </div>
         )}
       </div>
 
@@ -98,6 +102,7 @@ export function PrestamoPersonal({ deuda }: { deuda: Deuda }) {
               Pagar
             </button>
           )}
+          <DeleteButton id={deuda.id} action={eliminarDeuda} label="✕" confirmText={`¿Eliminar el registro de "${deuda.counterpartName}"?`} />
         </div>
       )}
     </div>

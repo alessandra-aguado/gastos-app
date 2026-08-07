@@ -1,6 +1,8 @@
 import { getInversiones } from "@/lib/queries";
 import NuevoAporteForm from "./NuevoAporteForm";
 import ActualizarValorForm from "./ActualizarValorForm";
+import DeleteButton from "../components/DeleteButton";
+import { eliminarInversion } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -69,11 +71,12 @@ export default async function InversionesPage() {
                     <p className={`text-xs ${gananciaPct >= 0 ? "text-positive" : "text-warning"}`}>{gananciaPct >= 0 ? "+" : ""}{gananciaPct.toFixed(1)}%</p>
                   </div>
                 </div>
-                {inv.kind === "variable" && (
-                  <div className="mt-2 pt-2 border-t border-border flex justify-end">
+                <div className="mt-2 pt-2 border-t border-border flex justify-between items-center">
+                  {inv.kind === "variable" ? (
                     <ActualizarValorForm id={inv.id} valorActual={inv.currentValue ?? inv.amountContributed} />
-                  </div>
-                )}
+                  ) : <span />}
+                  <DeleteButton id={inv.id} action={eliminarInversion} label="✕" confirmText={`¿Eliminar el aporte en "${inv.platform}"?`} />
+                </div>
               </div>
             );
           })

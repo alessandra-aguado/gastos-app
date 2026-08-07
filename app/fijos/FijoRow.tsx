@@ -1,6 +1,7 @@
 "use client";
 
-import { marcarFijoPagado } from "@/lib/actions";
+import { marcarFijoPagado, eliminarFijo } from "@/lib/actions";
+import DeleteButton from "../components/DeleteButton";
 
 type Fijo = {
   id: string;
@@ -37,6 +38,7 @@ export default function FijoRow({ fijo, ultimo, mesActual }: { fijo: Fijo; ultim
             <button className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">Marcar pagado</button>
           </form>
         )}
+        <DeleteButton id={fijo.id} action={eliminarFijo} label="✕" confirmText={`¿Eliminar el fijo "${fijo.name}"?`} />
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { updateSaldoCuenta } from "@/lib/actions";
+import { updateSaldoCuenta, eliminarCuenta } from "@/lib/actions";
+import DeleteButton from "../components/DeleteButton";
 
 type Cuenta = { id: string; name: string; balance: number; lastCheckIn: Date | null };
 
@@ -27,9 +28,12 @@ export default function CuentaRow({ cuenta, ultimo, dias }: { cuenta: Cuenta; ul
           <button className="text-xs px-2 py-1 rounded-lg bg-accent text-white">Guardar</button>
         </form>
       ) : (
-        <button onClick={() => setEditando(true)} className="text-sm hover:text-accent transition-colors">
-          S/ {cuenta.balance.toLocaleString("es-PE")}
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setEditando(true)} className="text-sm hover:text-accent transition-colors">
+            S/ {cuenta.balance.toLocaleString("es-PE")}
+          </button>
+          <DeleteButton id={cuenta.id} action={eliminarCuenta} label="✕" confirmText={`¿Eliminar la cuenta "${cuenta.name}"?`} />
+        </div>
       )}
     </div>
   );

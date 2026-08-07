@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { addContribucion, marcarMetaCompletada } from "@/lib/actions";
+import { addContribucion, marcarMetaCompletada, eliminarMeta } from "@/lib/actions";
+import DeleteButton from "../components/DeleteButton";
 
 type Meta = {
   id: string;
@@ -26,9 +27,12 @@ export default function MetaCard({ meta }: { meta: Meta }) {
             {meta.targetDate ? new Date(meta.targetDate).toLocaleDateString("es-PE", { month: "short", year: "numeric" }) : "sin fecha"}
           </p>
         </div>
-        {cumplida && (
-          <span className="text-[10px] font-medium px-2 py-1 rounded-md bg-positive-soft text-positive">Cumplida</span>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {cumplida && (
+            <span className="text-[10px] font-medium px-2 py-1 rounded-md bg-positive-soft text-positive">Cumplida</span>
+          )}
+          <DeleteButton id={meta.id} action={eliminarMeta} label="✕" confirmText={`¿Eliminar la meta "${meta.name}"?`} />
+        </div>
       </div>
       <div className="h-1.5 rounded-full bg-background overflow-hidden mb-2">
         <div className="h-full rounded-full" style={{ width: `${pct}%`, background: cumplida ? "var(--positive)" : "var(--accent)" }} />

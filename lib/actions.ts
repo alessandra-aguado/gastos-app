@@ -372,3 +372,44 @@ export async function createMedioDePago(formData: FormData) {
 
   revalidatePath("/ajustes");
 }
+
+// ================= Eliminar =================
+
+export async function eliminarMeta(formData: FormData) {
+  const id = String(formData.get("id"));
+  await prisma.savingsGoal.delete({ where: { id } });
+  revalidatePath("/metas");
+  revalidatePath("/debo");
+}
+
+export async function eliminarInversion(formData: FormData) {
+  const id = String(formData.get("id"));
+  await prisma.investment.delete({ where: { id } });
+  revalidatePath("/inversiones");
+}
+
+export async function eliminarCuenta(formData: FormData) {
+  const id = String(formData.get("id"));
+  await prisma.account.delete({ where: { id } });
+  revalidatePath("/cuentas");
+  revalidatePath("/");
+}
+
+export async function eliminarDeuda(formData: FormData) {
+  const id = String(formData.get("id"));
+  await prisma.debt.delete({ where: { id } });
+  revalidatePath("/debo");
+  revalidatePath("/");
+}
+
+export async function eliminarFijo(formData: FormData) {
+  const id = String(formData.get("id"));
+  await prisma.fixedExpense.delete({ where: { id } });
+  revalidatePath("/fijos");
+}
+
+export async function eliminarDeseo(formData: FormData) {
+  const id = String(formData.get("id"));
+  await prisma.wishlistItem.delete({ where: { id } });
+  revalidatePath("/deseos");
+}

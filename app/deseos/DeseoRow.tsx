@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { convertirDeseoEnMeta, marcarDeseoComprado } from "@/lib/actions";
+import { convertirDeseoEnMeta, marcarDeseoComprado, eliminarDeseo } from "@/lib/actions";
+import DeleteButton from "../components/DeleteButton";
 
 type Deseo = {
   id: string;
@@ -40,6 +41,7 @@ export default function DeseoRow({ deseo }: { deseo: Deseo }) {
               <input type="hidden" name="id" value={deseo.id} />
               <button className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">Comprado</button>
             </form>
+            <DeleteButton id={deseo.id} action={eliminarDeseo} label="✕" confirmText={`¿Eliminar el deseo "${deseo.name}"?`} />
           </div>
         )}
       </div>
