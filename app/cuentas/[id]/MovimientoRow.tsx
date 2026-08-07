@@ -36,7 +36,7 @@ export default function MovimientoRow({ accountId, movimiento, ultimo }: { accou
         <p className="text-sm font-medium flex items-center gap-1.5">
           {movimiento.description || (esIngreso ? "Entrada de dinero" : "Gasto")}
           {movimiento.imageUrl && (
-            <a href={movimiento.imageUrl} target="_blank" rel="noopener noreferrer" title="Ver foto del comprobante" className="text-muted hover:text-accent">
+            <a href={`/api/movimiento-foto/ver?url=${encodeURIComponent(movimiento.imageUrl)}`} target="_blank" rel="noopener noreferrer" title="Ver foto del comprobante" className="text-muted hover:text-accent">
               <ImageIcon size={13} />
             </a>
           )}

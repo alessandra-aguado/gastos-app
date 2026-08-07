@@ -67,7 +67,7 @@ export default function MovimientoModal({
                 try {
                   setSubiendo(true);
                   const blob = await upload(`movimientos/${accountId}/${Date.now()}-${foto.name}`, foto, {
-                    access: "public",
+                    access: "private",
                     handleUploadUrl: "/api/movimiento-foto",
                   });
                   fd.set("imageUrl", blob.url);
@@ -120,7 +120,7 @@ export default function MovimientoModal({
 
             {esEdicion && movimiento?.imageUrl && !quitarFoto && (
               <div className="flex items-center gap-2 mb-2">
-                <a href={movimiento.imageUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-accent underline">
+                <a href={`/api/movimiento-foto/ver?url=${encodeURIComponent(movimiento.imageUrl)}`} target="_blank" rel="noopener noreferrer" className="text-xs text-accent underline">
                   Ver foto actual
                 </a>
                 <button type="button" onClick={() => setQuitarFoto(true)} className="text-xs text-muted underline">
