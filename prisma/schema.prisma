@@ -31,6 +31,7 @@ model Category {
   budgets          Budget[]
   fixedExpenses    FixedExpense[]
   wishlistItems    WishlistItem[]
+  plannedExpenses  PlannedExpense[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -47,6 +48,7 @@ model PaymentMethod {
   fixedExpenses FixedExpense[]
   account       Account?
   debt          Debt?
+  plannedExpenses PlannedExpense[]
   createdAt     DateTime @default(now())
 }
 
@@ -245,6 +247,23 @@ model AccountCheckIn {
   date      DateTime @default(now())
 
   @@unique([accountId, month])
+}
+
+// Gasto (o préstamo dado) que aún no sucede pero que Ale quiere proyectar
+// contra el saldo de un medio de pago, antes de que sea un gasto o deuda real.
+model PlannedExpense {
+  id              String   @id @default(cuid())
+  description     String
+  amount          Float
+  month           String   // "2026-08"
+  kind            String   @default("gasto") // gasto | prestamo
+  categoryId      String?
+  category        Category?      @relation(fields: [categoryId], references: [id])
+  paymentMethodId String?
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  counterpartName String?  // solo si kind = prestamo
+  status          String   @default("pendiente") // pendiente | realizado | descartado
+  createdAt       DateTime @default(now())
 }
 
 model Income {

@@ -977,6 +977,125 @@ export async function eliminarFundMovement(formData: FormData) {
   revalidatePath(`/cuentas/${mov.accountId}`);
 }
 
+// ================= Gastos planificados (proyección) =================
+
+export async function createPlannedExpense(formData: FormData) {
+  const description = String(formData.get("description") || "").trim();
+  const amount = parseFloat(String(formData.get("amount")));
+  const kind = String(formData.get("kind") || "gasto");
+  const categoryId = String(formData.get("categoryId") || "").trim();
+  const paymentMethodId = String(formData.get("paymentMethodId") || "").trim();
+  const counterpartName = String(formData.get("counterpartName") || "").trim();
+
+  if (!description || !amount || (kind !== "gasto" && kind !== "prestamo")) {
+    throw new Error("Faltan campos requeridos");
+  }
+  if (kind === "gasto" && !categoryId) throw new Error("Elige una categoría");
+  if (kind === "prestamo" && !counterpartName) throw new Error("Indica a quién le prestas");
+
+  await prisma.plannedExpense.create({
+    data: {
+      description,
+      amount,
+      kind,
+      month: currentMonthKey(),
+      categoryId: categoryId || null,
+      paymentMethodId: paymentMethodId || null,
+      counterpartName: counterpartName || null,
+    },
+  });
+
+  await registrarActividad(
+    "Planificado",
+    "crear",
+    `${kind === "prestamo" ? "Préstamo planificado" : "Gasto planificado"}: "${description}" S/ ${amount.toFixed(0)}`
+  );
+  revalidatePath("/presupuesto");
+}
+
+export async function updatePlannedExpense(formData: FormData) {
+  const id = String(formData.get("id"));
+  const description = String(formData.get("description") || "").trim();
+  const amount = parseFloat(String(formData.get("amount")));
+  const kind = String(formData.get("kind") || "gasto");
+  const categoryId = String(formData.get("categoryId") || "").trim();
+  const paymentMethodId = String(formData.get("paymentMethodId") || "").trim();
+  const counterpartName = String(formData.get("counterpartName") || "").trim();
+
+  if (!id || !description || !amount) throw new Error("Faltan campos requeridos");
+
+  await prisma.plannedExpense.update({
+    where: { id },
+    data: {
+      description,
+      amount,
+      kind,
+      categoryId: categoryId || null,
+      paymentMethodId: paymentMethodId || null,
+      counterpartName: counterpartName || null,
+    },
+  });
+
+  await registrarActividad("Planificado", "editar", `Gasto planificado "${description}" editado`);
+  revalidatePath("/presupuesto");
+}
+
+export async function eliminarPlannedExpense(formData: FormData) {
+  const id = String(formData.get("id"));
+  const item = await prisma.plannedExpense.delete({ where: { id } });
+  await registrarActividad("Planificado", "eliminar", `Gasto planificado "${item.description}" eliminado`);
+  revalidatePath("/presupuesto");
+}
+
+// Convierte un gasto planificado en algo real: un Gasto (Transaction) o,
+// si es un préstamo, en una Deuda (préstamo personal, dirección "me deben").
+export async function marcarRealizadoPlannedExpense(formData: FormData) {
+  const id = String(formData.get("id"));
+  const item = await prisma.plannedExpense.findUnique({ where: { id } });
+  if (!item) throw new Error("No encontrado");
+
+  if (item.kind === "prestamo") {
+    await prisma.debt.create({
+      data: {
+        type: "prestamo_personal",
+        direction: "me_deben",
+        counterpartName: item.counterpartName,
+        principalAmount: item.amount,
+        balance: item.amount,
+        startDate: new Date(),
+        status: "activa",
+      },
+    });
+    revalidatePath("/debo");
+  } else {
+    if (!item.categoryId || !item.paymentMethodId) {
+      throw new Error("Este gasto planificado necesita categoría y medio de pago para poder realizarse");
+    }
+    await prisma.transaction.create({
+      data: {
+        amount: item.amount,
+        date: new Date(),
+        source: "manual",
+        status: "confirmado",
+        notes: item.description,
+        categoryId: item.categoryId,
+        paymentMethodId: item.paymentMethodId,
+      },
+    });
+    await sincronizarDeudaTarjeta(item.paymentMethodId, item.amount);
+    revalidatePath("/gastos");
+  }
+
+  await prisma.plannedExpense.update({ where: { id }, data: { status: "realizado" } });
+  await registrarActividad(
+    "Planificado",
+    "editar",
+    `"${item.description}" marcado como realizado (${item.kind === "prestamo" ? "préstamo" : "gasto"})`
+  );
+  revalidatePath("/presupuesto");
+  revalidatePath("/");
+}
+
 export async function eliminarDeuda(formData: FormData) {
   const id = String(formData.get("id"));
   const deudaEliminada = await prisma.debt.delete({ where: { id } });

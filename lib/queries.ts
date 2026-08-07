@@ -127,6 +127,30 @@ export async function getGastoVariableReal(range?: DateRange) {
   return result._sum.amount || 0;
 }
 
+// ---------- Gastos planificados (proyección) ----------
+export async function getPlannedExpenses(month?: string) {
+  return prisma.plannedExpense.findMany({
+    where: { month: month ?? currentMonthKey() },
+    include: { category: true, paymentMethod: true },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+// Suma de gastos reales del mes agrupados por medio de pago (para proyectar saldo).
+export async function getGastoDelMesPorMedio(range?: DateRange) {
+  const { start, end } = range ?? currentMonthRange();
+  const result = await prisma.transaction.groupBy({
+    by: ["paymentMethodId"],
+    where: { date: { gte: start, lt: end }, paymentMethodId: { not: null } },
+    _sum: { amount: true },
+  });
+  const map: Record<string, number> = {};
+  for (const r of result) {
+    if (r.paymentMethodId) map[r.paymentMethodId] = r._sum.amount || 0;
+  }
+  return map;
+}
+
 // Racha de días consecutivos con al menos un gasto registrado.
 export async function getRachaData() {
   const txs = await prisma.transaction.findMany({ select: { date: true }, orderBy: { date: "asc" } });

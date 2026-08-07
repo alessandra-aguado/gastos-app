@@ -1,15 +1,17 @@
-import { getTopCategories, getSpendByTopCategory, getBudgets, getFijos, getDeudas, getSettings, getGastoVariableReal } from "@/lib/queries";
+import { getTopCategories, getSpendByTopCategory, getBudgets, getFijos, getDeudas, getSettings, getGastoVariableReal, getPlannedExpenses, getGastoDelMesPorMedio, getPaymentMethods, getCuentas } from "@/lib/queries";
 import { formatMonto } from "@/lib/format";
 import { PieChart } from "lucide-react";
 import CategoryIcon from "../components/CategoryIcon";
 import { setBudget } from "@/lib/actions";
 import PresupuestoTabs from "../components/PresupuestoTabs";
 import IngresoMensualField from "./IngresoMensualField";
+import PlannedExpenseModal from "./PlannedExpenseModal";
+import PlannedExpenseRow from "./PlannedExpenseRow";
 
 export const dynamic = "force-dynamic";
 
 export default async function PresupuestoPage() {
-  const [categories, spendByCategory, budgets, fijos, deudas, settings, gastoVariableReal] = await Promise.all([
+  const [categories, spendByCategory, budgets, fijos, deudas, settings, gastoVariableReal, planificados, gastoPorMedio, medios, cuentas] = await Promise.all([
     getTopCategories(),
     getSpendByTopCategory(),
     getBudgets(),
@@ -17,6 +19,10 @@ export default async function PresupuestoPage() {
     getDeudas(),
     getSettings(),
     getGastoVariableReal(),
+    getPlannedExpenses(),
+    getGastoDelMesPorMedio(),
+    getPaymentMethods(),
+    getCuentas(),
   ]);
   const budgetMap: Record<string, number> = {};
   for (const b of budgets) budgetMap[b.categoryId] = b.amountLimit;
@@ -31,6 +37,27 @@ export default async function PresupuestoPage() {
   const totalPlanVariable = budgets.reduce((s, b) => s + b.amountLimit, 0);
   const disponibleDespuesDePlanes = disponibleAntesDePlanes - totalPlanVariable;
   const diffVariable = totalPlanVariable - gastoVariableReal;
+
+  const pendientes = planificados.filter((p) => p.status === "pendiente");
+  const totalPlanificadoPendiente = pendientes.reduce((s, p) => s + p.amount, 0);
+
+  const cuentaPorMedio: Record<string, (typeof cuentas)[number]> = {};
+  for (const c of cuentas) {
+    if (c.paymentMethodId) cuentaPorMedio[c.paymentMethodId] = c;
+  }
+  const planificadoPorMedio: Record<string, number> = {};
+  for (const p of pendientes) {
+    if (p.paymentMethodId) planificadoPorMedio[p.paymentMethodId] = (planificadoPorMedio[p.paymentMethodId] || 0) + p.amount;
+  }
+  const proyeccionPorMedio = medios
+    .filter((m) => cuentaPorMedio[m.id] && (planificadoPorMedio[m.id] || gastoPorMedio[m.id]))
+    .map((m) => {
+      const cuenta = cuentaPorMedio[m.id];
+      const gastado = gastoPorMedio[m.id] || 0;
+      const planificado = planificadoPorMedio[m.id] || 0;
+      const saldoProyectado = cuenta.balance - gastado - planificado;
+      return { medio: m, cuenta, gastado, planificado, saldoProyectado };
+    });
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
@@ -139,6 +166,56 @@ export default async function PresupuestoPage() {
                 </p>
               )}
             </div>
+
+            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
+              <div className="flex justify-between items-center mb-3">
+                <p className="text-sm font-medium">
+                  Gastos planificados (por hacer)
+                  {totalPlanificadoPendiente > 0 && <span className="text-muted font-normal"> · S/ {formatMonto(totalPlanificadoPendiente, decimales)}</span>}
+                </p>
+                <PlannedExpenseModal categorias={categories} medios={medios} />
+              </div>
+              <p className="text-xs text-muted mb-3">
+                Cosas concretas que crees que vas a gastar o prestar este mes, con su medio de pago, para ver si te alcanza antes de que pasen.
+              </p>
+              {pendientes.length === 0 ? (
+                <div className="border border-dashed border-border rounded-lg p-4 text-center text-muted text-xs">
+                  Sin gastos planificados este mes.
+                </div>
+              ) : (
+                <div className="border border-border rounded-lg overflow-hidden">
+                  {pendientes.map((p, idx) => (
+                    <PlannedExpenseRow key={p.id} item={p} categorias={categories} medios={medios} ultimo={idx === pendientes.length - 1} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {proyeccionPorMedio.length > 0 && (
+              <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
+                <p className="text-sm font-medium mb-1">Saldo proyectado por medio de pago</p>
+                <p className="text-xs text-muted mb-3">
+                  Tu último saldo confirmado, menos lo que ya gastaste este mes con ese medio, menos lo planificado pendiente.
+                </p>
+                <div className="space-y-2.5">
+                  {proyeccionPorMedio.map(({ medio, cuenta, gastado, planificado, saldoProyectado }) => (
+                    <div key={medio.id} className="flex justify-between items-center text-sm">
+                      <div>
+                        <p className="font-medium">{medio.name}</p>
+                        <p className="text-xs text-muted">
+                          S/ {formatMonto(cuenta.balance, decimales)} confirmado
+                          {gastado > 0 ? ` · − S/ ${formatMonto(gastado, decimales)} gastado` : ""}
+                          {planificado > 0 ? ` · − S/ ${formatMonto(planificado, decimales)} planificado` : ""}
+                        </p>
+                      </div>
+                      <span className={`font-medium ${saldoProyectado < 0 ? "text-warning" : ""}`}>
+                        S/ {formatMonto(saldoProyectado, decimales)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
               <p className="text-sm font-medium mb-3">Planificado vs. real este mes</p>
