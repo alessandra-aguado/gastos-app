@@ -244,6 +244,9 @@ model Income {
 model Settings {
   id            String  @id @default("singleton")
   monthlyIncome Float?
+  pctFijos      Float   @default(60) // % del ingreso destinado a fijos (regla de reparto, personalizable)
+  pctVariable   Float   @default(30) // % del ingreso destinado a gastos variables
+  pctAhorro     Float   @default(10) // % del ingreso destinado a ahorro
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

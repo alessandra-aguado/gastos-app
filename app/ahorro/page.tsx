@@ -11,7 +11,13 @@ export default async function AhorroPage() {
     getSettings(),
   ]);
 
-  const sugeridoPorRegla = settings?.monthlyIncome ? settings.monthlyIncome * 0.1 : null;
+  const ingreso = settings?.monthlyIncome ?? null;
+  const pctFijos = settings?.pctFijos ?? 60;
+  const pctVariable = settings?.pctVariable ?? 30;
+  const pctAhorro = settings?.pctAhorro ?? 10;
+  const sugeridoFijos = ingreso ? (ingreso * pctFijos) / 100 : null;
+  const sugeridoVariable = ingreso ? (ingreso * pctVariable) / 100 : null;
+  const sugeridoAhorro = ingreso ? (ingreso * pctAhorro) / 100 : null;
   const [anio, mes] = month.split("-");
   const nombreMes = new Date(Number(anio), Number(mes) - 1, 1).toLocaleDateString("es-PE", {
     month: "long",
@@ -75,11 +81,20 @@ export default async function AhorroPage() {
       <div className="bg-surface border border-border rounded-xl p-5">
         <p className="text-sm font-medium capitalize mb-3">Plan de ahorro · {nombreMes}</p>
         <SavingsPlanField month={month} plan={plan} />
-        {sugeridoPorRegla !== null && (
+        {sugeridoAhorro !== null ? (
           <p className="text-xs text-muted mt-3">
-            Con la regla 60/30/10 sobre tu ingreso mensual (S/{" "}
-            {settings!.monthlyIncome!.toLocaleString("es-PE")}), el ahorro sugerido sería S/{" "}
-            {sugeridoPorRegla.toLocaleString("es-PE", { minimumFractionDigits: 2 })} (10%).
+            Con tu regla de reparto ({pctFijos}/{pctVariable}/{pctAhorro} sobre S/{" "}
+            {ingreso!.toLocaleString("es-PE")} de ingreso mensual): fijos S/{" "}
+            {sugeridoFijos!.toLocaleString("es-PE", { minimumFractionDigits: 0 })}, variable S/{" "}
+            {sugeridoVariable!.toLocaleString("es-PE", { minimumFractionDigits: 0 })}, ahorro sugerido S/{" "}
+            {sugeridoAhorro.toLocaleString("es-PE", { minimumFractionDigits: 2 })}.{" "}
+            <Link href="/ajustes" className="text-accent hover:underline">
+              Cambiar reparto
+            </Link>
+          </p>
+        ) : (
+          <p className="text-xs text-muted mt-3">
+            Define tu ingreso mensual en Presupuesto para ver una sugerencia de reparto.
           </p>
         )}
       </div>

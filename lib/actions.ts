@@ -683,6 +683,28 @@ export async function updateIngresoMensual(formData: FormData) {
   revalidatePath("/presupuesto");
 }
 
+export async function updateReglaIngreso(formData: FormData) {
+  const pctFijos = parseFloat(String(formData.get("pctFijos") || "0")) || 0;
+  const pctVariable = parseFloat(String(formData.get("pctVariable") || "0")) || 0;
+  const pctAhorro = parseFloat(String(formData.get("pctAhorro") || "0")) || 0;
+
+  await prisma.settings.upsert({
+    where: { id: "singleton" },
+    update: { pctFijos, pctVariable, pctAhorro },
+    create: { id: "singleton", pctFijos, pctVariable, pctAhorro },
+  });
+
+  await registrarActividad(
+    "Presupuesto",
+    "editar",
+    `Regla de reparto de ingreso actualizada: ${pctFijos}% fijos / ${pctVariable}% variable / ${pctAhorro}% ahorro`
+  );
+
+  revalidatePath("/ajustes");
+  revalidatePath("/ahorro");
+  revalidatePath("/presupuesto");
+}
+
 // ================= Ajustes =================
 
 export async function createCategoria(formData: FormData) {
