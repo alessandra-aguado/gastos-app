@@ -18,6 +18,7 @@ type Item = {
 
 const TIPOS = [
   { value: "gasto", label: "Gasto" },
+  { value: "prestamo", label: "Préstamo que doy" },
   { value: "ingreso", label: "Ingreso extra" },
   { value: "pago_deuda", label: "Pago extra a deuda" },
 ];
@@ -84,7 +85,7 @@ export default function SimulationItemModal({
             </select>
 
             <label className="text-xs text-muted block mb-1">Descripción</label>
-            <input name="description" required defaultValue={item?.description} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder={type === "ingreso" ? "Chamba freelance" : type === "pago_deuda" ? "Pago extra a Interbank" : "Celular nuevo"} />
+            <input name="description" required defaultValue={item?.description} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder={type === "ingreso" ? "Chamba freelance" : type === "pago_deuda" ? "Pago extra a Interbank" : type === "prestamo" ? "Préstamo a papá" : "Celular nuevo"} />
 
             <label className="text-xs text-muted block mb-1">Monto</label>
             <input name="amount" type="number" step="any" required defaultValue={item?.amount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="500" />
@@ -98,7 +99,11 @@ export default function SimulationItemModal({
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
+              </>
+            )}
 
+            {(type === "gasto" || type === "prestamo") && (
+              <>
                 <label className="text-xs text-muted block mb-1">Medio de pago (opcional)</label>
                 <select name="paymentMethodId" defaultValue={item?.paymentMethodId || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5">
                   <option value="">Sin definir</option>
@@ -106,8 +111,13 @@ export default function SimulationItemModal({
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
                 </select>
-                <p className="text-xs text-muted mb-2.5 -mt-1.5">Si eliges una tarjeta de crédito, este gasto sube el saldo proyectado de esa tarjeta.</p>
+                <p className="text-xs text-muted mb-2.5 -mt-1.5">Si eliges una tarjeta de crédito, esto sube el saldo proyectado de esa tarjeta.</p>
               </>
+            )}
+            {type === "prestamo" && (
+              <p className="text-xs text-muted mb-2.5">
+                Un préstamo no se cuenta como gasto permanente — es plata que se supone que vuelve. Aun así, sí sale de tu bolsillo este mes, así que se resta de tu saldo proyectado igual que un gasto.
+              </p>
             )}
 
             {type === "pago_deuda" && (

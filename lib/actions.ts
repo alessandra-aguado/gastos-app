@@ -988,7 +988,7 @@ export async function createSimulationItem(formData: FormData) {
   const paymentMethodId = String(formData.get("paymentMethodId") || "").trim();
   const debtId = String(formData.get("debtId") || "").trim();
 
-  if (!month || !description || !amount || !["ingreso", "gasto", "pago_deuda"].includes(type)) {
+  if (!month || !description || !amount || !["ingreso", "gasto", "prestamo", "pago_deuda"].includes(type)) {
     throw new Error("Faltan campos requeridos");
   }
   if (type === "pago_deuda" && !debtId) throw new Error("Elige a qué deuda aplica el pago extra");

@@ -33,6 +33,7 @@ function borrarConConfirmacion(id: string, etiqueta: string) {
 const BADGE: Record<string, { label: string; className: string }> = {
   ingreso: { label: "Ingreso", className: "bg-accent-soft text-positive" },
   gasto: { label: "Gasto", className: "bg-accent-soft text-accent" },
+  prestamo: { label: "Préstamo", className: "bg-warning/15 text-warning" },
   pago_deuda: { label: "Pago extra", className: "bg-accent-soft text-accent" },
 };
 

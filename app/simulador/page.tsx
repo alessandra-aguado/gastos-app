@@ -47,7 +47,7 @@ export default async function SimuladorPage() {
   for (const mes of months) {
     const itemsMes = itemsPorMes[mes];
     const ingresosHip = itemsMes.filter((i) => i.type === "ingreso").reduce((s, i) => s + i.amount, 0);
-    const gastosHip = itemsMes.filter((i) => i.type === "gasto").reduce((s, i) => s + i.amount, 0);
+    const gastosHip = itemsMes.filter((i) => i.type === "gasto" || i.type === "prestamo").reduce((s, i) => s + i.amount, 0);
     const saldoDelMes = ingresoBase + ingresosHip - fijosSinTarjeta - cuotasTarjetas - gastosHip;
     const previo = filas.length > 0 ? filas[filas.length - 1].saldoAcumulado : 0;
     filas.push({ mes, itemsMes, ingresosHip, gastosHip, saldoDelMes, saldoAcumulado: previo + saldoDelMes });
@@ -58,7 +58,7 @@ export default async function SimuladorPage() {
     const porMes = months.map((mes) => {
       const itemsMes = itemsPorMes[mes];
       const cargosFijos = d.paymentMethodId ? fijosConTarjetaPorMedio[d.paymentMethodId] || 0 : 0;
-      const cargosHip = itemsMes.filter((i) => i.type === "gasto" && i.paymentMethodId === d.paymentMethodId).reduce((s, i) => s + i.amount, 0);
+      const cargosHip = itemsMes.filter((i) => (i.type === "gasto" || i.type === "prestamo") && i.paymentMethodId === d.paymentMethodId).reduce((s, i) => s + i.amount, 0);
       const pagoExtra = itemsMes.filter((i) => i.type === "pago_deuda" && i.debtId === d.id).reduce((s, i) => s + i.amount, 0);
       balance = Math.max(0, balance + cargosFijos + cargosHip - (d.minPayment || 0) - pagoExtra);
       const pctUso = d.creditLimit ? Math.min(999, Math.round((balance / d.creditLimit) * 100)) : null;
