@@ -27,24 +27,26 @@ export default function RachaChip() {
       </button>
 
       {open && (
-        <div className="mt-3 bg-surface border border-border rounded-2xl p-4 max-w-sm">
-          <div className="flex items-center justify-between mb-3">
+        <div className="mt-3 bg-surface border border-border rounded-2xl p-4" style={{ width: 300 }}>
+          <div className="flex items-center justify-between mb-3 gap-3">
             <div>
-              <p className="text-xl font-semibold text-accent">🔥 12 días</p>
-              <p className="text-xs text-muted">Registrando el mismo día que gastas</p>
+              <p className="text-xl font-semibold text-accent whitespace-nowrap">🔥 12 días</p>
+              <p className="text-xs text-muted">Registrando al día</p>
             </div>
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <p className="text-xs text-muted">Mejor racha</p>
               <p className="text-sm font-medium">21 días</p>
             </div>
           </div>
-          <div className="flex gap-1.5 mb-2">
+          <div className="flex gap-1.5 mb-2 justify-between">
             {dias.map((x, i) => (
-              <div key={i} className="flex-1 text-center">
+              <div key={i} className="text-center" style={{ width: 30 }}>
                 <p className="text-[10px] text-muted mb-1">{x.d}</p>
                 <div
-                  className="w-full aspect-square rounded-md"
+                  className="rounded-md"
                   style={{
+                    width: 30,
+                    height: 30,
                     background: x.ok === true ? "var(--positive)" : x.ok === false ? "var(--border)" : "var(--accent-soft)",
                     border: x.ok === null ? "1px dashed var(--accent)" : "none",
                   }}
