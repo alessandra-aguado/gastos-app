@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createMeta } from "@/lib/actions";
+import { Banknote, Receipt } from "lucide-react";
 
 export default function NuevaMetaModal() {
   const [abierto, setAbierto] = useState(false);
@@ -44,14 +45,14 @@ export default function NuevaMetaModal() {
                 onClick={() => setComoLograr("efectivo")}
                 className={`flex-1 text-xs py-2 rounded-lg border ${comoLograr === "efectivo" ? "bg-accent-soft text-accent border-accent" : "border-border"}`}
               >
-                💰 Ahorro en efectivo
+                <span className="inline-flex items-center gap-1.5"><Banknote size={14} strokeWidth={1.75} />Ahorro en efectivo</span>
               </button>
               <button
                 type="button"
                 onClick={() => setComoLograr("cuotas")}
                 className={`flex-1 text-xs py-2 rounded-lg border ${comoLograr === "cuotas" ? "bg-accent-soft text-accent border-accent" : "border-border"}`}
               >
-                🧾 Cuotas o crédito
+                <span className="inline-flex items-center gap-1.5"><Receipt size={14} strokeWidth={1.75} />Cuotas o crédito</span>
               </button>
             </div>
             <input type="hidden" name="method" value={comoLograr} />

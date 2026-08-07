@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, ReactNode } from "react";
+import { Camera, Mic, MessageSquare, PenLine, type LucideIcon } from "lucide-react";
 
 export default function MetodoSelector({ manual }: { manual: ReactNode }) {
   const [metodo, setMetodo] = useState<"foto" | "voz" | "texto" | "manual">("manual");
 
-  const metodos: { id: "foto" | "voz" | "texto" | "manual"; label: string; icon: string }[] = [
-    { id: "foto", label: "Foto", icon: "📷" },
-    { id: "voz", label: "Voz", icon: "🎤" },
-    { id: "texto", label: "Texto", icon: "💬" },
-    { id: "manual", label: "Manual", icon: "✍️" },
+  const metodos: { id: "foto" | "voz" | "texto" | "manual"; label: string; Icon: LucideIcon }[] = [
+    { id: "foto", label: "Foto", Icon: Camera },
+    { id: "voz", label: "Voz", Icon: Mic },
+    { id: "texto", label: "Texto", Icon: MessageSquare },
+    { id: "manual", label: "Manual", Icon: PenLine },
   ];
 
   return (
@@ -23,7 +24,7 @@ export default function MetodoSelector({ manual }: { manual: ReactNode }) {
               metodo === m.id ? "bg-accent-soft text-accent border-accent" : "border-border text-muted"
             }`}
           >
-            <span className="text-base">{m.icon}</span>
+            <m.Icon size={18} strokeWidth={1.75} />
             {m.label}
           </button>
         ))}
@@ -57,7 +58,7 @@ export default function MetodoSelector({ manual }: { manual: ReactNode }) {
       {metodo === "voz" && (
         <div>
           <div className="flex flex-col items-center py-4 mb-3">
-            <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center mb-2 text-white">🎤</div>
+            <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center mb-2 text-white"><Mic size={20} strokeWidth={1.75} /></div>
             <p className="text-xs text-muted">Escuchando...</p>
           </div>
           <div className="bg-background rounded-xl px-3 py-2.5 text-sm italic mb-3.5">&quot;Gasté 45 soles en un almuerzo con Marco, pagué con Yape.&quot;</div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Flame } from "lucide-react";
 
 const dias = [
   { d: "L", ok: true },
@@ -21,7 +22,7 @@ export default function RachaChip() {
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 bg-accent-soft rounded-full px-4 py-2 text-sm text-accent"
       >
-        <span>🔥</span>
+        <Flame size={15} strokeWidth={1.75} />
         <span>Racha</span>
         <span className="font-medium">12 días</span>
       </button>
@@ -30,7 +31,7 @@ export default function RachaChip() {
         <div className="mt-3 bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4" style={{ width: 300 }}>
           <div className="flex items-center justify-between mb-3 gap-3">
             <div>
-              <p className="text-xl font-semibold text-accent whitespace-nowrap">🔥 12 días</p>
+              <p className="text-xl font-semibold text-accent whitespace-nowrap flex items-center gap-1.5"><Flame size={20} strokeWidth={1.75} />12 días</p>
               <p className="text-xs text-muted">Registrando al día</p>
             </div>
             <div className="text-right shrink-0">

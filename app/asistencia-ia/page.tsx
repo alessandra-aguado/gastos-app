@@ -1,5 +1,5 @@
 "use client";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Bot } from "lucide-react";
 
 import { useState } from "react";
 
@@ -34,7 +34,7 @@ export default function AsistenciaIaPage() {
             </div>
           ) : (
             <div key={i} className="flex gap-2.5 items-start">
-              <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center text-white text-xs shrink-0">🤖</div>
+              <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center text-white shrink-0"><Bot size={14} strokeWidth={1.75} /></div>
               <div className="bg-accent-soft text-accent rounded-xl rounded-tl-sm px-3.5 py-2.5 text-sm max-w-[80%] leading-relaxed">{m.texto}</div>
             </div>
           )

@@ -4,6 +4,7 @@ import PatrimonioCard from "./components/PatrimonioCard";
 import TendenciaGeneral from "./components/TendenciaGeneral";
 import MesSelector from "./components/MesSelector";
 import CategoryIcon from "./components/CategoryIcon";
+import { Hand, PieChart, Target, CreditCard } from "lucide-react";
 import { colorForIndex } from "@/lib/categoryColors";
 import {
   getMonthSummary,
@@ -54,16 +55,16 @@ export default async function Home({
   const patrimonio = cuentas.filter((c) => c.type !== "puntos").reduce((s, c) => s + c.balance, 0);
 
   const chips = [
-    { icon: "📊", label: "Presupuesto", value: budgetPct !== null ? `${budgetPct}% usado` : "sin definir" },
-    { icon: "🎯", label: "Metas", value: `${metasActivas} activa${metasActivas === 1 ? "" : "s"}` },
-    { icon: "💳", label: "Debo", value: `S/ ${totalDebo.toLocaleString("es-PE")}` },
+    { Icon: PieChart, label: "Presupuesto", value: budgetPct !== null ? `${budgetPct}% usado` : "sin definir" },
+    { Icon: Target, label: "Metas", value: `${metasActivas} activa${metasActivas === 1 ? "" : "s"}` },
+    { Icon: CreditCard, label: "Debo", value: `S/ ${totalDebo.toLocaleString("es-PE")}` },
   ];
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Hola, Ale 👋</h1>
+          <h1 className="text-2xl font-semibold flex items-center gap-2">Hola, Ale <Hand size={22} strokeWidth={1.75} /></h1>
           <MesSelector mes={mesKey} />
         </div>
         <Link
@@ -74,20 +75,20 @@ export default async function Home({
         </Link>
       </header>
 
-      <section className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-6 flex flex-wrap items-center gap-8">
-        <div>
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
           <p className="text-xs text-muted">Gastado {esMesActual ? "este mes" : "en el mes"}</p>
           <p className="text-3xl font-bold mt-1">S/ {summary.total.toFixed(0)}</p>
         </div>
-        <div>
+        <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
           <p className="text-xs text-muted">Transacciones</p>
           <p className="text-3xl font-bold mt-1">{summary.count}</p>
         </div>
-        <div>
+        <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
           <p className="text-xs text-muted">Promedio por gasto</p>
           <p className="text-3xl font-bold mt-1">S/ {summary.avg.toFixed(0)}</p>
         </div>
-        <div>
+        <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
           <p className="text-xs text-muted">Pendientes por clasificar</p>
           <p className="text-3xl font-bold mt-1 text-positive">{summary.pending}</p>
         </div>
@@ -96,7 +97,7 @@ export default async function Home({
       <section className="flex flex-wrap items-start gap-3">
         {chips.map((c) => (
           <div key={c.label} className="flex items-center gap-2 bg-surface border border-border rounded-full px-4 py-2 text-sm">
-            <span>{c.icon}</span>
+            <c.Icon size={15} strokeWidth={1.75} className="text-muted" />
             <span className="text-muted">{c.label}</span>
             <span className="font-medium">{c.value}</span>
           </div>

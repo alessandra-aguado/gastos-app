@@ -1,5 +1,5 @@
 import { getDeudas, getMetas } from "@/lib/queries";
-import { CreditCard } from "lucide-react";
+import { CreditCard, Shield } from "lucide-react";
 import { TarjetaCredito, PrestamoPersonal } from "./DeudaCard";
 import NuevaDeudaModal from "./NuevaDeudaModal";
 
@@ -49,7 +49,7 @@ export default async function DeboPage() {
 
       {fondoEmergencia && (
         <div className="bg-accent-soft rounded-xl p-4 flex gap-2.5 items-center">
-          <span className="text-lg">🛡️</span>
+          <Shield size={18} strokeWidth={1.75} className="text-accent" />
           <p className="text-xs text-accent leading-relaxed">
             Tu fondo de emergencia ({fondoEmergencia.name}) tiene S/ {fondoEmergencia.currentAmount.toLocaleString("es-PE")}
             {mesesCobertura !== null ? ` — cubre ${mesesCobertura.toFixed(1)} meses de tus cuotas actuales (S/ ${cuotasMensuales.toFixed(0)}/mes).` : "."}
