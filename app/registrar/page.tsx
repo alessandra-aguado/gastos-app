@@ -58,7 +58,7 @@ export default async function RegistrarPage() {
           >
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.icon} {c.name}
+                {c.name}
               </option>
             ))}
           </select>

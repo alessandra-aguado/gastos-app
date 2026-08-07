@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { createCategoria, createMedioDePago } from "@/lib/actions";
+import { createMedioDePago } from "@/lib/actions";
+import CategoryIcon from "../components/CategoryIcon";
+import NuevaCategoriaModal from "./NuevaCategoriaModal";
 
-type Categoria = { id: string; name: string; icon: string | null; description: string | null };
+type Categoria = { id: string; name: string; icon: string | null; color: string | null; description: string | null };
 type Medio = { id: string; name: string; type: string; bankOrIssuer: string | null };
 
 export default function AjustesTabs({ categorias, medios }: { categorias: Categoria[]; medios: Medio[] }) {
@@ -18,11 +20,16 @@ export default function AjustesTabs({ categorias, medios }: { categorias: Catego
 
       {tab === "categorias" ? (
         <>
-          <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] overflow-hidden mb-3">
+          <div className="flex justify-end mb-3">
+            <NuevaCategoriaModal />
+          </div>
+          <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] overflow-hidden">
             {categorias.map((c, i) => (
               <div key={c.id} className={`flex justify-between items-start px-4 py-3 ${i < categorias.length - 1 ? "border-b border-border" : ""}`}>
-                <div className="flex gap-2.5">
-                  <span className="text-base">{c.icon || "🔹"}</span>
+                <div className="flex gap-2.5 items-center">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: c.color || "#F2F2F3" }}>
+                    <CategoryIcon icon={c.icon} size={16} />
+                  </div>
                   <div>
                     <p className="text-sm font-medium">{c.name}</p>
                     {c.description && <p className="text-xs text-muted max-w-[280px]">{c.description}</p>}
@@ -31,15 +38,6 @@ export default function AjustesTabs({ categorias, medios }: { categorias: Catego
               </div>
             ))}
           </div>
-          <form action={createCategoria} className="bg-surface border border-dashed border-border rounded-xl p-4">
-            <p className="text-xs text-muted mb-2">Nueva categoría</p>
-            <div className="flex gap-2 mb-2">
-              <input name="icon" placeholder="Ícono" className="w-16 border border-border rounded-lg px-2 py-1.5 bg-background text-sm" />
-              <input name="name" required placeholder="Nombre" className="flex-1 border border-border rounded-lg px-2 py-1.5 bg-background text-sm" />
-            </div>
-            <textarea name="description" placeholder="Descripción para la IA: qué tipo de compras van aquí..." className="w-full border border-border rounded-lg px-2 py-1.5 bg-background text-sm mb-2 h-11" />
-            <button className="text-xs px-3 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">Agregar categoría</button>
-          </form>
         </>
       ) : (
         <>

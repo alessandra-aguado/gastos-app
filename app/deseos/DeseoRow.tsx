@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { convertirDeseoEnMeta, marcarDeseoComprado, eliminarDeseo } from "@/lib/actions";
 import DeleteButton from "../components/DeleteButton";
+import CategoryIcon from "../components/CategoryIcon";
 
 type Deseo = {
   id: string;
@@ -10,7 +11,7 @@ type Deseo = {
   estimatedPrice: number;
   isNecessary: boolean;
   status: string;
-  category: { name: string; icon: string | null } | null;
+  category: { name: string; icon: string | null; color: string | null } | null;
 };
 
 export default function DeseoRow({ deseo }: { deseo: Deseo }) {
@@ -20,7 +21,9 @@ export default function DeseoRow({ deseo }: { deseo: Deseo }) {
     <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] px-4 py-3">
       <div className="flex justify-between items-center">
         <div className="flex gap-2.5 items-center">
-          <span className="text-lg">{deseo.category?.icon || "✨"}</span>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: deseo.category?.color || "#F2F2F3" }}>
+            <CategoryIcon icon={deseo.category?.icon} size={16} />
+          </div>
           <div>
             <p className="text-sm font-medium">{deseo.name}</p>
             <p className="text-xs text-muted">{deseo.category?.name || "Sin categoría"} · {deseo.isNecessary ? "necesario" : "innecesario"}</p>

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { getTopCategories, getSpendByTopCategory, listTransactionsByCategory, getMonthlyTrend } from "@/lib/queries";
+import CategoryIcon from "../components/CategoryIcon";
+import { colorForIndex } from "@/lib/categoryColors";
 
 export const dynamic = "force-dynamic";
-
-const PALETTE = ["#6d4aff", "#5b6cff", "#f97316", "#16a34a", "#a778e0", "#e07ba7", "#7bb8e0", "#c4a15b"];
 
 export default async function GastosPage({
   searchParams,
@@ -23,8 +23,9 @@ export default async function GastosPage({
         <Link href="/gastos" className="text-sm text-muted hover:text-accent">
           ← Todas las categorías
         </Link>
-        <h1 className="text-2xl font-semibold mt-2">
-          {category?.icon} {category?.name}
+        <h1 className="text-2xl font-semibold mt-2 flex items-center gap-2">
+          <CategoryIcon icon={category?.icon} size={22} />
+          {category?.name}
         </h1>
         <p className="text-muted text-sm mt-1">
           S/ {(spendByCategory[cat] || 0).toFixed(0)} este mes · {transactions.length} transacciones
@@ -58,7 +59,7 @@ export default async function GastosPage({
   const maxTrend = Math.max(1, ...trend.map((m) => m.total));
 
   const conCategoriasConGasto = categories
-    .map((c, i) => ({ ...c, monto: spendByCategory[c.id] || 0, color: PALETTE[i % PALETTE.length] }))
+    .map((c, i) => ({ ...c, monto: spendByCategory[c.id] || 0, color: c.color || colorForIndex(i) }))
     .filter((c) => c.monto > 0)
     .sort((a, b) => b.monto - a.monto);
   const totalMes = conCategoriasConGasto.reduce((s, c) => s + c.monto, 0);
@@ -100,7 +101,9 @@ export default async function GastosPage({
               <div className="space-y-1.5 flex-1 min-w-0">
                 {conCategoriasConGasto.slice(0, 5).map((c) => (
                   <div key={c.id} className="flex items-center gap-2 text-xs">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: c.color }} />
+                    <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style={{ background: c.color }}>
+                      <CategoryIcon icon={c.icon} size={11} />
+                    </div>
                     <span className="text-muted truncate flex-1">{c.name}</span>
                     <span className="font-medium">{Math.round((c.monto / totalMes) * 100)}%</span>
                   </div>
@@ -128,13 +131,15 @@ export default async function GastosPage({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
-        {categories.map((c) => (
+        {categories.map((c, i) => (
           <Link
             key={c.id}
             href={`/gastos?cat=${c.id}`}
             className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4 hover:border-accent transition-colors"
           >
-            <span className="text-xl">{c.icon}</span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: c.color || colorForIndex(i) }}>
+              <CategoryIcon icon={c.icon} size={16} />
+            </div>
             <p className="text-sm mt-2">{c.name}</p>
             <p className="text-lg font-semibold mt-0.5">S/ {(spendByCategory[c.id] || 0).toFixed(0)}</p>
           </Link>

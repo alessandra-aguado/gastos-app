@@ -350,15 +350,17 @@ export async function marcarDeseoComprado(formData: FormData) {
 export async function createCategoria(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   const icon = String(formData.get("icon") || "").trim() || null;
+  const color = String(formData.get("color") || "").trim() || null;
   const description = String(formData.get("description") || "").trim() || null;
 
   if (!name) throw new Error("Falta el nombre de la categoría");
 
-  await prisma.category.create({ data: { name, icon, description } });
+  await prisma.category.create({ data: { name, icon, color, description } });
 
   revalidatePath("/ajustes");
   revalidatePath("/presupuesto");
   revalidatePath("/gastos");
+  revalidatePath("/");
 }
 
 export async function createMedioDePago(formData: FormData) {

@@ -2,6 +2,7 @@
 
 import { marcarFijoPagado, eliminarFijo } from "@/lib/actions";
 import DeleteButton from "../components/DeleteButton";
+import CategoryIcon from "../components/CategoryIcon";
 
 type Fijo = {
   id: string;
@@ -12,7 +13,7 @@ type Fijo = {
   rangeStart: number | null;
   rangeEnd: number | null;
   lastPaidMonth: string | null;
-  category: { name: string; icon: string | null };
+  category: { name: string; icon: string | null; color: string | null };
 };
 
 export default function FijoRow({ fijo, ultimo, mesActual }: { fijo: Fijo; ultimo: boolean; mesActual: string }) {
@@ -22,7 +23,9 @@ export default function FijoRow({ fijo, ultimo, mesActual }: { fijo: Fijo; ultim
   return (
     <div className={`flex justify-between items-center px-4 py-3 ${!ultimo ? "border-b border-border" : ""}`}>
       <div className="flex gap-2.5 items-center">
-        <span className="text-lg">{fijo.category.icon || "🔁"}</span>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: fijo.category.color || "#F2F2F3" }}>
+          <CategoryIcon icon={fijo.category.icon} size={16} />
+        </div>
         <div>
           <p className="text-sm font-medium">{fijo.name}</p>
           <p className="text-xs text-muted">{fijo.category.name} · {vence}</p>

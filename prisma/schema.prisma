@@ -19,7 +19,8 @@ datasource db {
 model Category {
   id          String   @id @default(cuid())
   name        String
-  icon        String?
+  icon        String?  // nombre del icono lucide, ej. "utensils"
+  color       String?  // hex, ej. "#D8E8D4"
   description String? // se inyecta al prompt de clasificación de la IA
   parentId    String?
   parent      Category?  @relation("Subcategories", fields: [parentId], references: [id])

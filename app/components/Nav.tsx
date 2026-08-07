@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Home,
@@ -37,7 +38,7 @@ export default function Nav() {
   return (
     <aside className="w-60 shrink-0 border-r border-border bg-sidebar min-h-screen px-3 py-6 hidden md:flex md:flex-col gap-1">
       <div className="px-3 pb-6">
-        <p className="text-sm font-semibold text-foreground">Mis Gastos</p>
+        <Image src="/miga-logo.png" alt="miga" width={96} height={32} className="h-7 w-auto mb-2" priority />
         <p className="text-xs text-muted">Hola, Ale 👋</p>
       </div>
       {sections.map((s) => {

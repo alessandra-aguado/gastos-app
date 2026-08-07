@@ -7,21 +7,21 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 const TOP_CATEGORIES = [
-  { id: "supermercado", name: "Supermercado", icon: "🛒", description: "Compras en supermercado tipo Tottus, Plaza Vea, Metro, Wong." },
-  { id: "mercado", name: "Mercado", icon: "🥬", description: "Compras en mercado o puestos, no supermercado." },
-  { id: "transporte", name: "Transporte", icon: "🚌", description: "Movilidad: micro, taxi, corredor, apps de transporte." },
-  { id: "salidas_comer", name: "Salidas a comer", icon: "🍽️", description: "Restaurantes, delivery de comida, cafés." },
-  { id: "entretenimiento", name: "Entretenimiento", icon: "🎬", description: "Cine, streaming, salidas de ocio." },
-  { id: "salud", name: "Salud", icon: "💊", description: "Farmacia, consultas médicas, medicinas." },
-  { id: "salud_fisica", name: "Salud física", icon: "🏋️", description: "Gimnasio, deporte, actividad física." },
-  { id: "educacion", name: "Educación", icon: "📚", description: "Cursos, materiales de estudio, exámenes." },
-  { id: "suscripciones", name: "Suscripciones", icon: "🔁", description: "Netflix, Spotify y otros recibos recurrentes." },
-  { id: "viajes", name: "Viajes", icon: "✈️", description: "Pasajes, hospedaje, gastos de viaje." },
-  { id: "mascota", name: "Mascota", icon: "🐾", description: "Veterinaria, alimento y cuidado de mascota." },
-  { id: "familia", name: "Familia", icon: "👨‍👩‍👧", description: "Gastos o invitaciones relacionadas a la familia." },
-  { id: "amigos", name: "Amigos", icon: "🧑‍🤝‍🧑", description: "Salidas o gastos con amigos." },
-  { id: "regalos", name: "Regalos", icon: "🎁", description: "Compras hechas específicamente para regalar." },
-  { id: "otros", name: "Otros", icon: "🔹", description: "Cualquier gasto que no calce en otra categoría." },
+  { id: "supermercado", name: "Supermercado", icon: "shopping-cart", color: "#DCEBDD", description: "Compras en supermercado tipo Tottus, Plaza Vea, Metro, Wong." },
+  { id: "mercado", name: "Mercado", icon: "shopping-bag", color: "#D9F0E6", description: "Compras en mercado o puestos, no supermercado." },
+  { id: "transporte", name: "Transporte", icon: "bus", color: "#DCEAF7", description: "Movilidad: micro, taxi, corredor, apps de transporte." },
+  { id: "salidas_comer", name: "Salidas a comer", icon: "utensils", color: "#FBE4D8", description: "Restaurantes, delivery de comida, cafés." },
+  { id: "entretenimiento", name: "Entretenimiento", icon: "clapperboard", color: "#E7E0F8", description: "Cine, streaming, salidas de ocio." },
+  { id: "salud", name: "Salud", icon: "pill", color: "#FBE0EA", description: "Farmacia, consultas médicas, medicinas." },
+  { id: "salud_fisica", name: "Salud física", icon: "dumbbell", color: "#DCE9E3", description: "Gimnasio, deporte, actividad física." },
+  { id: "educacion", name: "Educación", icon: "graduation-cap", color: "#E3E4FB", description: "Cursos, materiales de estudio, exámenes." },
+  { id: "suscripciones", name: "Suscripciones", icon: "repeat", color: "#F2E8D8", description: "Netflix, Spotify y otros recibos recurrentes." },
+  { id: "viajes", name: "Viajes", icon: "plane", color: "#DCEAF7", description: "Pasajes, hospedaje, gastos de viaje." },
+  { id: "mascota", name: "Mascota", icon: "paw-print", color: "#FBF3D0", description: "Veterinaria, alimento y cuidado de mascota." },
+  { id: "familia", name: "Familia", icon: "users", color: "#FBE4D8", description: "Gastos o invitaciones relacionadas a la familia." },
+  { id: "amigos", name: "Amigos", icon: "users-round", color: "#E7E0F8", description: "Salidas o gastos con amigos." },
+  { id: "regalos", name: "Regalos", icon: "gift", color: "#FBE0EA", description: "Compras hechas específicamente para regalar." },
+  { id: "otros", name: "Otros", icon: "circle-dot", color: "#DCEBDD", description: "Cualquier gasto que no calce en otra categoría." },
 ];
 
 const SUBCATEGORIES = [
@@ -49,8 +49,8 @@ export async function ensureSeeded() {
   for (const c of TOP_CATEGORIES) {
     await prisma.category.upsert({
       where: { id: c.id },
-      update: {},
-      create: { id: c.id, name: c.name, icon: c.icon, description: c.description },
+      update: { icon: c.icon, color: c.color, description: c.description },
+      create: { id: c.id, name: c.name, icon: c.icon, color: c.color, description: c.description },
     });
   }
   for (const s of SUBCATEGORIES) {

@@ -1,4 +1,5 @@
 import { getTopCategories, getSpendByTopCategory, getBudgets } from "@/lib/queries";
+import CategoryIcon from "../components/CategoryIcon";
 import { setBudget } from "@/lib/actions";
 import PresupuestoTabs from "../components/PresupuestoTabs";
 
@@ -31,8 +32,11 @@ export default async function PresupuestoPage() {
           return (
             <div key={c.id} className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">
-                  {c.icon} {c.name}
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: c.color || "#F2F2F3" }}>
+                    <CategoryIcon icon={c.icon} size={13} />
+                  </span>
+                  {c.name}
                 </p>
                 <p className="text-sm text-muted">
                   S/ {spent.toFixed(0)} {limit > 0 ? `/ S/ ${limit.toFixed(0)}` : ""}

@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Mis Gastos — Ale",
+  title: "miga — Ale",
   description: "Control de gastos personal",
 };
 

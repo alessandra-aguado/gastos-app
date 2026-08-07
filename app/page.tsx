@@ -3,6 +3,8 @@ import RachaChip from "./components/RachaChip";
 import PatrimonioCard from "./components/PatrimonioCard";
 import TendenciaGeneral from "./components/TendenciaGeneral";
 import MesSelector from "./components/MesSelector";
+import CategoryIcon from "./components/CategoryIcon";
+import { colorForIndex } from "@/lib/categoryColors";
 import {
   getMonthSummary,
   getDailySpend,
@@ -140,13 +142,15 @@ export default async function Home({
       <section>
         <p className="text-sm font-medium mb-3">Por categoría</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {categories.map((c) => (
+          {categories.map((c, i) => (
             <Link
               key={c.id}
               href={`/gastos?cat=${c.id}`}
               className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4 text-left hover:border-accent transition-colors"
             >
-              <span className="text-xl">{c.icon}</span>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: c.color || colorForIndex(i) }}>
+                <CategoryIcon icon={c.icon} size={16} />
+              </div>
               <p className="text-sm mt-2">{c.name}</p>
               <p className="text-lg font-semibold mt-0.5">S/ {(spendByCategory[c.id] || 0).toFixed(0)}</p>
             </Link>
