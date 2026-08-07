@@ -14,10 +14,12 @@ export default function NuevaCategoriaModal() {
   const [colorPersonalizado, setColorPersonalizado] = useState<string | null>(null);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
+  const normalizar = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   const iconosFiltrados = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
+    const q = normalizar(busqueda.trim());
     if (!q) return CATEGORY_ICONS;
-    return CATEGORY_ICONS.filter((i) => i.label.toLowerCase().includes(q) || i.name.includes(q));
+    return CATEGORY_ICONS.filter((i) => normalizar(i.label).includes(q) || i.name.includes(q));
   }, [busqueda]);
 
   const IconoPreview = CATEGORY_ICONS.find((i) => i.name === iconoSeleccionado)?.Icon;
@@ -79,19 +81,23 @@ export default function NuevaCategoriaModal() {
                 />
               </div>
               <div className="grid grid-cols-8 gap-1 max-h-[140px] overflow-y-auto">
-                {iconosFiltrados.map(({ name, Icon, label }) => (
-                  <button
-                    key={name}
-                    type="button"
-                    title={label}
-                    onClick={() => setIconoSeleccionado(name)}
-                    className={`aspect-square flex items-center justify-center rounded-lg border ${
-                      iconoSeleccionado === name ? "border-accent bg-accent-soft" : "border-transparent hover:bg-hover"
-                    }`}
-                  >
-                    <Icon size={18} strokeWidth={1.75} />
-                  </button>
-                ))}
+                {iconosFiltrados.length === 0 ? (
+                  <p className="col-span-8 text-xs text-muted text-center py-4">Sin resultados para &quot;{busqueda}&quot;</p>
+                ) : (
+                  iconosFiltrados.map(({ name, Icon, label }) => (
+                    <button
+                      key={name}
+                      type="button"
+                      title={label}
+                      onClick={() => setIconoSeleccionado(name)}
+                      className={`aspect-square flex items-center justify-center rounded-lg border ${
+                        iconoSeleccionado === name ? "border-accent bg-accent-soft" : "border-transparent hover:bg-hover"
+                      }`}
+                    >
+                      <Icon size={18} strokeWidth={1.75} />
+                    </button>
+                  ))
+                )}
               </div>
             </div>
 
