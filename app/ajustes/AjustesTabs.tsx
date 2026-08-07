@@ -15,14 +15,28 @@ type Evento = { id: string; entity: string; action: string; label: string; creat
 const ACCION_ICONO: Record<string, typeof Plus> = { crear: Plus, editar: Pencil, eliminar: Trash2 };
 const ACCION_COLOR: Record<string, string> = { crear: "text-positive", editar: "text-accent", eliminar: "text-warning" };
 
-export default function AjustesTabs({ categorias, medios, historial }: { categorias: Categoria[]; medios: Medio[]; historial: Evento[] }) {
-  const [tab, setTab] = useState<"categorias" | "medios" | "historial">("categorias");
+export default function AjustesTabs({
+  categorias,
+  medios,
+  historial,
+  tabInicial,
+  abrirNuevoMedio,
+}: {
+  categorias: Categoria[];
+  medios: Medio[];
+  historial: Evento[];
+  tabInicial?: string;
+  abrirNuevoMedio?: boolean;
+}) {
+  const [tab, setTab] = useState<"categorias" | "medios" | "historial">(
+    tabInicial === "medios" ? "medios" : tabInicial === "historial" ? "historial" : "categorias"
+  );
 
   const [seleccionCat, setSeleccionCat] = useState<Set<string>>(new Set());
   const [seleccionMedio, setSeleccionMedio] = useState<Set<string>>(new Set());
 
   const [modalCategoria, setModalCategoria] = useState<Categoria | "new" | null>(null);
-  const [modalMedio, setModalMedio] = useState<Medio | "new" | null>(null);
+  const [modalMedio, setModalMedio] = useState<Medio | "new" | null>(abrirNuevoMedio ? "new" : null);
 
   const [error, setError] = useState<string | null>(null);
   const [procesando, setProcesando] = useState(false);

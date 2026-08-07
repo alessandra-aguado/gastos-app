@@ -32,6 +32,9 @@ export default function DeudaModal({ deuda, medios, onClose }: { deuda?: Deuda; 
     (deuda?.type as "tarjeta_credito" | "prestamo_personal") || "tarjeta_credito"
   );
 
+  const mediosDisponibles = medios || [];
+  const sinMedios = tipo === "tarjeta_credito" && mediosDisponibles.length === 0;
+
   function cerrar() {
     setAbierto(false);
     onClose?.();
@@ -73,11 +76,33 @@ export default function DeudaModal({ deuda, medios, onClose }: { deuda?: Deuda; 
             )}
             <input type="hidden" name="type" value={tipo} />
 
-            <label className="text-xs text-muted block mb-1">{tipo === "tarjeta_credito" ? "Banco emisor" : "Nombre de la persona"}</label>
-            <input name="counterpartName" required defaultValue={deuda?.counterpartName || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder={tipo === "tarjeta_credito" ? "Interbank, Falabella..." : "Juan, Sofía..."} />
-
-            {tipo === "prestamo_personal" && (
+            {tipo === "tarjeta_credito" ? (
               <>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-xs text-muted">Tarjeta de crédito</label>
+                  <a href="/ajustes?tab=medios&nuevo=1" className="text-xs text-accent hover:underline">+ Nueva tarjeta de crédito</a>
+                </div>
+                {sinMedios ? (
+                  <p className="text-xs text-muted border border-dashed border-border rounded-lg px-3 py-2.5 mb-3">
+                    Aún no tienes ninguna tarjeta de crédito configurada en Medios de pago. Créala con el link de arriba y vuelve aquí.
+                  </p>
+                ) : (
+                  <>
+                    <select name="paymentMethodId" required defaultValue={deuda?.paymentMethodId || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-1">
+                      <option value="" disabled>Selecciona tu tarjeta</option>
+                      {mediosDisponibles.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted mb-3">Los gastos que registres con esta tarjeta van a sumar automáticamente al saldo de esta deuda.</p>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <label className="text-xs text-muted block mb-1">Nombre de la persona</label>
+                <input name="counterpartName" required defaultValue={deuda?.counterpartName || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="Juan, Sofía..." />
+
                 <label className="text-xs text-muted block mb-1.5">¿Quién debe?</label>
                 <select name="direction" defaultValue={deuda?.direction || "yo_debo"} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5">
                   <option value="yo_debo">Yo debo</option>
@@ -86,47 +111,25 @@ export default function DeudaModal({ deuda, medios, onClose }: { deuda?: Deuda; 
               </>
             )}
 
-            <label className="text-xs text-muted block mb-1">{tipo === "tarjeta_credito" ? "Deuda actual" : "Monto"}</label>
-            <input name="balance" type="number" required defaultValue={deuda?.balance} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="230" />
-            <input type="hidden" name="principalAmount" value="" />
-
-            <label className="text-xs text-muted block mb-1">¿Desde cuándo?</label>
-            <input name="startDate" type="date" defaultValue={toDateInput(deuda?.startDate ?? null)} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" />
-
-            {tipo === "prestamo_personal" && (
+            {!sinMedios && (
               <>
-                <label className="text-xs text-muted block mb-1">Interés (opcional, %)</label>
-                <input name="interestRate" type="number" step="0.1" defaultValue={deuda?.interestRate ?? undefined} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="0" />
+                <label className="text-xs text-muted block mb-1">{tipo === "tarjeta_credito" ? "Deuda actual" : "Monto"}</label>
+                <input name="balance" type="number" required defaultValue={deuda?.balance} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="230" />
+                <input type="hidden" name="principalAmount" value="" />
+
+                <label className="text-xs text-muted block mb-1">¿Desde cuándo?</label>
+                <input name="startDate" type="date" defaultValue={toDateInput(deuda?.startDate ?? null)} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" />
+
+                {tipo === "prestamo_personal" && (
+                  <>
+                    <label className="text-xs text-muted block mb-1">Interés (opcional, %)</label>
+                    <input name="interestRate" type="number" step="0.1" defaultValue={deuda?.interestRate ?? undefined} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="0" />
+                  </>
+                )}
               </>
             )}
 
-            {tipo === "tarjeta_credito" && (
-              <>
-                <div className="flex gap-2 mb-2.5">
-                  <div className="flex-1">
-                    <label className="text-xs text-muted block mb-1">Línea total</label>
-                    <input name="creditLimit" type="number" defaultValue={deuda?.creditLimit ?? undefined} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm" placeholder="5000" />
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-xs text-muted block mb-1">Cuota mínima</label>
-                    <input name="minPayment" type="number" defaultValue={deuda?.minPayment ?? undefined} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm" placeholder="230" />
-                  </div>
-                </div>
-                <label className="text-xs text-muted block mb-1">Día de vencimiento</label>
-                <input name="dueDay" type="number" defaultValue={deuda?.dueDay ?? undefined} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-3" placeholder="20" />
-
-                <label className="text-xs text-muted block mb-1">Medio de pago vinculado (opcional)</label>
-                <select name="paymentMethodId" defaultValue={deuda?.paymentMethodId || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-1">
-                  <option value="">Sin vincular</option>
-                  {(medios || []).map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
-                <p className="text-xs text-muted mb-3">Si la vinculas, los gastos que registres con esta tarjeta van a sumar automáticamente al saldo de esta deuda.</p>
-              </>
-            )}
-
-            <button className="w-full py-2.5 bg-accent text-white rounded-lg text-sm font-medium mt-1">{esEdicion ? "Guardar cambios" : "Guardar deuda"}</button>
+            <button disabled={sinMedios} className="w-full py-2.5 bg-accent text-white rounded-lg text-sm font-medium mt-1 disabled:opacity-40">{esEdicion ? "Guardar cambios" : "Guardar deuda"}</button>
           </form>
         </div>
       )}

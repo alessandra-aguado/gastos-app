@@ -60,7 +60,7 @@ export default function MedioModal({ medio, onClose }: { medio: Medio | null; on
         {tipo === "credito" && (
           <div className="flex gap-2 mb-4">
             <div className="flex-1">
-              <label className="text-xs text-muted block mb-1.5">Fecha de corte</label>
+              <label className="text-xs text-muted block mb-1.5">Último día de pago</label>
               <input
                 name="closingDay"
                 type="number"

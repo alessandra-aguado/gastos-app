@@ -6,7 +6,12 @@ import FormatoMontoField from "./FormatoMontoField";
 
 export const dynamic = "force-dynamic";
 
-export default async function AjustesPage() {
+export default async function AjustesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; nuevo?: string }>;
+}) {
+  const { tab, nuevo } = await searchParams;
   const [categorias, medios, historial, settings] = await Promise.all([
     getTopCategories(),
     getPaymentMethods(),
@@ -25,7 +30,7 @@ export default async function AjustesPage() {
       <h1 className="text-2xl font-semibold mb-4 flex items-center gap-2"><Settings size={22} strokeWidth={1.75} />Ajustes</h1>
       <ReglaIngresoField regla={regla} />
       <FormatoMontoField decimales={settings?.decimales ?? 0} />
-      <AjustesTabs categorias={categorias} medios={medios} historial={historial} />
+      <AjustesTabs categorias={categorias} medios={medios} historial={historial} tabInicial={tab} abrirNuevoMedio={nuevo === "1"} />
     </div>
   );
 }

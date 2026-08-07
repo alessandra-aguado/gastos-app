@@ -16,9 +16,10 @@ async function sincronizarDeudaTarjeta(paymentMethodId: string | null, monto: nu
   if (!medio || medio.type !== "credito") return;
   const deuda = await prisma.debt.findUnique({ where: { paymentMethodId } });
   if (!deuda) return;
+  const nuevoBalance = deuda.balance + monto;
   await prisma.debt.update({
     where: { id: deuda.id },
-    data: { balance: deuda.balance + monto, status: "activa" },
+    data: { balance: nuevoBalance, minPayment: nuevoBalance * 0.1, status: "activa" },
   });
   revalidatePath("/debo");
 }
@@ -356,25 +357,34 @@ export async function updateCuenta(formData: FormData) {
 
 export async function createDeuda(formData: FormData) {
   const type = String(formData.get("type") || "tarjeta_credito");
-  const counterpartName = String(formData.get("counterpartName") || "").trim() || null;
   const direction = String(formData.get("direction") || "") || null;
   const balance = parseFloat(String(formData.get("balance") || "0"));
   const principalRaw = formData.get("principalAmount");
   const principalAmount = principalRaw && String(principalRaw) ? parseFloat(String(principalRaw)) : balance;
-  const creditLimitRaw = formData.get("creditLimit");
-  const minPaymentRaw = formData.get("minPayment");
-  const dueDayRaw = formData.get("dueDay");
 
   if (balance === null || balance === undefined || isNaN(balance) || balance < 0) throw new Error("Falta el monto de la deuda");
 
   const startDateRaw = String(formData.get("startDate") || "");
   const interestRateRaw = formData.get("interestRate");
-  const paymentMethodIdRaw = String(formData.get("paymentMethodId") || "").trim() || null;
-  const paymentMethodId = type === "tarjeta_credito" ? paymentMethodIdRaw : null;
 
-  if (paymentMethodId) {
+  let counterpartName = String(formData.get("counterpartName") || "").trim() || null;
+  let dueDay: number | null = null;
+  let minPayment: number | null = null;
+  let paymentMethodId: string | null = null;
+
+  if (type === "tarjeta_credito") {
+    paymentMethodId = String(formData.get("paymentMethodId") || "").trim() || null;
+    if (!paymentMethodId) throw new Error("Selecciona la tarjeta de crédito vinculada.");
+
     const yaVinculada = await prisma.debt.findUnique({ where: { paymentMethodId } });
     if (yaVinculada) throw new Error("Ese medio de pago ya está vinculado a otra deuda.");
+
+    const medio = await prisma.paymentMethod.findUnique({ where: { id: paymentMethodId } });
+    if (!medio) throw new Error("Medio de pago no encontrado.");
+
+    counterpartName = medio.bankOrIssuer || medio.name;
+    dueDay = medio.closingDay ?? null;
+    minPayment = balance * 0.1;
   }
 
   const deudaCreada = await prisma.debt.create({
@@ -384,9 +394,8 @@ export async function createDeuda(formData: FormData) {
       direction: type === "prestamo_personal" ? direction : null,
       principalAmount,
       balance,
-      creditLimit: type === "tarjeta_credito" && creditLimitRaw ? parseFloat(String(creditLimitRaw)) : null,
-      minPayment: type === "tarjeta_credito" && minPaymentRaw ? parseFloat(String(minPaymentRaw)) : null,
-      dueDay: dueDayRaw ? parseInt(String(dueDayRaw), 10) : null,
+      minPayment,
+      dueDay,
       startDate: startDateRaw ? new Date(startDateRaw) : new Date(),
       interestRate: type === "prestamo_personal" && interestRateRaw ? parseFloat(String(interestRateRaw)) : null,
       paymentMethodId,
@@ -406,11 +415,7 @@ export async function createDeuda(formData: FormData) {
 
 export async function updateDeuda(formData: FormData) {
   const id = String(formData.get("id"));
-  const counterpartName = String(formData.get("counterpartName") || "").trim() || null;
   const balance = parseFloat(String(formData.get("balance") || "0"));
-  const creditLimitRaw = formData.get("creditLimit");
-  const minPaymentRaw = formData.get("minPayment");
-  const dueDayRaw = formData.get("dueDay");
   const startDateRaw = String(formData.get("startDate") || "");
   const interestRateRaw = formData.get("interestRate");
 
@@ -419,12 +424,27 @@ export async function updateDeuda(formData: FormData) {
   const deuda = await prisma.debt.findUnique({ where: { id } });
   if (!deuda) throw new Error("Deuda no encontrada");
 
-  const paymentMethodIdRaw = String(formData.get("paymentMethodId") || "").trim() || null;
-  const paymentMethodId = deuda.type === "tarjeta_credito" ? paymentMethodIdRaw : deuda.paymentMethodId;
+  let counterpartName = String(formData.get("counterpartName") || "").trim() || deuda.counterpartName;
+  let dueDay = deuda.dueDay;
+  let minPayment = deuda.minPayment;
+  let paymentMethodId = deuda.paymentMethodId;
 
-  if (paymentMethodId && paymentMethodId !== deuda.paymentMethodId) {
-    const yaVinculada = await prisma.debt.findUnique({ where: { paymentMethodId } });
-    if (yaVinculada && yaVinculada.id !== id) throw new Error("Ese medio de pago ya está vinculado a otra deuda.");
+  if (deuda.type === "tarjeta_credito") {
+    paymentMethodId = String(formData.get("paymentMethodId") || "").trim() || deuda.paymentMethodId;
+
+    if (paymentMethodId && paymentMethodId !== deuda.paymentMethodId) {
+      const yaVinculada = await prisma.debt.findUnique({ where: { paymentMethodId } });
+      if (yaVinculada && yaVinculada.id !== id) throw new Error("Ese medio de pago ya está vinculado a otra deuda.");
+    }
+
+    if (paymentMethodId) {
+      const medio = await prisma.paymentMethod.findUnique({ where: { id: paymentMethodId } });
+      if (medio) {
+        counterpartName = medio.bankOrIssuer || medio.name;
+        dueDay = medio.closingDay ?? null;
+      }
+    }
+    minPayment = balance * 0.1;
   }
 
   await prisma.debt.update({
@@ -432,16 +452,15 @@ export async function updateDeuda(formData: FormData) {
     data: {
       counterpartName,
       balance,
-      creditLimit: deuda.type === "tarjeta_credito" && creditLimitRaw ? parseFloat(String(creditLimitRaw)) : deuda.creditLimit,
-      minPayment: deuda.type === "tarjeta_credito" && minPaymentRaw ? parseFloat(String(minPaymentRaw)) : deuda.minPayment,
-      dueDay: dueDayRaw ? parseInt(String(dueDayRaw), 10) : deuda.dueDay,
+      minPayment,
+      dueDay,
       startDate: startDateRaw ? new Date(startDateRaw) : deuda.startDate,
       interestRate: deuda.type === "prestamo_personal" && interestRateRaw ? parseFloat(String(interestRateRaw)) : deuda.interestRate,
       paymentMethodId,
     },
   });
 
-  const etiquetaDeuda = deuda.counterpartName ? ` con "${deuda.counterpartName}"` : "";
+  const etiquetaDeuda = counterpartName ? ` con "${counterpartName}"` : "";
   if (deuda.balance !== balance) {
     await registrarActividad("Deuda", "editar", `Saldo de deuda${etiquetaDeuda} actualizado: S/ ${deuda.balance.toFixed(0)} → S/ ${balance.toFixed(0)}`);
   } else {
@@ -466,7 +485,11 @@ export async function registrarPagoDeuda(formData: FormData) {
   await prisma.debtPayment.create({ data: { debtId, amount, date: new Date() } });
   await prisma.debt.update({
     where: { id: debtId },
-    data: { balance: nuevoBalance, status: nuevoBalance === 0 ? "pagada" : "activa" },
+    data: {
+      balance: nuevoBalance,
+      minPayment: debt.type === "tarjeta_credito" ? nuevoBalance * 0.1 : debt.minPayment,
+      status: nuevoBalance === 0 ? "pagada" : "activa",
+    },
   });
 
   await registrarActividad(
