@@ -3,7 +3,7 @@ import { formatMonto } from "@/lib/format";
 import { CircleDollarSign } from "lucide-react";
 import IngresoModal from "./IngresoModal";
 import IngresoRow from "./IngresoRow";
-import DescargarCSV from "../components/DescargarCSV";
+import DescargarReporte from "../components/DescargarReporte";
 
 export const dynamic = "force-dynamic";
 
@@ -36,8 +36,10 @@ export default async function IngresosPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <DescargarCSV
-            filename="ingresos.csv"
+          <DescargarReporte
+            filename="ingresos"
+            title="Ingresos"
+            subtitle={`S/ ${formatMonto(totalMes, decimales)} este mes · ${ingresos.length} registros · generado el ${new Date().toLocaleDateString("es-PE")}`}
             headers={["Fecha", "Tipo", "Monto", "Fuente", "Notas"]}
             rows={ingresos.map((i) => [
               new Date(i.date).toLocaleDateString("es-PE"),

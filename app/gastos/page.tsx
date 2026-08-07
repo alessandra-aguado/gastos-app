@@ -7,7 +7,7 @@ import { colorForIndex } from "@/lib/categoryColors";
 import RangoSelector from "../components/RangoSelector";
 import { rangeForPreset, parsePreset, formatRangeLabel, toDateInputValue } from "@/lib/dateRanges";
 import TransactionRow from "./TransactionRow";
-import DescargarCSV from "../components/DescargarCSV";
+import DescargarReporte from "../components/DescargarReporte";
 
 export const dynamic = "force-dynamic";
 
@@ -46,8 +46,10 @@ export default async function GastosPage({
               S/ {formatMonto(spendByCategory[cat] || 0, decimales)} en {rangeLabel.toLowerCase()} · {transactions.length} transacciones
             </p>
           </div>
-          <DescargarCSV
-            filename={`gastos-${(category?.name || "categoria").toLowerCase().replace(/\s+/g, "-")}.csv`}
+          <DescargarReporte
+            filename={`gastos-${(category?.name || "categoria").toLowerCase().replace(/\s+/g, "-")}`}
+            title={`Gastos — ${category?.name || "Categoría"}`}
+            subtitle={`S/ ${formatMonto(spendByCategory[cat] || 0, decimales)} en ${rangeLabel.toLowerCase()} · ${transactions.length} transacciones · generado el ${new Date().toLocaleDateString("es-PE")}`}
             headers={["Fecha", "Monto", "Comercio", "Medio de pago", "Notas"]}
             rows={transactions.map((t) => [
               new Date(t.date).toLocaleDateString("es-PE"),

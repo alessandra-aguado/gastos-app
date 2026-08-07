@@ -3,7 +3,7 @@ import { formatMonto } from "@/lib/format";
 import { TrendingUp } from "lucide-react";
 import InversionModal from "./InversionModal";
 import InversionRow from "./InversionRow";
-import DescargarCSV from "../components/DescargarCSV";
+import DescargarReporte from "../components/DescargarReporte";
 
 export const dynamic = "force-dynamic";
 
@@ -34,8 +34,10 @@ export default async function InversionesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <DescargarCSV
-            filename="inversiones.csv"
+          <DescargarReporte
+            filename="inversiones"
+            title="Inversiones"
+            subtitle={`S/ ${formatMonto(invertido, decimales)} invertido · valor actual S/ ${formatMonto(actual, decimales)} · generado el ${new Date().toLocaleDateString("es-PE")}`}
             headers={["Plataforma", "Tipo de instrumento", "Modalidad", "Monto invertido", "Fecha", "Valor actual", "TEA", "Plazo (meses)", "Vencimiento"]}
             rows={inversiones.map((inv) => [
               inv.platform,

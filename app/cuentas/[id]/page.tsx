@@ -5,7 +5,7 @@ import { getCuentaPorId, getFundMovements, getSettings } from "@/lib/queries";
 import { formatMonto } from "@/lib/format";
 import MovimientoModal from "./MovimientoModal";
 import MovimientoRow from "./MovimientoRow";
-import DescargarCSV from "../../components/DescargarCSV";
+import DescargarReporte from "../../components/DescargarReporte";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +30,10 @@ export default async function CuentaCustodiaPage({ params }: { params: Promise<{
           <p className="text-muted text-sm mt-1">Saldo actual: S/ {formatMonto(cuenta.balance, decimales)} · plata de {cuenta.bank}, no es tuya</p>
         </div>
         <div className="flex items-center gap-2">
-          <DescargarCSV
-            filename={`movimientos-${cuenta.name.toLowerCase().replace(/\s+/g, "-")}.csv`}
+          <DescargarReporte
+            filename={`movimientos-${cuenta.name.toLowerCase().replace(/\s+/g, "-")}`}
+            title={`Movimientos — ${cuenta.name}`}
+            subtitle={`Saldo actual: S/ ${formatMonto(cuenta.balance, decimales)} · ${movimientos.length} movimiento${movimientos.length === 1 ? "" : "s"} · generado el ${new Date().toLocaleDateString("es-PE")}`}
             headers={["Fecha", "Tipo", "Monto", "Descripción"]}
             rows={movimientos.map((m) => [
               new Date(m.date).toLocaleDateString("es-PE"),

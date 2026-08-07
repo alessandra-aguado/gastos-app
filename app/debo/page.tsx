@@ -3,7 +3,7 @@ import { formatMonto } from "@/lib/format";
 import { CreditCard, Shield } from "lucide-react";
 import { TarjetaCredito, PrestamoPersonal } from "./DeudaCard";
 import DeudaModal from "./DeudaModal";
-import DescargarCSV from "../components/DescargarCSV";
+import DescargarReporte from "../components/DescargarReporte";
 
 export const dynamic = "force-dynamic";
 
@@ -31,8 +31,10 @@ export default async function DeboPage() {
           <p className="text-muted text-sm mt-1">Debes S/ {formatMonto(debes, decimales)} · te deben S/ {formatMonto(meDeben, decimales)}</p>
         </div>
         <div className="flex items-center gap-2">
-          <DescargarCSV
-            filename="deudas.csv"
+          <DescargarReporte
+            filename="deudas"
+            title="Deuda"
+            subtitle={`Debes S/ ${formatMonto(debes, decimales)} · te deben S/ ${formatMonto(meDeben, decimales)} · generado el ${new Date().toLocaleDateString("es-PE")}`}
             headers={["Tipo", "Contraparte", "Dirección", "Saldo", "Línea de crédito", "Cuota mínima", "Vence el día", "Desde"]}
             rows={activas.map((d) => [
               d.type === "tarjeta_credito" ? "Tarjeta de crédito" : "Préstamo personal",
