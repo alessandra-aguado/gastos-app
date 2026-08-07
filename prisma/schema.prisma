@@ -215,7 +215,20 @@ model Account {
   lastCheckIn     DateTime?
   paymentMethodId String?        @unique
   paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  checkIns        AccountCheckIn[]
   createdAt       DateTime  @default(now())
+}
+
+// Snapshot del saldo confirmado por mes, para reconciliacion mensual.
+model AccountCheckIn {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  month     String   // "2026-08"
+  balance   Float
+  date      DateTime @default(now())
+
+  @@unique([accountId, month])
 }
 
 model Income {

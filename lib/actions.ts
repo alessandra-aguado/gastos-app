@@ -239,7 +239,13 @@ export async function createCuenta(formData: FormData) {
 export async function updateSaldoCuenta(formData: FormData) {
   const id = String(formData.get("id"));
   const balance = parseFloat(String(formData.get("balance") || "0"));
+  const month = currentMonthKey();
   await prisma.account.update({ where: { id }, data: { balance, lastCheckIn: new Date() } });
+  await prisma.accountCheckIn.upsert({
+    where: { accountId_month: { accountId: id, month } },
+    update: { balance, date: new Date() },
+    create: { accountId: id, month, balance },
+  });
   revalidatePath("/cuentas");
   revalidatePath("/");
 }

@@ -1,12 +1,13 @@
-import { getCuentas } from "@/lib/queries";
+import { getCuentas, getReconciliacionCuentas } from "@/lib/queries";
 import { Wallet } from "lucide-react";
 import CuentaRow from "./CuentaRow";
 import NuevaCuentaModal from "./NuevaCuentaModal";
+import ReconciliacionCard from "./ReconciliacionCard";
 
 export const dynamic = "force-dynamic";
 
 export default async function CuentasPage() {
-  const cuentas = await getCuentas();
+  const [cuentas, recon] = await Promise.all([getCuentas(), getReconciliacionCuentas()]);
   const total = cuentas.filter((c) => c.type !== "puntos").reduce((s, c) => s + c.balance, 0);
 
   const grupos = new Map<string, typeof cuentas>();
@@ -24,6 +25,8 @@ export default async function CuentasPage() {
         </div>
         <NuevaCuentaModal />
       </div>
+
+      {cuentas.length > 0 && <ReconciliacionCard recon={recon} />}
 
       {cuentas.length === 0 ? (
         <div className="border border-dashed border-border rounded-xl p-10 text-center text-muted text-sm">

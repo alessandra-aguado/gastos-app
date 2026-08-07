@@ -10,6 +10,11 @@ export function currentMonthKey(base = new Date()) {
   return base.toISOString().slice(0, 7); // "2026-08"
 }
 
+export function previousMonthKey(base = new Date()) {
+  const d = new Date(base.getFullYear(), base.getMonth() - 1, 1);
+  return d.toISOString().slice(0, 7);
+}
+
 export async function getCategories() {
   await ensureSeeded();
   return prisma.category.findMany({ orderBy: [{ name: "asc" }] });
@@ -235,6 +240,47 @@ export async function getAhorroSummary() {
 // ---------- Cuentas ----------
 export async function getCuentas() {
   return prisma.account.findMany({ orderBy: [{ bank: "asc" }, { createdAt: "asc" }] });
+}
+
+// ---------- Reconciliacion de cuentas ----------
+export async function getReconciliacionCuentas() {
+  const cuentas = await getCuentas();
+  const relevantes = cuentas.filter((c) => c.type !== "puntos");
+  const month = currentMonthKey();
+  const prevMonth = previousMonthKey();
+
+  const checkIns = await prisma.accountCheckIn.findMany({
+    where: { accountId: { in: relevantes.map((c) => c.id) }, month: { in: [month, prevMonth] } },
+  });
+
+  const porCuenta = relevantes.map((c) => {
+    const actual = checkIns.find((k) => k.accountId === c.id && k.month === month);
+    const anterior = checkIns.find((k) => k.accountId === c.id && k.month === prevMonth);
+    return {
+      id: c.id,
+      name: c.name,
+      bank: c.bank,
+      balance: c.balance,
+      confirmadoEsteMes: !!actual,
+      saldoAnterior: anterior?.balance ?? null,
+    };
+  });
+
+  const hayHistorialMesAnterior = checkIns.some((k) => k.month === prevMonth);
+  const totalActual = porCuenta.reduce((s, c) => s + c.balance, 0);
+  const totalAnterior = hayHistorialMesAnterior
+    ? porCuenta.reduce((s, c) => s + (c.saldoAnterior ?? c.balance), 0)
+    : null;
+
+  return {
+    month,
+    prevMonth,
+    cuentas: porCuenta,
+    totalActual,
+    totalAnterior,
+    delta: totalAnterior !== null ? totalActual - totalAnterior : null,
+    pendientes: porCuenta.filter((c) => !c.confirmadoEsteMes).length,
+  };
 }
 
 // ---------- Debo ----------
