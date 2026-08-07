@@ -1,5 +1,5 @@
 import { createTransaction } from "@/lib/actions";
-import { getTopCategories, getPaymentMethods } from "@/lib/queries";
+import { getTopCategories, getCategories, getPaymentMethods } from "@/lib/queries";
 import { redirect } from "next/navigation";
 import MetodoSelector from "../components/MetodoSelector";
 
@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RegistrarPage() {
   const categories = await getTopCategories();
+  const todasCategorias = await getCategories();
   const paymentMethods = await getPaymentMethods();
   const today = new Date().toISOString().slice(0, 10);
 
@@ -24,7 +25,7 @@ export default async function RegistrarPage() {
       </p>
 
       <div className="mt-8">
-      <MetodoSelector manual={
+      <MetodoSelector categorias={todasCategorias} medios={paymentMethods} manual={
       <form action={action} className="space-y-5">
         <div>
           <label className="text-sm font-medium block mb-1">Monto (S/)</label>

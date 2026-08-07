@@ -33,23 +33,50 @@ export async function createTransaction(formData: FormData) {
   const paymentMethodId = String(formData.get("paymentMethodId"));
   const notes = String(formData.get("notes") || "");
   const merchant = String(formData.get("merchant") || "");
+  const source = String(formData.get("source") || "manual");
+  const rawInputRaw = formData.get("rawInput");
+  const rawInput = rawInputRaw ? String(rawInputRaw) : null;
+  const aiConfidenceRaw = formData.get("aiConfidence");
+  const aiConfidence = aiConfidenceRaw ? parseInt(String(aiConfidenceRaw), 10) : null;
+  const itemsRaw = formData.get("items");
 
   if (!amount || !date || !categoryId || !paymentMethodId) {
     throw new Error("Faltan campos requeridos");
   }
 
-  await prisma.transaction.create({
+  const transaction = await prisma.transaction.create({
     data: {
       amount,
       date: new Date(date),
       merchant: merchant || null,
-      source: "manual",
+      source,
+      rawInput,
+      aiConfidence,
       status: "confirmado",
       notes: notes || null,
       categoryId,
       paymentMethodId,
     },
   });
+
+  if (itemsRaw) {
+    try {
+      const items = JSON.parse(String(itemsRaw)) as { productName: string; quantity?: number; unitPrice: number }[];
+      const validos = Array.isArray(items) ? items.filter((it) => it.productName && it.unitPrice) : [];
+      if (validos.length > 0) {
+        await prisma.transactionItem.createMany({
+          data: validos.map((it) => ({
+            transactionId: transaction.id,
+            productName: it.productName,
+            quantity: it.quantity || 1,
+            unitPrice: it.unitPrice,
+          })),
+        });
+      }
+    } catch {
+      // JSON de items malformado: se ignora, la transacción ya quedó guardada
+    }
+  }
 
   await sincronizarDeudaTarjeta(paymentMethodId, amount);
 
