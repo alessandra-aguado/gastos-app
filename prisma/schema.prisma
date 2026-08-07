@@ -43,6 +43,7 @@ model PaymentMethod {
   bankOrIssuer  String?
   transactions  Transaction[]
   fixedExpenses FixedExpense[]
+  account       Account?
   createdAt     DateTime @default(now())
 }
 
@@ -195,13 +196,15 @@ model WishlistItem {
 }
 
 model Account {
-  id          String    @id @default(cuid())
-  name        String // "Cuenta corriente", "Guardadito"
-  bank        String // BCP, Interbank, BBVA...
-  type        String // corriente | ahorro | billetera | puntos
-  balance     Float     @default(0)
-  lastCheckIn DateTime?
-  createdAt   DateTime  @default(now())
+  id              String    @id @default(cuid())
+  name            String // "Cuenta corriente", "Guardadito"
+  bank            String // BCP, Interbank, BBVA...
+  type            String // corriente | ahorro | billetera | puntos
+  balance         Float     @default(0)
+  lastCheckIn     DateTime?
+  paymentMethodId String?        @unique
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  createdAt       DateTime  @default(now())
 }
 
 model EmailAccount {

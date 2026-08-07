@@ -370,9 +370,26 @@ export async function createMedioDePago(formData: FormData) {
 
   if (!name) throw new Error("Falta el nombre del medio de pago");
 
-  await prisma.paymentMethod.create({ data: { name, type, bankOrIssuer } });
+  const medio = await prisma.paymentMethod.create({ data: { name, type, bankOrIssuer } });
+
+  // Débito y billetera digital representan plata real en algún lado: se refleja
+  // como Cuenta para que aparezca en Cuentas y sume al patrimonio.
+  // Efectivo no tiene "banco"; crédito es deuda y vive en Debo, no en Cuentas.
+  if (type === "debito" || type === "billetera_digital") {
+    await prisma.account.create({
+      data: {
+        name,
+        bank: bankOrIssuer || name,
+        type: type === "debito" ? "corriente" : "billetera",
+        balance: 0,
+        paymentMethodId: medio.id,
+      },
+    });
+  }
 
   revalidatePath("/ajustes");
+  revalidatePath("/cuentas");
+  revalidatePath("/");
 }
 
 // ================= Eliminar =================
@@ -482,7 +499,28 @@ export async function updateMedioDePago(formData: FormData) {
 
   await prisma.paymentMethod.update({ where: { id }, data: { name, type, bankOrIssuer } });
 
+  const cuentaVinculada = await prisma.account.findUnique({ where: { paymentMethodId: id } });
+  const debeTenerCuenta = type === "debito" || type === "billetera_digital";
+
+  if (debeTenerCuenta) {
+    if (cuentaVinculada) {
+      await prisma.account.update({
+        where: { id: cuentaVinculada.id },
+        data: { name, bank: bankOrIssuer || name, type: type === "debito" ? "corriente" : "billetera" },
+      });
+    } else {
+      await prisma.account.create({
+        data: { name, bank: bankOrIssuer || name, type: type === "debito" ? "corriente" : "billetera", balance: 0, paymentMethodId: id },
+      });
+    }
+  } else if (cuentaVinculada) {
+    // cambió a credito/efectivo: desvincula la cuenta pero no la borra, para no perder el saldo ya registrado
+    await prisma.account.update({ where: { id: cuentaVinculada.id }, data: { paymentMethodId: null } });
+  }
+
   revalidatePath("/ajustes");
+  revalidatePath("/cuentas");
+  revalidatePath("/");
 }
 
 export async function eliminarMedioDePago(id: string): Promise<{ ok: boolean; error?: string }> {
@@ -495,9 +533,12 @@ export async function eliminarMedioDePago(id: string): Promise<{ ok: boolean; er
     return { ok: false, error: `No se puede eliminar: está en uso en ${enUso} registro${enUso === 1 ? "" : "s"}.` };
   }
 
+  // desvincula la cuenta asociada (si la hay) para no perder el saldo ya registrado
+  await prisma.account.updateMany({ where: { paymentMethodId: id }, data: { paymentMethodId: null } });
   await prisma.paymentMethod.delete({ where: { id } });
 
   revalidatePath("/ajustes");
+  revalidatePath("/cuentas");
   return { ok: true };
 }
 
@@ -513,10 +554,12 @@ export async function eliminarMediosDePagoBulk(ids: string[]): Promise<{ ok: boo
   const idsEliminables = ids.filter((id) => !idsEnUso.has(id));
 
   if (idsEliminables.length > 0) {
+    await prisma.account.updateMany({ where: { paymentMethodId: { in: idsEliminables } }, data: { paymentMethodId: null } });
     await prisma.paymentMethod.deleteMany({ where: { id: { in: idsEliminables } } });
   }
 
   revalidatePath("/ajustes");
+  revalidatePath("/cuentas");
 
   if (idsEnUso.size > 0) {
     return {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createMedioDePago, eliminarCategoria, eliminarCategoriasBulk, eliminarMedioDePago, eliminarMediosDePagoBulk } from "@/lib/actions";
+import { eliminarCategoria, eliminarCategoriasBulk, eliminarMedioDePago, eliminarMediosDePagoBulk } from "@/lib/actions";
 import CategoryIcon from "../components/CategoryIcon";
 import RowMenu from "../components/RowMenu";
 import CategoriaModal from "./CategoriaModal";
@@ -17,7 +17,7 @@ export default function AjustesTabs({ categorias, medios }: { categorias: Catego
   const [seleccionMedio, setSeleccionMedio] = useState<Set<string>>(new Set());
 
   const [modalCategoria, setModalCategoria] = useState<Categoria | "new" | null>(null);
-  const [modalMedio, setModalMedio] = useState<Medio | null>(null);
+  const [modalMedio, setModalMedio] = useState<Medio | "new" | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [procesando, setProcesando] = useState(false);
@@ -161,6 +161,12 @@ export default function AjustesTabs({ categorias, medios }: { categorias: Catego
                 <button onClick={() => setSeleccionMedio(new Set())} className="text-xs text-muted">Cancelar</button>
               </div>
             ) : <span />}
+            <button
+              onClick={() => setModalMedio("new")}
+              className="text-xs px-3 py-1.5 rounded-lg border border-border hover:border-accent transition-colors"
+            >
+              + Nuevo medio de pago
+            </button>
           </div>
 
           <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] overflow-hidden mb-3">
@@ -179,20 +185,7 @@ export default function AjustesTabs({ categorias, medios }: { categorias: Catego
               </div>
             ))}
           </div>
-          <form action={createMedioDePago} className="bg-surface border border-dashed border-border rounded-xl p-4">
-            <p className="text-xs text-muted mb-2">Nuevo medio de pago</p>
-            <div className="flex gap-2 mb-2">
-              <input name="name" required placeholder="Nombre" className="flex-1 border border-border rounded-lg px-2 py-1.5 bg-background text-sm" />
-              <select name="type" className="flex-1 border border-border rounded-lg px-2 py-1.5 bg-background text-sm">
-                <option value="debito">Débito</option>
-                <option value="credito">Crédito</option>
-                <option value="billetera_digital">Billetera digital</option>
-                <option value="efectivo">Efectivo</option>
-              </select>
-            </div>
-            <input name="bankOrIssuer" placeholder="Banco o emisor" className="w-full border border-border rounded-lg px-2 py-1.5 bg-background text-sm mb-2" />
-            <button className="text-xs px-3 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">Agregar medio de pago</button>
-          </form>
+
         </>
       )}
 
@@ -202,7 +195,12 @@ export default function AjustesTabs({ categorias, medios }: { categorias: Catego
           onClose={() => setModalCategoria(null)}
         />
       )}
-      {modalMedio && <MedioModal medio={modalMedio} onClose={() => setModalMedio(null)} />}
+      {modalMedio && (
+        <MedioModal
+          medio={modalMedio === "new" ? null : modalMedio}
+          onClose={() => setModalMedio(null)}
+        />
+      )}
     </>
   );
 }

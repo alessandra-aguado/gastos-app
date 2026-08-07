@@ -67,4 +67,21 @@ export async function ensureSeeded() {
       create: { id: p.id, name: p.name, type: p.type },
     });
   }
+
+  // Sincroniza medios de pago débito/billetera con Cuentas: si alguno todavía
+  // no tiene una cuenta vinculada, se la crea (con saldo 0, editable en Cuentas).
+  const medios = await prisma.paymentMethod.findMany({
+    where: { type: { in: ["debito", "billetera_digital"] }, account: null },
+  });
+  for (const m of medios) {
+    await prisma.account.create({
+      data: {
+        name: m.name,
+        bank: m.bankOrIssuer || m.name,
+        type: m.type === "debito" ? "corriente" : "billetera",
+        balance: 0,
+        paymentMethodId: m.id,
+      },
+    });
+  }
 }
