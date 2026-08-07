@@ -106,3 +106,45 @@ export async function getMonthlyTrend() {
   }
   return months;
 }
+
+// ---------- Metas ----------
+export async function getMetas() {
+  return prisma.savingsGoal.findMany({
+    include: { contributions: { orderBy: { date: "desc" } } },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+// ---------- Inversiones ----------
+export async function getInversiones() {
+  return prisma.investment.findMany({ orderBy: { createdAt: "desc" } });
+}
+
+// ---------- Cuentas ----------
+export async function getCuentas() {
+  return prisma.account.findMany({ orderBy: [{ bank: "asc" }, { createdAt: "asc" }] });
+}
+
+// ---------- Debo ----------
+export async function getDeudas() {
+  return prisma.debt.findMany({
+    include: { payments: { orderBy: { date: "desc" } } },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+// ---------- Fijos ----------
+export async function getFijos() {
+  return prisma.fixedExpense.findMany({
+    include: { category: true, paymentMethod: true },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+// ---------- Deseos ----------
+export async function getDeseos() {
+  return prisma.wishlistItem.findMany({
+    include: { category: true, savingsGoal: true },
+    orderBy: { createdAt: "desc" },
+  });
+}

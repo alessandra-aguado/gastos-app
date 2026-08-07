@@ -36,12 +36,13 @@ model Category {
 }
 
 model PaymentMethod {
-  id           String   @id @default(cuid())
-  name         String
-  type         String // debito | credito | billetera_digital | efectivo
-  bankOrIssuer String?
-  transactions Transaction[]
-  createdAt    DateTime @default(now())
+  id            String   @id @default(cuid())
+  name          String
+  type          String // debito | credito | billetera_digital | efectivo
+  bankOrIssuer  String?
+  transactions  Transaction[]
+  fixedExpenses FixedExpense[]
+  createdAt     DateTime @default(now())
 }
 
 model Transaction {
@@ -94,15 +95,24 @@ model Budget {
 }
 
 model FixedExpense {
-  id          String   @id @default(cuid())
-  name        String
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
-  amount      Float
-  frequency   String // mensual | semanal | anual
-  nextDueDate DateTime?
-  transactions Transaction[]
-  createdAt   DateTime @default(now())
+  id              String   @id @default(cuid())
+  name            String
+  categoryId      String
+  category        Category @relation(fields: [categoryId], references: [id])
+  amount          Float
+  frequency       String // mensual | semanal | anual
+  nextDueDate     DateTime?
+  paymentMethodId String?
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  dueMode         String   @default("unica") // unica | rango
+  dueDay          Int?     // día del mes si dueMode = unica
+  rangeStart      Int?     // día de emisión si dueMode = rango
+  rangeEnd        Int?     // día límite de pago si dueMode = rango
+  reminderDays    Int      @default(3)
+  syncCalendar    Boolean  @default(false)
+  lastPaidMonth   String?  // "2026-08", último mes marcado como pagado
+  transactions    Transaction[]
+  createdAt       DateTime @default(now())
 }
 
 model SavingsGoal {
@@ -112,6 +122,13 @@ model SavingsGoal {
   currentAmount     Float    @default(0)
   targetDate        DateTime?
   status            String   @default("activa") // activa | completada
+  method            String?  // efectivo | cuotas
+  isEmergencyFund   Boolean  @default(false)
+  isPercentageGoal  Boolean  @default(false)
+  totalValue        Float?   // valor total del bien, si la meta es "% del valor"
+  percentage        Float?   // % del valor total que representa la meta
+  motivo            String?  // para qué ahorras / con qué visión
+  timeframeMonths   Int?
   originWishlistId  String?  @unique
   originWishlist    WishlistItem? @relation(fields: [originWishlistId], references: [id])
   contributions     SavingsContribution[]
@@ -128,13 +145,15 @@ model SavingsContribution {
 }
 
 model Investment {
-  id               String   @id @default(cuid())
-  platform         String // Trii, bolsa de valores, etc.
-  instrumentType   String // acciones, fondo, etc.
+  id                String   @id @default(cuid())
+  platform          String // Trii, bolsa de valores, etc.
+  instrumentType    String // acciones, fondo, etc.
+  kind              String   @default("variable") // variable | fija
   amountContributed Float
-  date             DateTime
-  currentValue     Float?
-  createdAt        DateTime @default(now())
+  date              DateTime
+  currentValue      Float?
+  tea               Float?   // tasa efectiva anual, solo renta fija
+  createdAt         DateTime @default(now())
 }
 
 model Debt {
@@ -144,6 +163,10 @@ model Debt {
   direction       String? // yo_debo | me_deben (solo prestamo_personal)
   principalAmount Float
   balance         Float
+  creditLimit     Float?  // solo tarjeta_credito
+  minPayment      Float?  // cuota mínima mensual, solo tarjeta_credito
+  dueDay          Int?    // día del mes en que vence
+  status          String   @default("activa") // activa | pagada
   dueDate         DateTime?
   payments        DebtPayment[]
   createdAt       DateTime @default(now())
@@ -168,6 +191,16 @@ model WishlistItem {
   status         String   @default("pendiente") // pendiente | comprado | convertido_a_meta
   savingsGoal    SavingsGoal?
   createdAt      DateTime @default(now())
+}
+
+model Account {
+  id          String    @id @default(cuid())
+  name        String // "Cuenta corriente", "Guardadito"
+  bank        String // BCP, Interbank, BBVA...
+  type        String // corriente | ahorro | billetera | puntos
+  balance     Float     @default(0)
+  lastCheckIn DateTime?
+  createdAt   DateTime  @default(now())
 }
 
 model EmailAccount {

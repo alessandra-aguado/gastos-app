@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export default function PatrimonioCard() {
+export default function PatrimonioCard({ total }: { total: number }) {
   return (
     <Link
       href="/cuentas"
@@ -8,7 +8,7 @@ export default function PatrimonioCard() {
     >
       <span>👛</span>
       <span className="text-muted">Patrimonio</span>
-      <span className="font-medium">S/ 4,750</span>
+      <span className="font-medium">S/ {total.toLocaleString("es-PE")}</span>
     </Link>
   );
 }

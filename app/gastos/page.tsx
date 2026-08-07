@@ -63,15 +63,18 @@ export default async function GastosPage({
     .sort((a, b) => b.monto - a.monto);
   const totalMes = conCategoriasConGasto.reduce((s, c) => s + c.monto, 0);
 
-  let acumulado = 0;
   const gradientStops = conCategoriasConGasto
-    .map((c) => {
-      const desde = (acumulado / totalMes) * 100;
-      acumulado += c.monto;
-      const hasta = (acumulado / totalMes) * 100;
-      return `${c.color} ${desde}% ${hasta}%`;
-    })
-    .join(", ");
+    .reduce<{ acumulado: number; stops: string[] }>(
+      (acc, c) => {
+        const desde = (acc.acumulado / totalMes) * 100;
+        const nuevoAcumulado = acc.acumulado + c.monto;
+        const hasta = (nuevoAcumulado / totalMes) * 100;
+        acc.stops.push(`${c.color} ${desde}% ${hasta}%`);
+        return { acumulado: nuevoAcumulado, stops: acc.stops };
+      },
+      { acumulado: 0, stops: [] }
+    )
+    .stops.join(", ");
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">

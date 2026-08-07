@@ -10,6 +10,9 @@ import {
   getTopCategories,
   getBudgets,
   getMonthlyTrend,
+  getMetas,
+  getDeudas,
+  getCuentas,
 } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +34,9 @@ export default async function Home({
   const categories = await getTopCategories();
   const budgets = await getBudgets(base);
   const trend = await getMonthlyTrend();
+  const metas = await getMetas();
+  const deudas = await getDeudas();
+  const cuentas = await getCuentas();
 
   const totalBudget = budgets.reduce((s, b) => s + b.amountLimit, 0);
   const budgetPct = totalBudget > 0 ? Math.round((summary.total / totalBudget) * 100) : null;
@@ -39,10 +45,16 @@ export default async function Home({
   const maxSpend = Math.max(1, ...Object.values(dailyMap));
   const esMesActual = base.getFullYear() === now.getFullYear() && base.getMonth() === now.getMonth();
 
+  const metasActivas = metas.filter((m) => m.status !== "completada").length;
+  const totalDebo = deudas
+    .filter((d) => d.status !== "pagada" && (d.type === "tarjeta_credito" || d.direction === "yo_debo"))
+    .reduce((s, d) => s + d.balance, 0);
+  const patrimonio = cuentas.filter((c) => c.type !== "puntos").reduce((s, c) => s + c.balance, 0);
+
   const chips = [
     { icon: "📊", label: "Presupuesto", value: budgetPct !== null ? `${budgetPct}% usado` : "sin definir" },
-    { icon: "🎯", label: "Metas", value: "3 activas" },
-    { icon: "💳", label: "Debo", value: "S/ 2,890" },
+    { icon: "🎯", label: "Metas", value: `${metasActivas} activa${metasActivas === 1 ? "" : "s"}` },
+    { icon: "💳", label: "Debo", value: `S/ ${totalDebo.toLocaleString("es-PE")}` },
   ];
 
   return (
@@ -87,7 +99,7 @@ export default async function Home({
             <span className="font-medium">{c.value}</span>
           </div>
         ))}
-        <PatrimonioCard />
+        <PatrimonioCard total={patrimonio} />
         <RachaChip />
       </section>
 

@@ -1,0 +1,36 @@
+"use client";
+
+import { useState } from "react";
+import { updateSaldoCuenta } from "@/lib/actions";
+
+type Cuenta = { id: string; name: string; balance: number; lastCheckIn: Date | null };
+
+export default function CuentaRow({ cuenta, ultimo, dias }: { cuenta: Cuenta; ultimo: boolean; dias: number | null }) {
+  const [editando, setEditando] = useState(false);
+
+  return (
+    <div className={`flex justify-between items-center px-4 py-3 ${!ultimo ? "border-b border-border" : ""}`}>
+      <div>
+        <p className="text-sm font-medium">{cuenta.name}</p>
+        <p className="text-xs text-muted">{dias === null ? "Sin actualizar" : dias === 0 ? "Actualizado hoy" : `Actualizado hace ${dias} día${dias === 1 ? "" : "s"}`}</p>
+      </div>
+      {editando ? (
+        <form
+          action={async (fd) => {
+            await updateSaldoCuenta(fd);
+            setEditando(false);
+          }}
+          className="flex gap-1.5 items-center"
+        >
+          <input type="hidden" name="id" value={cuenta.id} />
+          <input name="balance" type="number" defaultValue={cuenta.balance} autoFocus className="w-24 border border-border rounded-lg px-2 py-1 bg-background text-xs" />
+          <button className="text-xs px-2 py-1 rounded-lg bg-accent text-white">Guardar</button>
+        </form>
+      ) : (
+        <button onClick={() => setEditando(true)} className="text-sm hover:text-accent transition-colors">
+          S/ {cuenta.balance.toLocaleString("es-PE")}
+        </button>
+      )}
+    </div>
+  );
+}
