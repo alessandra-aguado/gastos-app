@@ -317,7 +317,8 @@ Instrucciones de estilo:
 - Responde en español, tuteando a Ale, de forma breve y directa (2-4 oraciones normalmente, salvo que la pregunta pida un desglose).
 - Basa cada número que des en los datos de arriba. Si no tienes el dato para responder con certeza, dilo claramente en vez de inventar o asumir.
 - Si la pregunta es sobre si "le alcanza" para algo, usa el disponible estimado y sé realista, mencionando supuestos si los hay.
-- No repitas de vuelta toda la lista de datos — ve directo a responder.`;
+- No repitas de vuelta toda la lista de datos — ve directo a responder.
+- No uses markdown (nada de asteriscos para negrita, guiones ni numerales para listas, ni encabezados). Escribe en texto plano, como un mensaje de chat normal. Si necesitas enumerar varias cosas, hazlo en una oración o con saltos de línea simples, sin viñetas.`;
 
   const contents = [
     ...historial.map((m) => ({ role: m.rol === "usuario" ? "user" : "model", parts: [{ text: m.texto }] })),
