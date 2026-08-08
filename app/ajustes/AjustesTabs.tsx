@@ -1,16 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { eliminarCategoria, eliminarCategoriasBulk, eliminarMedioDePago, eliminarMediosDePagoBulk } from "@/lib/actions";
+import { eliminarCategoria, eliminarCategoriasBulk, eliminarMedioDePago, eliminarMediosDePagoBulk, restaurarGasto } from "@/lib/actions";
 import CategoryIcon from "../components/CategoryIcon";
 import RowMenu from "../components/RowMenu";
 import CategoriaModal from "./CategoriaModal";
 import MedioModal from "./MedioModal";
+import ReglaIngresoField from "./ReglaIngresoField";
+import FormatoMontoField from "./FormatoMontoField";
+import AlertaTarjetaField from "./AlertaTarjetaField";
 import { Plus, Pencil, Trash2, History } from "lucide-react";
 
 type Categoria = { id: string; name: string; icon: string | null; color: string | null; description: string | null };
 type Medio = { id: string; name: string; type: string; bankOrIssuer: string | null };
-type Evento = { id: string; entity: string; action: string; label: string; createdAt: Date };
+type Evento = { id: string; entity: string; action: string; label: string; snapshot?: unknown; restored?: boolean; createdAt: Date };
+type Regla = { pctFijos: number; pctVariable: number; pctAhorro: number };
 
 const ACCION_ICONO: Record<string, typeof Plus> = { crear: Plus, editar: Pencil, eliminar: Trash2 };
 const ACCION_COLOR: Record<string, string> = { crear: "text-positive", editar: "text-accent", eliminar: "text-warning" };
@@ -21,15 +25,21 @@ export default function AjustesTabs({
   historial,
   tabInicial,
   abrirNuevoMedio,
+  regla,
+  decimales,
+  alertaTarjetaDefault,
 }: {
   categorias: Categoria[];
   medios: Medio[];
   historial: Evento[];
   tabInicial?: string;
   abrirNuevoMedio?: boolean;
+  regla: Regla;
+  decimales: number;
+  alertaTarjetaDefault: number;
 }) {
-  const [tab, setTab] = useState<"categorias" | "medios" | "historial">(
-    tabInicial === "medios" ? "medios" : tabInicial === "historial" ? "historial" : "categorias"
+  const [tab, setTab] = useState<"personalizable" | "categorias" | "medios" | "historial">(
+    tabInicial === "medios" ? "medios" : tabInicial === "historial" ? "historial" : tabInicial === "categorias" ? "categorias" : "personalizable"
   );
 
   const [seleccionCat, setSeleccionCat] = useState<Set<string>>(new Set());
@@ -97,6 +107,12 @@ export default function AjustesTabs({
     <>
       <div className="flex gap-1 border-b border-border mb-4">
         <button
+          onClick={() => { setTab("personalizable"); setError(null); }}
+          className={`px-3.5 py-2 text-sm ${tab === "personalizable" ? "text-accent font-medium border-b-2 border-accent" : "text-muted"}`}
+        >
+          Personalizable
+        </button>
+        <button
           onClick={() => { setTab("categorias"); setError(null); }}
           className={`px-3.5 py-2 text-sm ${tab === "categorias" ? "text-accent font-medium border-b-2 border-accent" : "text-muted"}`}
         >
@@ -123,7 +139,13 @@ export default function AjustesTabs({
         </div>
       )}
 
-      {tab === "categorias" ? (
+      {tab === "personalizable" ? (
+        <>
+          <ReglaIngresoField regla={regla} />
+          <FormatoMontoField decimales={decimales} />
+          <AlertaTarjetaField alertaTarjetaDefault={alertaTarjetaDefault} />
+        </>
+      ) : tab === "categorias" ? (
         <>
           <div className="flex justify-between items-center mb-3">
             {seleccionCat.size > 0 ? (
@@ -222,13 +244,14 @@ export default function AjustesTabs({
             <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] overflow-hidden">
               {historial.map((e, i) => {
                 const Icon = ACCION_ICONO[e.action] ?? History;
+                const puedeRestaurar = e.entity === "Gasto" && e.action === "eliminar" && !!e.snapshot && !e.restored;
                 return (
                   <div
                     key={e.id}
                     className={`flex items-start gap-3 px-4 py-3 ${i < historial.length - 1 ? "border-b border-border" : ""}`}
                   >
                     <Icon size={15} strokeWidth={2} className={`mt-0.5 shrink-0 ${ACCION_COLOR[e.action] ?? "text-muted"}`} />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm">{e.label}</p>
                       <p className="text-xs text-muted mt-0.5">
                         {e.entity} ·{" "}
@@ -240,6 +263,17 @@ export default function AjustesTabs({
                         })}
                       </p>
                     </div>
+                    {puedeRestaurar && (
+                      <form action={restaurarGasto} className="shrink-0">
+                        <input type="hidden" name="logId" value={e.id} />
+                        <button className="text-xs px-2.5 py-1.5 rounded-lg border border-border hover:border-accent transition-colors">
+                          Restaurar
+                        </button>
+                      </form>
+                    )}
+                    {e.restored && (
+                      <span className="text-[10px] text-muted shrink-0 mt-1">Restaurado</span>
+                    )}
                   </div>
                 );
               })}

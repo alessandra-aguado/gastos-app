@@ -1,4 +1,4 @@
-import { getTopCategories, getSpendByTopCategory, getBudgets, getFijos, getDeudas, getSettings, getGastoVariableReal, getPlannedExpenses, getGastoDelMesPorMedio, getPaymentMethods, getCuentas, getDebtPaymentPlans, getPlannedExpensesCredito, agruparPlanificadosPorCorte, nextMonthKeys, currentMonthKey } from "@/lib/queries";
+import { getTopCategories, getSpendByTopCategory, getBudgets, getFijos, getDeudas, getSettings, getGastoVariableReal, getPlannedExpenses, getGastoDelMesPorMedio, getPaymentMethods, getCuentas, getDebtPaymentPlans, getPlannedExpensesCredito, agruparPlanificadosPorCorte, getSavingsPlan, nextMonthKeys, currentMonthKey } from "@/lib/queries";
 import { formatMonto } from "@/lib/format";
 import { PieChart } from "lucide-react";
 import CategoryIcon from "../components/CategoryIcon";
@@ -8,6 +8,7 @@ import IngresoMensualField from "./IngresoMensualField";
 import PlannedExpenseModal from "./PlannedExpenseModal";
 import PlannedExpenseRow from "./PlannedExpenseRow";
 import PlanPagoDeudaRow from "./PlanPagoDeudaRow";
+import SavingsPlanField from "../ahorro/SavingsPlanField";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +29,10 @@ export default async function PresupuestoPage() {
 
   const mesActual = currentMonthKey();
   const mesesPlan = nextMonthKeys(3);
-  const [planesPago, planificadosCredito] = await Promise.all([
+  const [planesPago, planificadosCredito, planAhorro] = await Promise.all([
     getDebtPaymentPlans(mesesPlan),
     getPlannedExpensesCredito(),
+    getSavingsPlan(mesActual),
   ]);
   const planificadosPorMedioYMes = agruparPlanificadosPorCorte(planificadosCredito, mesesPlan);
   const tarjetasActivas = deudas.filter((d) => d.type === "tarjeta_credito" && d.status !== "pagada");
@@ -59,7 +61,8 @@ export default async function PresupuestoPage() {
   const usaPlanDePago = tarjetasActivas.some((d) => planMesActualPorDeuda[d.id] !== undefined);
   const decimales = settings?.decimales ?? 0;
   const ingresoMensual = settings?.monthlyIncome || 0;
-  const disponibleAntesDePlanes = ingresoMensual - totalFijos - cuotasTarjetas;
+  const ahorroPlanMes = planAhorro?.totalAmount || 0;
+  const disponibleAntesDePlanes = ingresoMensual - totalFijos - cuotasTarjetas - ahorroPlanMes;
   const totalPlanVariable = budgets.reduce((s, b) => s + b.amountLimit, 0);
   const disponibleDespuesDePlanes = disponibleAntesDePlanes - totalPlanVariable;
   const diffVariable = totalPlanVariable - gastoVariableReal;
@@ -152,6 +155,14 @@ export default async function PresupuestoPage() {
         }
         planificados={
           <div className="space-y-3">
+            <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
+              <p className="text-sm font-medium mb-1">Plan de ahorro/inversión de este mes</p>
+              <p className="text-xs text-muted mb-3">
+                Lo que separas antes de gastar. Se resta de tu disponible en Proyección, igual que un fijo.
+              </p>
+              <SavingsPlanField month={mesActual} plan={planAhorro} />
+            </div>
+
             {tarjetasActivas.length > 0 && (
               <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
                 <p className="text-sm font-medium mb-1">Plan de pago de tarjetas</p>
@@ -233,6 +244,14 @@ export default async function PresupuestoPage() {
               </div>
               {usaPlanDePago && (
                 <p className="text-xs text-muted -mt-1 mb-1">Incluye tu plan de pago de tarjetas de la pestaña &quot;Planificados&quot; para este mes.</p>
+              )}
+              {ahorroPlanMes > 0 && (
+                <div className="flex justify-between items-center text-sm text-muted py-1.5">
+                  <span>
+                    Ahorro/Inversión planificado <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Tu plan</span>
+                  </span>
+                  <span className="text-foreground">− S/ {formatMonto(ahorroPlanMes, decimales)}</span>
+                </div>
               )}
               {totalFijosTarjeta > 0 && (
                 <div className="flex justify-between items-center text-xs text-muted py-1">

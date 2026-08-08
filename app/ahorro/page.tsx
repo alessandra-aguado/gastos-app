@@ -101,10 +101,6 @@ export default async function AhorroPage() {
         )}
       </div>
 
-      <div className="border border-dashed border-border rounded-xl p-5 text-center text-muted text-sm mt-4">
-        El seguimiento de cuánto has aportado realmente este mes frente a tu plan llega en la próxima
-        actualización.
-      </div>
     </div>
   );
 }

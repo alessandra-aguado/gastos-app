@@ -4,8 +4,8 @@ import { prisma, ensureSeeded } from "./db";
 import { revalidatePath } from "next/cache";
 import { currentMonthKey } from "./queries";
 
-async function registrarActividad(entity: string, action: "crear" | "editar" | "eliminar", label: string) {
-  await prisma.activityLog.create({ data: { entity, action, label } });
+async function registrarActividad(entity: string, action: "crear" | "editar" | "eliminar", label: string, snapshot?: object) {
+  await prisma.activityLog.create({ data: { entity, action, label, snapshot: snapshot ? (snapshot as never) : undefined } });
 }
 
 // Si el gasto se paga con una tarjeta de credito vinculada a una Deuda, ese
@@ -134,12 +134,78 @@ export async function eliminarTransaccion(formData: FormData) {
   // Revierte el efecto en la deuda de tarjeta vinculada, si aplica.
   await sincronizarDeudaTarjeta(gasto.paymentMethodId, -gasto.amount);
 
-  await registrarActividad("Gasto", "eliminar", `Gasto de S/ ${gasto.amount.toFixed(0)} eliminado${gasto.merchant ? ` (${gasto.merchant})` : ""}`);
+  await registrarActividad(
+    "Gasto",
+    "eliminar",
+    `Gasto de S/ ${gasto.amount.toFixed(0)} eliminado${gasto.merchant ? ` (${gasto.merchant})` : ""}`,
+    {
+      amount: gasto.amount,
+      date: gasto.date.toISOString(),
+      merchant: gasto.merchant,
+      source: gasto.source,
+      rawInput: gasto.rawInput,
+      aiConfidence: gasto.aiConfidence,
+      status: gasto.status,
+      notes: gasto.notes,
+      categoryId: gasto.categoryId,
+      paymentMethodId: gasto.paymentMethodId,
+    }
+  );
 
   revalidatePath("/");
   revalidatePath("/gastos");
   revalidatePath("/presupuesto");
   revalidatePath("/debo");
+  revalidatePath("/ajustes");
+}
+
+// Recrea un Gasto eliminado a partir del snapshot guardado en su ActivityLog.
+// Solo funciona una vez por registro (se marca restored=true para no duplicar).
+export async function restaurarGasto(formData: FormData) {
+  const logId = String(formData.get("logId"));
+  const log = await prisma.activityLog.findUnique({ where: { id: logId } });
+  if (!log || log.restored || log.entity !== "Gasto" || log.action !== "eliminar" || !log.snapshot) {
+    throw new Error("Este registro ya no se puede restaurar");
+  }
+
+  const snap = log.snapshot as {
+    amount: number;
+    date: string;
+    merchant: string | null;
+    source: string;
+    rawInput: string | null;
+    aiConfidence: number | null;
+    status: string;
+    notes: string | null;
+    categoryId: string | null;
+    paymentMethodId: string | null;
+  };
+
+  const transaction = await prisma.transaction.create({
+    data: {
+      amount: snap.amount,
+      date: new Date(snap.date),
+      merchant: snap.merchant,
+      source: snap.source,
+      rawInput: snap.rawInput,
+      aiConfidence: snap.aiConfidence,
+      status: snap.status,
+      notes: snap.notes,
+      categoryId: snap.categoryId,
+      paymentMethodId: snap.paymentMethodId,
+    },
+  });
+
+  await sincronizarDeudaTarjeta(transaction.paymentMethodId, transaction.amount);
+
+  await prisma.activityLog.update({ where: { id: logId }, data: { restored: true } });
+  await registrarActividad("Gasto", "crear", `Gasto de S/ ${transaction.amount.toFixed(0)} restaurado${transaction.merchant ? ` (${transaction.merchant})` : ""}`);
+
+  revalidatePath("/");
+  revalidatePath("/gastos");
+  revalidatePath("/presupuesto");
+  revalidatePath("/debo");
+  revalidatePath("/ajustes");
 }
 
 export async function setBudget(formData: FormData) {
@@ -793,6 +859,7 @@ export async function upsertSavingsPlan(formData: FormData) {
   });
   await registrarActividad("Ahorro", "editar", `Plan de ahorro de ${month} actualizado: S/ ${totalAmount.toFixed(0)}`);
   revalidatePath("/ahorro");
+  revalidatePath("/presupuesto");
 }
 
 // ================= Ajustes generales =================
