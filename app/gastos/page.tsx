@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
-import { getTopCategories, getSpendByTopCategory, listTransactionsByCategory, getMonthlyTrend, getPaymentMethods, getSettings } from "@/lib/queries";
+import { ShoppingCart, LayoutList, CalendarDays } from "lucide-react";
+import { getTopCategories, getSpendByTopCategory, listTransactionsByCategory, getMonthlyTrend, getPaymentMethods, getSettings, getMonthTransactions, monthRangeFromKey, currentMonthKey } from "@/lib/queries";
 import { formatMonto } from "@/lib/format";
 import CategoryIcon from "../components/CategoryIcon";
 import { colorForIndex } from "@/lib/categoryColors";
@@ -8,15 +8,16 @@ import RangoSelector from "../components/RangoSelector";
 import { rangeForPreset, parsePreset, formatRangeLabel, toDateInputValue } from "@/lib/dateRanges";
 import TransactionRow from "./TransactionRow";
 import DescargarReporte from "../components/DescargarReporte";
+import GastoCalendario from "./GastoCalendario";
 
 export const dynamic = "force-dynamic";
 
 export default async function GastosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cat?: string; rango?: string; desde?: string; hasta?: string }>;
+  searchParams: Promise<{ cat?: string; rango?: string; desde?: string; hasta?: string; vista?: string; mes?: string }>;
 }) {
-  const { cat, rango, desde, hasta } = await searchParams;
+  const { cat, rango, desde, hasta, vista, mes } = await searchParams;
   const preset = parsePreset(rango);
   const range = rangeForPreset(preset, desde, hasta);
   const rangeLabel = formatRangeLabel(preset, range.start, range.end);
@@ -25,6 +26,69 @@ export default async function GastosPage({
   const spendByCategory = await getSpendByTopCategory(range);
   const settings = await getSettings();
   const decimales = settings?.decimales ?? 0;
+
+  if (!cat && vista === "calendario") {
+    const mesKey = mes || currentMonthKey();
+    const monthRange = monthRangeFromKey(mesKey);
+    const [transacciones, medios] = await Promise.all([getMonthTransactions(monthRange), getPaymentMethods()]);
+
+    const porDia: Record<string, typeof transacciones> = {};
+    for (const t of transacciones) {
+      const key = t.date.toISOString().slice(0, 10);
+      if (!porDia[key]) porDia[key] = [];
+      porDia[key].push(t);
+    }
+
+    const [y, m] = mesKey.split("-").map(Number);
+    const diasEnMes = new Date(y, m, 0).getDate();
+    const dias = Array.from({ length: diasEnMes }, (_, i) => {
+      const dia = i + 1;
+      const key = `${y}-${String(m).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+      const txs = porDia[key] || [];
+      return { dia, date: key, total: txs.reduce((s, t) => s + t.amount, 0), transacciones: txs };
+    });
+    const totalMes = dias.reduce((s, d) => s + d.total, 0);
+    const maxTotal = Math.max(1, ...dias.map((d) => d.total));
+    // Lunes = 0 ... Domingo = 6, para que la grilla empiece en lunes.
+    const primerDiaSemana = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-semibold flex items-center gap-2"><ShoppingCart size={22} strokeWidth={1.75} />Gastos</h1>
+            <div className="flex gap-1 mt-3 bg-background border border-border rounded-lg p-0.5 w-fit">
+              <Link href="/gastos" className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md text-muted hover:text-foreground transition-colors">
+                <LayoutList size={13} /> Lista
+              </Link>
+              <Link href="/gastos?vista=calendario" className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-surface shadow-sm font-medium">
+                <CalendarDays size={13} /> Calendario
+              </Link>
+            </div>
+          </div>
+          <Link
+            href="/registrar"
+            className="bg-accent text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
+          >
+            + Registrar gasto
+          </Link>
+        </div>
+
+        <div className="mt-6">
+          <GastoCalendario
+            mesKey={mesKey}
+            dias={dias}
+            primerDiaSemana={primerDiaSemana}
+            decimales={decimales}
+            categorias={categories}
+            medios={medios}
+            maxTotal={maxTotal}
+            totalMes={totalMes}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (cat) {
     const category = categories.find((c) => c.id === cat);
@@ -100,6 +164,14 @@ export default async function GastosPage({
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2"><ShoppingCart size={22} strokeWidth={1.75} />Gastos</h1>
+          <div className="flex gap-1 mt-3 mb-1 bg-background border border-border rounded-lg p-0.5 w-fit">
+            <Link href="/gastos" className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-surface shadow-sm font-medium">
+              <LayoutList size={13} /> Lista
+            </Link>
+            <Link href="/gastos?vista=calendario" className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md text-muted hover:text-foreground transition-colors">
+              <CalendarDays size={13} /> Calendario
+            </Link>
+          </div>
           <RangoSelector
             preset={preset}
             label={rangeLabel}

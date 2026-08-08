@@ -118,6 +118,24 @@ export async function listTransactionsByCategory(topCategoryId: string, range?: 
   });
 }
 
+// Todas las transacciones de un rango (para la vista de calendario en Gastos),
+// sin filtrar por categoria.
+export async function getMonthTransactions(range: DateRange) {
+  return prisma.transaction.findMany({
+    where: { date: { gte: range.start, lt: range.end } },
+    include: { category: true, paymentMethod: true },
+    orderBy: { date: "desc" },
+  });
+}
+
+// Rango de un mes calendario completo a partir de una clave "YYYY-MM".
+export function monthRangeFromKey(monthKey: string): DateRange {
+  const [y, m] = monthKey.split("-").map(Number);
+  const start = new Date(y, m - 1, 1);
+  const end = new Date(y, m, 1);
+  return { start, end };
+}
+
 export async function getBudgets(range?: DateRange) {
   if (!range) return prisma.budget.findMany({ where: { month: currentMonthKey() } });
   // Suma los presupuestos de todos los meses que toca el rango.
