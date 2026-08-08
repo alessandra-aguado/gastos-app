@@ -174,7 +174,7 @@ export default async function SimuladorPage() {
 
             {idx > 0 && (
               <div className="flex justify-between items-center text-sm py-1">
-                <span className="text-muted">Lo que traes de {etiquetaMes(filas[idx - 1].mes).split(" ")[0]}</span>
+                <span className="text-muted">Saldo anterior <span className="text-[11px]">({etiquetaMes(filas[idx - 1].mes).split(" ")[0]})</span></span>
                 <span className={traeDeMesAnterior < 0 ? "text-warning" : "text-positive"}>S/ {formatMonto(traeDeMesAnterior, decimales)}</span>
               </div>
             )}
