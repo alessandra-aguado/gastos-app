@@ -1,6 +1,21 @@
 "use server";
 
-import { getCategories, getPaymentMethods } from "./queries";
+import {
+  getCategories,
+  getPaymentMethods,
+  getSettings,
+  getMonthTransactions,
+  monthRangeFromKey,
+  currentMonthKey,
+  getBudgets,
+  getDeudas,
+  getMetas,
+  getFijos,
+  getCuentas,
+  getSavingsPlan,
+  getDebtPaymentPlans,
+  getAhorroSummary,
+} from "./queries";
 
 const GEMINI_MODEL = "gemini-3.6-flash";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
@@ -151,4 +166,186 @@ export async function interpretarTexto(texto: string): Promise<ParsedGasto> {
   const { listaCategorias, listaMedios } = await construirContexto();
   const prompt = construirPrompt(listaCategorias, listaMedios, "texto") + `\n\nTexto del usuario:\n"""${texto}"""`;
   return llamarGemini([], prompt);
+}
+
+
+// ================= Asistencia IA (chat conversacional) =================
+
+function fmt(n: number) {
+  return n.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+async function construirContextoFinanciero(): Promise<string> {
+  const mesActual = currentMonthKey();
+  const monthRange = monthRangeFromKey(mesActual);
+
+  const [
+    settings,
+    transacciones,
+    budgets,
+    categorias,
+    deudas,
+    metas,
+    fijos,
+    cuentas,
+    savingsPlan,
+    planesPago,
+    ahorroSummary,
+  ] = await Promise.all([
+    getSettings(),
+    getMonthTransactions(monthRange),
+    getBudgets(),
+    getCategories(),
+    getDeudas(),
+    getMetas(),
+    getFijos(),
+    getCuentas(),
+    getSavingsPlan(mesActual),
+    getDebtPaymentPlans([mesActual]),
+    getAhorroSummary(),
+  ]);
+  const nombreCategoriaPorId: Record<string, string> = {};
+  for (const c of categorias) nombreCategoriaPorId[c.id] = c.name;
+
+  const totalGastado = transacciones.reduce((s, t) => s + t.amount, 0);
+  const porCategoria: Record<string, number> = {};
+  for (const t of transacciones) {
+    const nombre = t.category?.name || "Sin categoría";
+    porCategoria[nombre] = (porCategoria[nombre] || 0) + t.amount;
+  }
+  const categoriasTexto = Object.entries(porCategoria)
+    .sort((a, b) => b[1] - a[1])
+    .map(([nombre, monto]) => `  - ${nombre}: S/ ${fmt(monto)}`)
+    .join("\n") || "  (sin gastos registrados este mes)";
+
+  const topGastos = [...transacciones]
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5)
+    .map((t) => `  - S/ ${fmt(t.amount)} en ${t.merchant || t.category?.name || "gasto"} (${t.category?.name || "sin categoría"}), ${new Date(t.date).toLocaleDateString("es-PE")}, pagado con ${t.paymentMethod?.name || "medio no indicado"}`)
+    .join("\n") || "  (ninguno)";
+
+  const limitesTexto = budgets.length
+    ? budgets
+        .map((b) => {
+          const nombreCat = nombreCategoriaPorId[b.categoryId] || "categoría";
+          const gastado = porCategoria[nombreCat] ?? 0;
+          return `  - ${nombreCat}: límite S/ ${fmt(b.amountLimit)}, gastado hasta ahora S/ ${fmt(gastado)}`;
+        })
+        .join("\n")
+    : "  (sin límites de presupuesto definidos)";
+
+  const planPorDeuda: Record<string, number> = {};
+  for (const p of planesPago) planPorDeuda[p.debtId] = p.amount;
+  const deudasActivas = deudas.filter((d) => d.status !== "pagada");
+  const deudasTexto = deudasActivas.length
+    ? deudasActivas
+        .map((d) => {
+          const pago = planPorDeuda[d.id] ?? d.minPayment ?? 0;
+          const tipo = d.type === "tarjeta_credito" ? "tarjeta de crédito" : "préstamo personal";
+          const limite = d.creditLimit ? `, línea de crédito S/ ${fmt(d.creditLimit)}` : "";
+          return `  - ${d.counterpartName || tipo} (${tipo}): debe S/ ${fmt(d.balance)}${limite}, pago previsto este mes S/ ${fmt(pago)}`;
+        })
+        .join("\n")
+    : "  (sin deudas activas)";
+
+  const metasTexto = metas.length
+    ? metas
+        .map((m) => `  - "${m.name}": S/ ${fmt(m.currentAmount)} de S/ ${fmt(m.targetAmount)} (${Math.round((m.currentAmount / m.targetAmount) * 100)}%)${m.status === "completada" ? " · cumplida" : ""}`)
+        .join("\n")
+    : "  (sin metas de ahorro creadas)";
+
+  const fijosTexto = fijos.length
+    ? fijos.map((f) => `  - ${f.name || f.category?.name || "fijo"}: S/ ${fmt(f.amount)}/mes`).join("\n")
+    : "  (sin gastos fijos registrados)";
+  const totalFijos = fijos.reduce((s, f) => s + f.amount, 0);
+
+  const cuentasTexto = cuentas.length
+    ? cuentas.map((c) => `  - ${c.name} (${c.bank || c.type}): S/ ${fmt(c.balance)}`).join("\n")
+    : "  (sin cuentas registradas)";
+  const totalCuentas = cuentas.filter((c) => c.type !== "puntos" && c.type !== "custodia").reduce((s, c) => s + c.balance, 0);
+
+  const ingresoMensual = settings?.monthlyIncome ?? null;
+  const disponible = ingresoMensual !== null ? ingresoMensual - totalFijos - Object.values(planPorDeuda).reduce((s, v) => s + v, 0) : null;
+
+  return `Fecha de hoy: ${new Date().toLocaleDateString("es-PE", { day: "numeric", month: "long", year: "numeric" })}
+Mes actual: ${mesActual}
+
+INGRESO Y DISPONIBLE:
+  - Ingreso mensual configurado: ${ingresoMensual !== null ? `S/ ${fmt(ingresoMensual)}` : "no está definido"}
+  - Disponible estimado (ingreso menos fijos y cuotas de deuda de este mes): ${disponible !== null ? `S/ ${fmt(disponible)}` : "no se puede calcular sin ingreso mensual"}
+
+GASTOS DE ESTE MES (total S/ ${fmt(totalGastado)}, ${transacciones.length} transacciones):
+Por categoría:
+${categoriasTexto}
+Los 5 gastos más caros del mes:
+${topGastos}
+
+LÍMITES DE PRESUPUESTO POR CATEGORÍA ESTE MES:
+${limitesTexto}
+
+GASTOS FIJOS MENSUALES (total S/ ${fmt(totalFijos)}):
+${fijosTexto}
+
+DEUDAS ACTIVAS:
+${deudasTexto}
+
+METAS DE AHORRO:
+${metasTexto}
+
+RESUMEN DE AHORRO E INVERSIÓN ACUMULADO: colchón de emergencia S/ ${fmt(ahorroSummary.colchon)}, metas S/ ${fmt(ahorroSummary.totalMetas)}, inversiones S/ ${fmt(ahorroSummary.totalInversiones)}
+Plan de ahorro/inversión para este mes: ${savingsPlan ? `S/ ${fmt(savingsPlan.totalAmount)}` : "no definido"}
+
+CUENTAS Y SALDOS (patrimonio líquido total S/ ${fmt(totalCuentas)}):
+${cuentasTexto}`;
+}
+
+export type MensajeChat = { rol: "usuario" | "ia"; texto: string };
+
+export async function preguntarAsistente(pregunta: string, historial: MensajeChat[]): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Falta configurar GEMINI_API_KEY en las variables de entorno.");
+  }
+
+  const contexto = await construirContextoFinanciero();
+
+  const systemPrompt = `Eres el asistente financiero personal de Ale, integrado dentro de su app de finanzas personales "miga". Tu trabajo es responder sus preguntas sobre SU dinero usando exclusivamente los datos reales de abajo — nunca inventes cifras que no estén ahí.
+
+${contexto}
+
+Instrucciones de estilo:
+- Responde en español, tuteando a Ale, de forma breve y directa (2-4 oraciones normalmente, salvo que la pregunta pida un desglose).
+- Basa cada número que des en los datos de arriba. Si no tienes el dato para responder con certeza, dilo claramente en vez de inventar o asumir.
+- Si la pregunta es sobre si "le alcanza" para algo, usa el disponible estimado y sé realista, mencionando supuestos si los hay.
+- No repitas de vuelta toda la lista de datos — ve directo a responder.`;
+
+  const contents = [
+    ...historial.map((m) => ({ role: m.rol === "usuario" ? "user" : "model", parts: [{ text: m.texto }] })),
+    { role: "user", parts: [{ text: pregunta }] },
+  ];
+
+  const res = await fetch(GEMINI_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey,
+    },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents,
+      generationConfig: { temperature: 0.4 },
+    }),
+  });
+
+  if (!res.ok) {
+    const detalle = await res.text().catch(() => "");
+    throw new Error(`Gemini respondió ${res.status}: ${detalle.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!texto || typeof texto !== "string") {
+    throw new Error("Gemini no devolvió una respuesta interpretable.");
+  }
+  return texto.trim();
 }
