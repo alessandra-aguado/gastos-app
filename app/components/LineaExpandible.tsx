@@ -92,9 +92,9 @@ export default function LineaExpandible({
                           <span className="text-muted">S/ {formatMonto(d.amount, decimales)}</span>
                         </div>
                       ))}
-                      {f.detalle!.length > 1 && (
+                      {f.detalle!.length > 1 && Math.abs(totalDetalle - f.amount) > 0.01 && (
                         <div className="flex justify-between items-center pt-1.5 text-[11px] font-medium">
-                          <span>Total si sigues usándola así</span>
+                          <span>Total si pagaras todo esto</span>
                           <span>S/ {formatMonto(totalDetalle, decimales)}</span>
                         </div>
                       )}

@@ -110,9 +110,13 @@ export default async function SimuladorPage() {
       const cargosPlanificados = d.paymentMethodId ? planificadosPorMedioYMes[d.paymentMethodId]?.[mes] || 0 : 0;
       const pagoExtra = itemsMes.filter((i) => i.type === "pago_deuda" && i.debtId === d.id).reduce((s, i) => s + i.amount, 0);
       const planMes = planPorDeudaMes[d.id]?.[mes];
-      // Sin un plan explicito para el mes, se usa el default global: pagar
-      // todo el saldo de este corte, o solo la cuota minima.
-      const pagoDeuda = planMes ?? (pagoTotalDefault ? balance : (d.minPayment || 0));
+      // Sin un plan explicito para el mes: si tu default es "pago total",
+      // pagas TODO lo que vas a deber en este corte — lo que ya debes MAS lo
+      // que le sigas cargando (fijos, planificados, hipoteticos) — porque asi
+      // es como realmente pagas tus tarjetas (todo de una, con tu sueldo). Si
+      // tu default es "minimo", solo se paga la cuota minima del saldo actual
+      // y lo demas se acumula para el siguiente corte.
+      const pagoDeuda = planMes ?? (pagoTotalDefault ? balance + cargosFijos + cargosHip + cargosPlanificados : (d.minPayment || 0));
       // Cuanto habria que agregar como "pago extra" para dejar la tarjeta en
       // cero este mes, sin contar dos veces lo que ya se resta por plan/minimo.
       const montoParaPagoTotal = idx === 0 ? Math.max(0, balance - pagoDeuda) : null;
@@ -134,27 +138,31 @@ export default async function SimuladorPage() {
   function cuotasTarjetasMes(mes: string) {
     return tarjetas.reduce((s, d) => s + (pagoDeudaPorDeudaYMes[d.id]?.[mes] ?? 0), 0);
   }
-  // Lo que ya planificaste cargar a esta tarjeta este corte (fijos recurrentes
-  // + compras planificadas puntuales) — no es lo que pagas del saldo actual,
-  // sino lo que va a sumarse al saldo del proximo corte si sigues adelante.
-  function detalleTarjetaMes(d: (typeof tarjetas)[number], mes: string, pagoDeuda: number) {
+  // Desglose de "cuanto vas a pagar en total de esta tarjeta este corte":
+  // la deuda pendiente que ya tienes registrada, mas todo lo que le sigas
+  // cargando antes de que cierre el corte (fijos recurrentes, hipoteticos del
+  // simulador, y compras planificadas). La suma de este detalle es EXACTAMENTE
+  // el monto que se muestra arriba en "pago total", para que no se confundan.
+  function detalleTarjetaMes(d: (typeof tarjetas)[number], mes: string) {
     const detalle: { label: string; sublabel?: string; amount: number }[] = [];
-    // Primero, lo que ya debes de este corte (la deuda actual que estas
-    // pagando/simulando pagar este mes) — para que no se confunda con lo
-    // que viene abajo, que es plata NUEVA que se sumaria a tu deuda si
-    // sigues usando la tarjeta.
-    detalle.push({ label: "Deuda de este corte", sublabel: "lo que ya debes", amount: pagoDeuda });
+    detalle.push({ label: "Deuda pendiente", sublabel: "lo que ya debes hoy", amount: d.balance });
     if (!d.paymentMethodId) return detalle;
     for (const f of fijos) {
       if (f.paymentMethodId === d.paymentMethodId && f.paymentMethod?.type === "credito") {
-        detalle.push({ label: f.name, sublabel: "se suma el próximo corte", amount: f.amount });
+        detalle.push({ label: f.name, sublabel: "fijo recurrente", amount: f.amount });
+      }
+    }
+    const itemsMes = itemsPorMes[mes] || [];
+    for (const it of itemsMes) {
+      if ((it.type === "gasto" || it.type === "prestamo") && it.paymentMethodId === d.paymentMethodId) {
+        detalle.push({ label: it.description, sublabel: "hipotético del simulador", amount: it.amount });
       }
     }
     for (const p of planificadosCredito) {
       if (p.paymentMethodId !== d.paymentMethodId) continue;
       const mesCorte = p.date ? mesDeFacturacion(new Date(p.date), p.paymentMethod?.billingDay) : months[0];
       if (mesCorte !== mes) continue;
-      detalle.push({ label: p.description, sublabel: "se sumaría si compras esto", amount: p.amount });
+      detalle.push({ label: p.description, sublabel: "planificado", amount: p.amount });
     }
     return detalle;
   }
@@ -166,7 +174,7 @@ export default async function SimuladorPage() {
         label: d.counterpartName || "Tarjeta de crédito",
         sublabel: planPorDeudaMes[d.id]?.[mes] !== undefined ? "según tu plan" : pagoTotalDefault ? "pago total" : "pago mínimo",
         amount: pagoDeuda,
-        detalle: detalleTarjetaMes(d, mes, pagoDeuda),
+        detalle: detalleTarjetaMes(d, mes),
       };
     });
   }
