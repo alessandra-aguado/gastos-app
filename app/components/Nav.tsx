@@ -41,26 +41,27 @@ const presupuestoGroup: { id: string; parent: Item; children: Item[] } = {
 
 // Grupos que no tienen pagina propia: solo agrupan visualmente varias
 // secciones relacionadas bajo un encabezado no clickeable.
-const patrimonioGroup: { id: string; label: string; children: Item[] } = {
-  id: "patrimonio",
-  label: "Patrimonio",
+const patrimonioItems: Item[] = [
+  { href: "/cuentas", icon: Wallet, label: "Cuentas" },
+  { href: "/debo", icon: CreditCard, label: "Deuda" },
+];
+
+// Ahorro tiene pagina propia, y adentro agrupa Metas e Inversiones (que
+// tambien son paginas propias) — igual patron que Gastos/Presupuesto, pero
+// anidado un nivel mas adentro de "Patrimonio".
+const ahorroGroup: { id: string; parent: Item; children: Item[] } = {
+  id: "ahorro",
+  parent: { href: "/ahorro", icon: PiggyBank, label: "Ahorro" },
   children: [
-    { href: "/cuentas", icon: Wallet, label: "Cuentas" },
-    { href: "/debo", icon: CreditCard, label: "Deuda" },
-    { href: "/ahorro", icon: PiggyBank, label: "Ahorro" },
     { href: "/metas", icon: Target, label: "Metas" },
     { href: "/inversiones", icon: TrendingUp, label: "Inversiones" },
   ],
 };
 
-const planeadoGroup: { id: string; label: string; children: Item[] } = {
-  id: "planeado",
-  label: "Planeado",
-  children: [
-    { href: "/fijos", icon: Repeat, label: "Fijos" },
-    { href: "/deseos", icon: Gift, label: "Deseos" },
-  ],
-};
+const planeadoItems: Item[] = [
+  { href: "/fijos", icon: Repeat, label: "Fijos" },
+  { href: "/deseos", icon: Gift, label: "Deseos" },
+];
 
 function useGrupoAbierto(id: string, activo: boolean) {
   const key = `miga_nav_${id}_abierto`;
@@ -158,18 +159,24 @@ function GrupoConPagina({
 }
 
 // Grupo sin pagina propia (Patrimonio, Planeado): solo un encabezado fijo,
-// sin flechita — siempre expandido.
+// sin flechita — siempre expandido. Acepta items planos y, opcionalmente,
+// subgrupos colapsables (como Ahorro dentro de Patrimonio).
 function GrupoConEncabezado({
-  grupo,
+  label,
+  items,
   pathname,
+  subgrupos,
 }: {
-  grupo: { id: string; label: string; children: Item[] };
+  label: string;
+  items: Item[];
   pathname: string;
+  subgrupos?: { id: string; parent: Item; children: Item[] }[];
 }) {
   return (
     <div>
-      <p className="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{grupo.label}</p>
-      {grupo.children.map((c) => <NavLink key={c.href} {...c} active={pathname === c.href} />)}
+      <p className="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</p>
+      {items.map((c) => <NavLink key={c.href} {...c} active={pathname === c.href} />)}
+      {subgrupos?.map((g) => <GrupoConPagina key={g.id} grupo={g} pathname={pathname} />)}
     </div>
   );
 }
@@ -187,8 +194,8 @@ export default function Nav() {
 
       <GrupoConPagina grupo={gastosGroup} pathname={pathname} />
       <GrupoConPagina grupo={presupuestoGroup} pathname={pathname} />
-      <GrupoConEncabezado grupo={patrimonioGroup} pathname={pathname} />
-      <GrupoConEncabezado grupo={planeadoGroup} pathname={pathname} />
+      <GrupoConEncabezado label="Patrimonio" items={patrimonioItems} pathname={pathname} subgrupos={[ahorroGroup]} />
+      <GrupoConEncabezado label="Planeado" items={planeadoItems} pathname={pathname} />
 
       <div className="mt-2 pt-2 border-t border-border">
         <NavLink href="/asistencia-ia" icon={Sparkles} label="Asistencia IA" active={pathname === "/asistencia-ia"} />
