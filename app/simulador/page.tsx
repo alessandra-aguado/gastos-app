@@ -1,9 +1,10 @@
-import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, getDebtPaymentPlans, getPlannedExpensesCredito, agruparPlanificadosPorCorte, nextMonthKeys } from "@/lib/queries";
+import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, getDebtPaymentPlans, getPlannedExpensesCredito, getPlannedExpensesPendientesTodas, mesEfectivoPlanificado, agruparPlanificadosPorCorte, nextMonthKeys } from "@/lib/queries";
 import { simularPagoTotalDeuda } from "@/lib/actions";
 import { formatMonto } from "@/lib/format";
 import { Calculator } from "lucide-react";
 import SimulationItemModal from "./SimulationItemModal";
 import SimulationItemRow from "./SimulationItemRow";
+import LineaExpandible from "../components/LineaExpandible";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ function etiquetaMes(mes: string) {
 
 export default async function SimuladorPage() {
   const months = nextMonthKeys(3);
-  const [settings, fijos, deudas, categories, medios, items, planesPago, planificadosCredito] = await Promise.all([
+  const [settings, fijos, deudas, categories, medios, items, planesPago, planificadosCredito, planificadosPendientes] = await Promise.all([
     getSettings(),
     getFijos(),
     getDeudas(),
@@ -25,8 +26,23 @@ export default async function SimuladorPage() {
     getSimulationItems(months),
     getDebtPaymentPlans(months),
     getPlannedExpensesCredito(),
+    getPlannedExpensesPendientesTodas(),
   ]);
   const planificadosPorMedioYMes = agruparPlanificadosPorCorte(planificadosCredito, months);
+
+  // Todos los planificados pendientes, agrupados por el mes en el que
+  // realmente van a impactar (fecha de corte si es tarjeta, mes calendario si
+  // es debito/efectivo/billetera). Los que NO son con tarjeta salen de tu
+  // bolsillo ese mes, asi que se restan del saldo igual que un gasto.
+  const planificadosPorMesEfectivo: Record<string, typeof planificadosPendientes> = {};
+  for (const p of planificadosPendientes) {
+    const mes = mesEfectivoPlanificado(p);
+    if (!planificadosPorMesEfectivo[mes]) planificadosPorMesEfectivo[mes] = [];
+    planificadosPorMesEfectivo[mes].push(p);
+  }
+  function planificadosNoCreditoMes(mes: string) {
+    return (planificadosPorMesEfectivo[mes] || []).filter((p) => p.paymentMethod?.type !== "credito");
+  }
 
   const decimales = settings?.decimales ?? 0;
   const ingresoBase = settings?.monthlyIncome || 0;
@@ -38,7 +54,9 @@ export default async function SimuladorPage() {
     planPorDeudaMes[p.debtId][p.month] = p.amount;
   }
 
-  const fijosSinTarjeta = fijos.filter((f) => f.paymentMethod?.type !== "credito").reduce((s, f) => s + f.amount, 0);
+  const fijosSinTarjetaLista = fijos.filter((f) => f.paymentMethod?.type !== "credito");
+  const fijosSinTarjeta = fijosSinTarjetaLista.reduce((s, f) => s + f.amount, 0);
+  const fijosSinTarjetaFilas = fijosSinTarjetaLista.map((f) => ({ label: f.name, sublabel: f.paymentMethod?.name, amount: f.amount }));
   const fijosConTarjetaPorMedio: Record<string, number> = {};
   for (const f of fijos) {
     if (f.paymentMethod?.type === "credito" && f.paymentMethodId) {
@@ -50,13 +68,20 @@ export default async function SimuladorPage() {
   function cuotasTarjetasMes(mes: string) {
     return tarjetas.reduce((s, d) => s + (planPorDeudaMes[d.id]?.[mes] ?? d.minPayment ?? 0), 0);
   }
+  function cuotasTarjetasFilasMes(mes: string) {
+    return tarjetas.map((d) => ({
+      label: d.counterpartName || "Tarjeta de crédito",
+      sublabel: planPorDeudaMes[d.id]?.[mes] !== undefined ? "según tu plan" : "pago mínimo",
+      amount: planPorDeudaMes[d.id]?.[mes] ?? d.minPayment ?? 0,
+    }));
+  }
 
   const deudasActivas = deudas.filter((d) => d.status !== "pagada" && (d.type === "tarjeta_credito" || d.direction === "yo_debo"));
 
   const itemsPorMes: Record<string, typeof items> = {};
   for (const m of months) itemsPorMes[m] = items.filter((i) => i.month === m);
 
-  const filas: { mes: string; itemsMes: typeof items; ingresosHip: number; gastosHip: number; cuotasTarjetas: number; saldoDelMes: number; saldoAcumulado: number }[] = [];
+  const filas: { mes: string; itemsMes: typeof items; ingresosHip: number; gastosHip: number; cuotasTarjetas: number; totalPlanificados: number; saldoDelMes: number; saldoAcumulado: number }[] = [];
   for (const mes of months) {
     const itemsMes = itemsPorMes[mes];
     const ingresosHip = itemsMes.filter((i) => i.type === "ingreso").reduce((s, i) => s + i.amount, 0);
@@ -65,10 +90,13 @@ export default async function SimuladorPage() {
     // cuota minima/plan que ya se resta en "cuotas"), asi que debe restarse
     // del saldo igual que un gasto hipotetico.
     const pagoDeudaHip = itemsMes.filter((i) => i.type === "pago_deuda").reduce((s, i) => s + i.amount, 0);
+    // Gastos/prestamos planificados REALES (no hipoteticos del Simulador) que
+    // no son con tarjeta: tambien salen de tu bolsillo este mes.
+    const totalPlanificados = planificadosNoCreditoMes(mes).reduce((s, p) => s + p.amount, 0);
     const cuotas = cuotasTarjetasMes(mes);
-    const saldoDelMes = ingresoBase + ingresosHip - fijosSinTarjeta - cuotas - gastosHip - pagoDeudaHip;
+    const saldoDelMes = ingresoBase + ingresosHip - fijosSinTarjeta - cuotas - gastosHip - pagoDeudaHip - totalPlanificados;
     const previo = filas.length > 0 ? filas[filas.length - 1].saldoAcumulado : 0;
-    filas.push({ mes, itemsMes, ingresosHip, gastosHip, cuotasTarjetas: cuotas, saldoDelMes, saldoAcumulado: previo + saldoDelMes });
+    filas.push({ mes, itemsMes, ingresosHip, gastosHip, cuotasTarjetas: cuotas, totalPlanificados, saldoDelMes, saldoAcumulado: previo + saldoDelMes });
   }
 
   const proyeccionTarjetas = tarjetas.map((d) => {
@@ -100,7 +128,7 @@ export default async function SimuladorPage() {
       </p>
 
       <div className="mt-6 space-y-4">
-        {filas.map(({ mes, itemsMes, saldoDelMes, cuotasTarjetas: cuotasMes, saldoAcumulado: acumulado }) => (
+        {filas.map(({ mes, itemsMes, saldoDelMes, cuotasTarjetas: cuotasMes, totalPlanificados, saldoAcumulado: acumulado }) => (
           <div key={mes} className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
             <div className="flex justify-between items-center mb-3">
               <p className="text-sm font-medium capitalize">{etiquetaMes(mes)}</p>
@@ -111,14 +139,20 @@ export default async function SimuladorPage() {
               <span>Ingreso mensual</span>
               <span className="text-foreground">S/ {formatMonto(ingresoBase, decimales)}</span>
             </div>
-            <div className="flex justify-between items-center text-sm text-muted py-1">
-              <span>Fijos (débito/efectivo)</span>
-              <span className="text-foreground">− S/ {formatMonto(fijosSinTarjeta, decimales)}</span>
-            </div>
-            <div className="flex justify-between items-center text-sm text-muted py-1 mb-2">
-              <span>Cuotas de tarjetas</span>
-              <span className="text-foreground">− S/ {formatMonto(cuotasMes, decimales)}</span>
-            </div>
+            <LineaExpandible label="Fijos (débito/efectivo)" total={fijosSinTarjeta} filas={fijosSinTarjetaFilas} />
+            <LineaExpandible label="Cuotas de tarjetas" total={cuotasMes} filas={cuotasTarjetasFilasMes(mes)} />
+            {totalPlanificados > 0 && (
+              <LineaExpandible
+                label="Gastos planificados (débito/efectivo)"
+                total={totalPlanificados}
+                filas={planificadosNoCreditoMes(mes).map((p) => ({
+                  label: p.description,
+                  sublabel: p.kind === "prestamo" ? `préstamo a ${p.counterpartName}` : p.category?.name || undefined,
+                  amount: p.amount,
+                }))}
+              />
+            )}
+            <div className="mb-2" />
 
             {itemsMes.length > 0 && (
               <div className="border border-border rounded-lg overflow-hidden mb-3">

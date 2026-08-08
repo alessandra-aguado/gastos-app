@@ -213,6 +213,25 @@ export async function getPlannedExpensesCredito() {
   });
 }
 
+// Todos los gastos/prestamos planificados pendientes (cualquier medio de
+// pago), para el Simulador: los que NO son con tarjeta salen de tu bolsillo
+// ese mismo mes y deben restarse del saldo proyectado igual que un gasto.
+export async function getPlannedExpensesPendientesTodas() {
+  return prisma.plannedExpense.findMany({
+    where: { status: "pendiente" },
+    include: { category: true, paymentMethod: true },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+// A que mes (calendario o de facturacion, segun el medio de pago) pertenece
+// un gasto planificado, usando su fecha si la tiene o su mes de creacion si no.
+export function mesEfectivoPlanificado(p: { date: Date | null; month: string; paymentMethod: { type: string; billingDay: number | null } | null }): string {
+  if (!p.date) return p.month;
+  if (p.paymentMethod?.type === "credito") return mesDeFacturacion(new Date(p.date), p.paymentMethod.billingDay);
+  return monthKeyFromLocalDate(new Date(p.date));
+}
+
 // Agrupa esos gastos planificados con tarjeta por deuda (via paymentMethodId) y por
 // mes de facturacion real (corte), usando la fecha en que Ale piensa hacer la compra.
 // Si no puso fecha, se asume que cae en el corte mas proximo (el primer mes de la lista).

@@ -9,7 +9,7 @@ import PlannedExpenseModal from "./PlannedExpenseModal";
 import PlannedExpenseRow from "./PlannedExpenseRow";
 import PlanPagoDeudaRow from "./PlanPagoDeudaRow";
 import SavingsPlanField from "../ahorro/SavingsPlanField";
-import LineaExpandible from "./LineaExpandible";
+import LineaExpandible from "../components/LineaExpandible";
 
 export const dynamic = "force-dynamic";
 

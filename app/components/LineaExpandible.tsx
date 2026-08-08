@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { formatMonto } from "@/lib/format";
-import { useDecimales } from "../components/DecimalesProvider";
+import { useDecimales } from "./DecimalesProvider";
 
 type Fila = { label: string; sublabel?: string; amount: number };
 
