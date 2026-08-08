@@ -157,8 +157,8 @@ function GrupoConPagina({
   );
 }
 
-// Grupo sin pagina propia (Patrimonio, Planeado): el encabezado entero es el
-// que expande/contrae.
+// Grupo sin pagina propia (Patrimonio, Planeado): solo un encabezado fijo,
+// sin flechita — siempre expandido.
 function GrupoConEncabezado({
   grupo,
   pathname,
@@ -166,16 +166,10 @@ function GrupoConEncabezado({
   grupo: { id: string; label: string; children: Item[] };
   pathname: string;
 }) {
-  const activo = grupo.children.some((c) => c.href === pathname);
-  const { abierto, toggle } = useGrupoAbierto(grupo.id, activo);
-
   return (
     <div>
-      <button onClick={toggle} className="flex items-center justify-between w-full px-3 pt-3 pb-1 group">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{grupo.label}</span>
-        <ChevronDown size={12} strokeWidth={2} className={`text-muted transition-transform ${abierto ? "" : "-rotate-90"}`} />
-      </button>
-      {abierto && grupo.children.map((c) => <NavLink key={c.href} {...c} active={pathname === c.href} />)}
+      <p className="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{grupo.label}</p>
+      {grupo.children.map((c) => <NavLink key={c.href} {...c} active={pathname === c.href} />)}
     </div>
   );
 }

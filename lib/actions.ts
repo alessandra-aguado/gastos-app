@@ -291,6 +291,24 @@ export async function addContribucion(formData: FormData) {
   await registrarActividad("Meta", "editar", `Aporte de S/ ${amount.toFixed(0)} a "${metaAporte.name}"`);
 
   revalidatePath("/metas");
+  revalidatePath(`/metas/${savingsGoalId}`);
+}
+
+// Elimina un abono puntual (por si se registro por error) y revierte su
+// efecto sobre el monto acumulado de la meta.
+export async function eliminarContribucion(formData: FormData) {
+  const id = String(formData.get("id"));
+  const contribucion = await prisma.savingsContribution.delete({ where: { id } });
+
+  const meta = await prisma.savingsGoal.update({
+    where: { id: contribucion.savingsGoalId },
+    data: { currentAmount: { decrement: contribucion.amount } },
+  });
+
+  await registrarActividad("Meta", "eliminar", `Aporte de S/ ${contribucion.amount.toFixed(0)} a "${meta.name}" eliminado`);
+
+  revalidatePath("/metas");
+  revalidatePath(`/metas/${contribucion.savingsGoalId}`);
 }
 
 export async function marcarMetaCompletada(formData: FormData) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { addContribucion, marcarMetaCompletada, eliminarMeta } from "@/lib/actions";
 import RowMenu from "../components/RowMenu";
 import { useDecimales } from "../components/DecimalesProvider";
@@ -35,7 +36,9 @@ export default function MetaCard({ meta }: { meta: Meta }) {
     <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-4">
       <div className="flex justify-between items-start mb-2.5">
         <div>
-          <p className="text-sm font-medium">{meta.name}</p>
+          <Link href={`/metas/${meta.id}`} className="text-sm font-medium hover:text-accent hover:underline underline-offset-2">
+            {meta.name}
+          </Link>
           <p className="text-xs text-muted">
             {meta.targetDate ? new Date(meta.targetDate).toLocaleDateString("es-PE", { month: "short", year: "numeric" }) : "sin fecha"}
           </p>

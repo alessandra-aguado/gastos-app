@@ -370,6 +370,13 @@ export async function getMetas() {
   });
 }
 
+export async function getMetaPorId(id: string) {
+  return prisma.savingsGoal.findUnique({
+    where: { id },
+    include: { contributions: { orderBy: { date: "desc" } } },
+  });
+}
+
 // ---------- Inversiones ----------
 export async function getInversiones() {
   return prisma.investment.findMany({ orderBy: { createdAt: "desc" } });

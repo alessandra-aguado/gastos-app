@@ -9,7 +9,7 @@ import MedioModal from "./MedioModal";
 import ReglaIngresoField from "./ReglaIngresoField";
 import FormatoMontoField from "./FormatoMontoField";
 import AlertaTarjetaField from "./AlertaTarjetaField";
-import { Plus, Pencil, Trash2, History } from "lucide-react";
+import { Plus, Pencil, Trash2, History, CalendarClock, Mail } from "lucide-react";
 
 type Categoria = { id: string; name: string; icon: string | null; color: string | null; description: string | null };
 type Medio = { id: string; name: string; type: string; bankOrIssuer: string | null };
@@ -144,6 +144,46 @@ export default function AjustesTabs({
           <ReglaIngresoField regla={regla} />
           <FormatoMontoField decimales={decimales} />
           <AlertaTarjetaField alertaTarjetaDefault={alertaTarjetaDefault} />
+
+          <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5 mb-4">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-sm font-medium">Integraciones</p>
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-background text-muted border border-border">Vista previa</span>
+            </div>
+            <p className="text-xs text-muted mb-4">
+              Así se vería conectar Miga con tus cuentas de Google. Todavía no está activo — es un adelanto para que veas cómo luciría antes de decidir si vale la pena construirlo.
+            </p>
+
+            <div className="flex items-center justify-between border border-border rounded-lg px-4 py-3 mb-2.5">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-background flex items-center justify-center shrink-0">
+                  <CalendarClock size={18} strokeWidth={1.75} className="text-muted" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Google Calendar</p>
+                  <p className="text-xs text-muted">Crea recordatorios automáticos de tus fechas de corte y vencimiento.</p>
+                </div>
+              </div>
+              <button disabled className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted cursor-not-allowed shrink-0">
+                Conectar
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between border border-border rounded-lg px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-background flex items-center justify-center shrink-0">
+                  <Mail size={18} strokeWidth={1.75} className="text-muted" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Gmail</p>
+                  <p className="text-xs text-muted">Detecta correos de tus bancos para sugerir gastos automáticamente.</p>
+                </div>
+              </div>
+              <button disabled className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted cursor-not-allowed shrink-0">
+                Conectar
+              </button>
+            </div>
+          </div>
         </>
       ) : tab === "categorias" ? (
         <>
