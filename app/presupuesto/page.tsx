@@ -58,7 +58,9 @@ export default async function PresupuestoPage() {
   const totalFijos = fijosSinTarjeta.reduce((s, f) => s + f.amount, 0);
   const totalFijosTarjeta = fijosConTarjeta.reduce((s, f) => s + f.amount, 0);
 
-  const cuotasTarjetas = tarjetasActivas.reduce((s, d) => s + (planMesActualPorDeuda[d.id] ?? d.minPayment ?? 0), 0);
+  const pagoTotalDefault = settings?.tarjetaPagoDefault === "total";
+  const pagoTarjetaSinPlan = (d: (typeof tarjetasActivas)[number]) => (pagoTotalDefault ? d.balance : d.minPayment ?? 0);
+  const cuotasTarjetas = tarjetasActivas.reduce((s, d) => s + (planMesActualPorDeuda[d.id] ?? pagoTarjetaSinPlan(d)), 0);
   const usaPlanDePago = tarjetasActivas.some((d) => planMesActualPorDeuda[d.id] !== undefined);
   const decimales = settings?.decimales ?? 0;
   const ingresoMensual = settings?.monthlyIncome || 0;
@@ -243,8 +245,8 @@ export default async function PresupuestoPage() {
                 total={cuotasTarjetas}
                 filas={tarjetasActivas.map((d) => ({
                   label: d.counterpartName || "Tarjeta de crédito",
-                  sublabel: planMesActualPorDeuda[d.id] !== undefined ? "según tu plan" : "pago mínimo",
-                  amount: planMesActualPorDeuda[d.id] ?? d.minPayment ?? 0,
+                  sublabel: planMesActualPorDeuda[d.id] !== undefined ? "según tu plan" : pagoTotalDefault ? "pago total" : "pago mínimo",
+                  amount: planMesActualPorDeuda[d.id] ?? pagoTarjetaSinPlan(d),
                 }))}
               />
               {usaPlanDePago && (

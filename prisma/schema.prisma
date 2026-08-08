@@ -323,6 +323,7 @@ model Settings {
   pctAhorro     Float   @default(10) // % del ingreso destinado a ahorro
   decimales     Int     @default(0) // cantidad de decimales al mostrar montos en soles (0-3, personalizable)
   alertaTarjetaDefault Int @default(30) // % de uso de tarjeta al que se muestra alerta, por defecto (personalizable por tarjeta en Debt.alertaPorcentaje)
+  tarjetaPagoDefault String @default("minimo") // "minimo" | "total" — que asumir en Proyeccion/Simulador cuando NO hay un DebtPaymentPlan explicito para el mes
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

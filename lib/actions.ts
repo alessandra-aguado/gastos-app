@@ -1579,3 +1579,25 @@ export async function updateAlertaTarjetaDefault(formData: FormData) {
   revalidatePath("/debo");
   revalidatePath("/simulador");
 }
+
+// ---------- Default global: pago mínimo vs pago total para cuotas de tarjeta sin plan explícito ----------
+export async function updateTarjetaPagoDefault(formData: FormData) {
+  const value = String(formData.get("tarjetaPagoDefault") || "minimo");
+  const tarjetaPagoDefault = value === "total" ? "total" : "minimo";
+
+  await prisma.settings.upsert({
+    where: { id: "singleton" },
+    update: { tarjetaPagoDefault },
+    create: { id: "singleton", tarjetaPagoDefault },
+  });
+
+  await registrarActividad(
+    "Ajustes",
+    "editar",
+    `Default de cuotas de tarjeta actualizado a "${tarjetaPagoDefault === "total" ? "pago total" : "pago mínimo"}"`
+  );
+
+  revalidatePath("/ajustes");
+  revalidatePath("/presupuesto");
+  revalidatePath("/simulador");
+}

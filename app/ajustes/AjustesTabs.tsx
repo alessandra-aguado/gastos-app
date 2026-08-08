@@ -9,6 +9,7 @@ import MedioModal from "./MedioModal";
 import ReglaIngresoField from "./ReglaIngresoField";
 import FormatoMontoField from "./FormatoMontoField";
 import AlertaTarjetaField from "./AlertaTarjetaField";
+import TarjetaPagoDefaultField from "./TarjetaPagoDefaultField";
 import { Plus, Pencil, Trash2, History, CalendarClock, Mail } from "lucide-react";
 
 type Categoria = { id: string; name: string; icon: string | null; color: string | null; description: string | null };
@@ -28,6 +29,7 @@ export default function AjustesTabs({
   regla,
   decimales,
   alertaTarjetaDefault,
+  tarjetaPagoDefault,
 }: {
   categorias: Categoria[];
   medios: Medio[];
@@ -37,6 +39,7 @@ export default function AjustesTabs({
   regla: Regla;
   decimales: number;
   alertaTarjetaDefault: number;
+  tarjetaPagoDefault: string;
 }) {
   const [tab, setTab] = useState<"personalizable" | "categorias" | "medios" | "historial">(
     tabInicial === "medios" ? "medios" : tabInicial === "historial" ? "historial" : tabInicial === "categorias" ? "categorias" : "personalizable"
@@ -144,6 +147,7 @@ export default function AjustesTabs({
           <ReglaIngresoField regla={regla} />
           <FormatoMontoField decimales={decimales} />
           <AlertaTarjetaField alertaTarjetaDefault={alertaTarjetaDefault} />
+          <TarjetaPagoDefaultField tarjetaPagoDefault={tarjetaPagoDefault} />
 
           <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5 mb-4">
             <div className="flex items-center justify-between mb-1">

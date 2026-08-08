@@ -65,21 +65,54 @@ export default async function SimuladorPage() {
   }
 
   const tarjetas = deudas.filter((d) => d.type === "tarjeta_credito" && d.status !== "pagada");
-  function cuotasTarjetasMes(mes: string) {
-    return tarjetas.reduce((s, d) => s + (planPorDeudaMes[d.id]?.[mes] ?? d.minPayment ?? 0), 0);
-  }
-  function cuotasTarjetasFilasMes(mes: string) {
-    return tarjetas.map((d) => ({
-      label: d.counterpartName || "Tarjeta de crédito",
-      sublabel: planPorDeudaMes[d.id]?.[mes] !== undefined ? "según tu plan" : "pago mínimo",
-      amount: planPorDeudaMes[d.id]?.[mes] ?? d.minPayment ?? 0,
-    }));
-  }
+  const pagoTotalDefault = settings?.tarjetaPagoDefault === "total";
 
   const deudasActivas = deudas.filter((d) => d.status !== "pagada" && (d.type === "tarjeta_credito" || d.direction === "yo_debo"));
 
   const itemsPorMes: Record<string, typeof items> = {};
   for (const m of months) itemsPorMes[m] = items.filter((i) => i.month === m);
+
+  const proyeccionTarjetas = tarjetas.map((d) => {
+    let balance = d.balance;
+    const umbral = d.alertaPorcentaje ?? alertaDefault;
+    const porMes = months.map((mes, idx) => {
+      const itemsMes = itemsPorMes[mes];
+      const cargosFijos = d.paymentMethodId ? fijosConTarjetaPorMedio[d.paymentMethodId] || 0 : 0;
+      const cargosHip = itemsMes.filter((i) => (i.type === "gasto" || i.type === "prestamo") && i.paymentMethodId === d.paymentMethodId).reduce((s, i) => s + i.amount, 0);
+      const cargosPlanificados = d.paymentMethodId ? planificadosPorMedioYMes[d.paymentMethodId]?.[mes] || 0 : 0;
+      const pagoExtra = itemsMes.filter((i) => i.type === "pago_deuda" && i.debtId === d.id).reduce((s, i) => s + i.amount, 0);
+      const planMes = planPorDeudaMes[d.id]?.[mes];
+      // Sin un plan explicito para el mes, se usa el default global: pagar
+      // todo el saldo de este corte, o solo la cuota minima.
+      const pagoDeuda = planMes ?? (pagoTotalDefault ? balance : (d.minPayment || 0));
+      // Cuanto habria que agregar como "pago extra" para dejar la tarjeta en
+      // cero este mes, sin contar dos veces lo que ya se resta por plan/minimo.
+      const montoParaPagoTotal = idx === 0 ? Math.max(0, balance - pagoDeuda) : null;
+      balance = Math.max(0, balance + cargosFijos + cargosHip + cargosPlanificados - pagoDeuda - pagoExtra);
+      const pctUso = d.creditLimit ? Math.min(999, Math.round((balance / d.creditLimit) * 100)) : null;
+      return { mes, balance, pctUso, umbral, segunPlan: planMes !== undefined, cargosPlanificados, montoParaPagoTotal, pagoDeuda };
+    });
+    return { deuda: d, porMes };
+  });
+
+  // Las cuotas que se restan del saldo mensual usan exactamente el mismo
+  // pagoDeuda calculado arriba (plan explicito, o el default global), asi
+  // que "Cuotas de tarjetas" y "Proyeccion de tus tarjetas" siempre coinciden.
+  const pagoDeudaPorDeudaYMes: Record<string, Record<string, number>> = {};
+  for (const { deuda, porMes } of proyeccionTarjetas) {
+    pagoDeudaPorDeudaYMes[deuda.id] = {};
+    for (const p of porMes) pagoDeudaPorDeudaYMes[deuda.id][p.mes] = p.pagoDeuda;
+  }
+  function cuotasTarjetasMes(mes: string) {
+    return tarjetas.reduce((s, d) => s + (pagoDeudaPorDeudaYMes[d.id]?.[mes] ?? 0), 0);
+  }
+  function cuotasTarjetasFilasMes(mes: string) {
+    return tarjetas.map((d) => ({
+      label: d.counterpartName || "Tarjeta de crédito",
+      sublabel: planPorDeudaMes[d.id]?.[mes] !== undefined ? "según tu plan" : pagoTotalDefault ? "pago total" : "pago mínimo",
+      amount: pagoDeudaPorDeudaYMes[d.id]?.[mes] ?? 0,
+    }));
+  }
 
   const filas: { mes: string; itemsMes: typeof items; ingresosHip: number; gastosHip: number; cuotasTarjetas: number; totalPlanificados: number; saldoDelMes: number; saldoAcumulado: number }[] = [];
   for (const mes of months) {
@@ -98,27 +131,6 @@ export default async function SimuladorPage() {
     const previo = filas.length > 0 ? filas[filas.length - 1].saldoAcumulado : 0;
     filas.push({ mes, itemsMes, ingresosHip, gastosHip, cuotasTarjetas: cuotas, totalPlanificados, saldoDelMes, saldoAcumulado: previo + saldoDelMes });
   }
-
-  const proyeccionTarjetas = tarjetas.map((d) => {
-    let balance = d.balance;
-    const umbral = d.alertaPorcentaje ?? alertaDefault;
-    const porMes = months.map((mes, idx) => {
-      const itemsMes = itemsPorMes[mes];
-      const cargosFijos = d.paymentMethodId ? fijosConTarjetaPorMedio[d.paymentMethodId] || 0 : 0;
-      const cargosHip = itemsMes.filter((i) => (i.type === "gasto" || i.type === "prestamo") && i.paymentMethodId === d.paymentMethodId).reduce((s, i) => s + i.amount, 0);
-      const cargosPlanificados = d.paymentMethodId ? planificadosPorMedioYMes[d.paymentMethodId]?.[mes] || 0 : 0;
-      const pagoExtra = itemsMes.filter((i) => i.type === "pago_deuda" && i.debtId === d.id).reduce((s, i) => s + i.amount, 0);
-      const planMes = planPorDeudaMes[d.id]?.[mes];
-      const pagoDeuda = planMes ?? (d.minPayment || 0);
-      // Cuanto habria que agregar como "pago extra" para dejar la tarjeta en
-      // cero este mes, sin contar dos veces lo que ya se resta por plan/minimo.
-      const montoParaPagoTotal = idx === 0 ? Math.max(0, balance - pagoDeuda) : null;
-      balance = Math.max(0, balance + cargosFijos + cargosHip + cargosPlanificados - pagoDeuda - pagoExtra);
-      const pctUso = d.creditLimit ? Math.min(999, Math.round((balance / d.creditLimit) * 100)) : null;
-      return { mes, balance, pctUso, umbral, segunPlan: planMes !== undefined, cargosPlanificados, montoParaPagoTotal };
-    });
-    return { deuda: d, porMes };
-  });
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
@@ -177,7 +189,9 @@ export default async function SimuladorPage() {
           <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
             <p className="text-sm font-medium mb-1">Proyección de tus tarjetas</p>
             <p className="text-xs text-muted mb-3">
-              Si sigues cargándoles tus fijos y solo pagas la cuota mínima, así se vería su saldo.
+              {pagoTotalDefault
+                ? "Asumimos que pagas cada tarjeta en su totalidad cada mes (puedes cambiarlo en Ajustes)."
+                : "Si sigues cargándoles tus fijos y solo pagas la cuota mínima, así se vería su saldo."}
             </p>
             <div className="space-y-4">
               {proyeccionTarjetas.map(({ deuda, porMes }) => (
@@ -191,7 +205,7 @@ export default async function SimuladorPage() {
                         {pctUso !== null && (
                           <p className={`text-[11px] ${pctUso >= umbral ? "text-warning" : "text-muted"}`}>{pctUso}% de tu línea</p>
                         )}
-                        <p className="text-[10px] text-muted mt-0.5">{segunPlan ? "según tu plan" : "pago mínimo est."}</p>
+                        <p className="text-[10px] text-muted mt-0.5">{segunPlan ? "según tu plan" : pagoTotalDefault ? "pago total est." : "pago mínimo est."}</p>
                         {cargosPlanificados > 0 && (
                           <p className="text-[10px] text-accent mt-0.5">+ S/ {formatMonto(cargosPlanificados, decimales)} planificado</p>
                         )}

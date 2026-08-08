@@ -35,6 +35,7 @@ export default async function AjustesPage({
         regla={regla}
         decimales={settings?.decimales ?? 0}
         alertaTarjetaDefault={settings?.alertaTarjetaDefault ?? 30}
+        tarjetaPagoDefault={settings?.tarjetaPagoDefault ?? "minimo"}
       />
     </div>
   );
