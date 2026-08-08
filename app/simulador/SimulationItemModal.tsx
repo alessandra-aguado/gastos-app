@@ -5,7 +5,7 @@ import { createSimulationItem, updateSimulationItem } from "@/lib/actions";
 
 type Categoria = { id: string; name: string };
 type Medio = { id: string; name: string; type: string };
-type DeudaOpcion = { id: string; counterpartName: string | null; type: string };
+type DeudaOpcion = { id: string; counterpartName: string | null; type: string; balance: number };
 type Item = {
   id: string;
   type: string;
@@ -41,6 +41,7 @@ export default function SimulationItemModal({
   const esEdicion = !!item;
   const [abierto, setAbierto] = useState(esEdicion);
   const [type, setType] = useState(item?.type || "gasto");
+  const [amount, setAmount] = useState(item?.amount !== undefined ? String(item.amount) : "");
 
   function cerrar() {
     setAbierto(false);
@@ -88,7 +89,7 @@ export default function SimulationItemModal({
             <input name="description" required defaultValue={item?.description} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder={type === "ingreso" ? "Chamba freelance" : type === "pago_deuda" ? "Pago extra a Interbank" : type === "prestamo" ? "Préstamo a papá" : "Celular nuevo"} />
 
             <label className="text-xs text-muted block mb-1">Monto</label>
-            <input name="amount" type="number" step="any" required defaultValue={item?.amount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="500" />
+            <input name="amount" type="number" step="any" required value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="500" />
 
             {type === "gasto" && (
               <>
@@ -123,12 +124,23 @@ export default function SimulationItemModal({
             {type === "pago_deuda" && (
               <>
                 <label className="text-xs text-muted block mb-1">¿A qué deuda aplica?</label>
-                <select name="debtId" required defaultValue={item?.debtId || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5">
+                <select
+                  name="debtId"
+                  required
+                  defaultValue={item?.debtId || ""}
+                  onChange={(e) => {
+                    if (esEdicion) return;
+                    const d = deudas.find((x) => x.id === e.target.value);
+                    if (d) setAmount(String(d.balance));
+                  }}
+                  className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-1"
+                >
                   <option value="" disabled>Elige una deuda</option>
                   {deudas.map((d) => (
                     <option key={d.id} value={d.id}>{d.counterpartName || (d.type === "tarjeta_credito" ? "Tarjeta de crédito" : "Préstamo")}</option>
                   ))}
                 </select>
+                {!esEdicion && <p className="text-xs text-muted mb-2.5 -mt-0.5">El monto se llena con el saldo actual de la deuda — puedes cambiarlo.</p>}
               </>
             )}
 

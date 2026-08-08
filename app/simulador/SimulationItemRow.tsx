@@ -9,7 +9,7 @@ import SimulationItemModal from "./SimulationItemModal";
 
 type Categoria = { id: string; name: string };
 type Medio = { id: string; name: string; type: string };
-type DeudaOpcion = { id: string; counterpartName: string | null; type: string };
+type DeudaOpcion = { id: string; counterpartName: string | null; type: string; balance: number };
 type Item = {
   id: string;
   type: string;

@@ -9,6 +9,7 @@ import PlannedExpenseModal from "./PlannedExpenseModal";
 import PlannedExpenseRow from "./PlannedExpenseRow";
 import PlanPagoDeudaRow from "./PlanPagoDeudaRow";
 import SavingsPlanField from "../ahorro/SavingsPlanField";
+import LineaExpandible from "./LineaExpandible";
 
 export const dynamic = "force-dynamic";
 
@@ -230,18 +231,22 @@ export default async function PresupuestoPage() {
           <div className="space-y-3">
             <div className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
               <IngresoMensualField monthlyIncome={settings?.monthlyIncome ?? null} />
-              <div className="flex justify-between items-center text-sm text-muted py-1.5">
-                <span>
-                  Fijos <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">Auto</span>
-                </span>
-                <span className="text-foreground">− S/ {formatMonto(totalFijos, decimales)}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm text-muted py-1.5">
-                <span>
-                  Deuda, cuotas de tarjetas <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">{usaPlanDePago ? "Tu plan" : "Auto"}</span>
-                </span>
-                <span className="text-foreground">− S/ {formatMonto(cuotasTarjetas, decimales)}</span>
-              </div>
+              <LineaExpandible
+                label="Fijos"
+                badge="Auto"
+                total={totalFijos}
+                filas={fijosSinTarjeta.map((f) => ({ label: f.name, sublabel: f.paymentMethod?.name, amount: f.amount }))}
+              />
+              <LineaExpandible
+                label="Deuda, cuotas de tarjetas"
+                badge={usaPlanDePago ? "Tu plan" : "Auto"}
+                total={cuotasTarjetas}
+                filas={tarjetasActivas.map((d) => ({
+                  label: d.counterpartName || "Tarjeta de crédito",
+                  sublabel: planMesActualPorDeuda[d.id] !== undefined ? "según tu plan" : "pago mínimo",
+                  amount: planMesActualPorDeuda[d.id] ?? d.minPayment ?? 0,
+                }))}
+              />
               {usaPlanDePago && (
                 <p className="text-xs text-muted -mt-1 mb-1">Incluye tu plan de pago de tarjetas de la pestaña &quot;Planificados&quot; para este mes.</p>
               )}

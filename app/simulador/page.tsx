@@ -1,4 +1,5 @@
 import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, getDebtPaymentPlans, getPlannedExpensesCredito, agruparPlanificadosPorCorte, nextMonthKeys } from "@/lib/queries";
+import { simularPagoTotalDeuda } from "@/lib/actions";
 import { formatMonto } from "@/lib/format";
 import { Calculator } from "lucide-react";
 import SimulationItemModal from "./SimulationItemModal";
@@ -69,7 +70,7 @@ export default async function SimuladorPage() {
   const proyeccionTarjetas = tarjetas.map((d) => {
     let balance = d.balance;
     const umbral = d.alertaPorcentaje ?? alertaDefault;
-    const porMes = months.map((mes) => {
+    const porMes = months.map((mes, idx) => {
       const itemsMes = itemsPorMes[mes];
       const cargosFijos = d.paymentMethodId ? fijosConTarjetaPorMedio[d.paymentMethodId] || 0 : 0;
       const cargosHip = itemsMes.filter((i) => (i.type === "gasto" || i.type === "prestamo") && i.paymentMethodId === d.paymentMethodId).reduce((s, i) => s + i.amount, 0);
@@ -77,9 +78,12 @@ export default async function SimuladorPage() {
       const pagoExtra = itemsMes.filter((i) => i.type === "pago_deuda" && i.debtId === d.id).reduce((s, i) => s + i.amount, 0);
       const planMes = planPorDeudaMes[d.id]?.[mes];
       const pagoDeuda = planMes ?? (d.minPayment || 0);
+      // Cuanto habria que agregar como "pago extra" para dejar la tarjeta en
+      // cero este mes, sin contar dos veces lo que ya se resta por plan/minimo.
+      const montoParaPagoTotal = idx === 0 ? Math.max(0, balance - pagoDeuda) : null;
       balance = Math.max(0, balance + cargosFijos + cargosHip + cargosPlanificados - pagoDeuda - pagoExtra);
       const pctUso = d.creditLimit ? Math.min(999, Math.round((balance / d.creditLimit) * 100)) : null;
-      return { mes, balance, pctUso, umbral, segunPlan: planMes !== undefined, cargosPlanificados };
+      return { mes, balance, pctUso, umbral, segunPlan: planMes !== undefined, cargosPlanificados, montoParaPagoTotal };
     });
     return { deuda: d, porMes };
   });
@@ -142,7 +146,7 @@ export default async function SimuladorPage() {
                 <div key={deuda.id}>
                   <p className="text-sm font-medium mb-1.5">{deuda.counterpartName || "Tarjeta de crédito"}</p>
                   <div className="grid grid-cols-3 gap-2">
-                    {porMes.map(({ mes, balance, pctUso, umbral, segunPlan, cargosPlanificados }) => (
+                    {porMes.map(({ mes, balance, pctUso, umbral, segunPlan, cargosPlanificados, montoParaPagoTotal }) => (
                       <div key={mes} className="border border-border rounded-lg p-2.5">
                         <p className="text-[11px] text-muted capitalize mb-1">{etiquetaMes(mes).split(" ")[0]}</p>
                         <p className={`text-sm font-medium ${pctUso !== null && pctUso >= umbral ? "text-warning" : ""}`}>S/ {formatMonto(balance, decimales)}</p>
@@ -152,6 +156,19 @@ export default async function SimuladorPage() {
                         <p className="text-[10px] text-muted mt-0.5">{segunPlan ? "según tu plan" : "pago mínimo est."}</p>
                         {cargosPlanificados > 0 && (
                           <p className="text-[10px] text-accent mt-0.5">+ S/ {formatMonto(cargosPlanificados, decimales)} planificado</p>
+                        )}
+                        {montoParaPagoTotal !== null && (
+                          montoParaPagoTotal === 0 ? (
+                            <p className="text-[10px] text-muted mt-1.5">Tu plan ya cubre todo el saldo</p>
+                          ) : (
+                            <form action={simularPagoTotalDeuda} className="mt-1.5">
+                              <input type="hidden" name="debtId" value={deuda.id} />
+                              <input type="hidden" name="month" value={mes} />
+                              <input type="hidden" name="amount" value={montoParaPagoTotal} />
+                              <input type="hidden" name="description" value={`Pago total simulado de ${deuda.counterpartName || "tarjeta"}`} />
+                              <button className="text-[10px] text-accent font-medium hover:underline">Simular pago total</button>
+                            </form>
+                          )
                         )}
                       </div>
                     ))}

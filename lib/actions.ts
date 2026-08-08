@@ -1138,6 +1138,37 @@ export async function createSimulationItem(formData: FormData) {
   revalidatePath("/simulador");
 }
 
+// Atajo de un clic: simula pagar TODO el saldo restante de una tarjeta en un
+// mes del Simulador, sin que Ale tenga que escribir el monto a mano. El monto
+// que se guarda es "amount" ya calculado en el cliente (saldo real menos lo
+// que ya se resta por plan/minimo ese mes, para no descontarlo dos veces).
+// Si ya existe un pago_deuda hipotetico para esa deuda+mes, lo actualiza en
+// vez de crear uno duplicado.
+export async function simularPagoTotalDeuda(formData: FormData) {
+  const debtId = String(formData.get("debtId") || "").trim();
+  const month = String(formData.get("month") || "").trim();
+  const amount = parseFloat(String(formData.get("amount") || "0"));
+  const description = String(formData.get("description") || "Pago total simulado");
+  if (!debtId || !month) throw new Error("Faltan datos para simular el pago");
+
+  const existente = await prisma.simulationItem.findFirst({
+    where: { debtId, month, type: "pago_deuda" },
+  });
+
+  if (amount <= 0) {
+    // Ya esta cubierta con el plan/minimo de ese mes: no hace falta pago extra.
+    if (existente) await prisma.simulationItem.delete({ where: { id: existente.id } });
+  } else if (existente) {
+    await prisma.simulationItem.update({ where: { id: existente.id }, data: { amount, description } });
+  } else {
+    await prisma.simulationItem.create({
+      data: { month, type: "pago_deuda", description, amount, debtId },
+    });
+  }
+
+  revalidatePath("/simulador");
+}
+
 export async function updateSimulationItem(formData: FormData) {
   const id = String(formData.get("id"));
   const type = String(formData.get("type") || "gasto");
