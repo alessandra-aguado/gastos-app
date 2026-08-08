@@ -74,7 +74,6 @@ export default async function SimuladorPage() {
   }
 
   const decimales = settings?.decimales ?? 0;
-  const ingresoBase = settings?.monthlyIncome || 0;
   const alertaDefault = settings?.alertaTarjetaDefault ?? 30;
 
   const planPorDeudaMes: Record<string, Record<string, number>> = {};
@@ -191,7 +190,7 @@ export default async function SimuladorPage() {
     // mes y ese sueldo te sostiene el mes SIGUIENTE), asi que se suma como
     // disponible ademas del ingreso de este mes.
     const traeDeMesAnterior = filas.length > 0 ? filas[filas.length - 1].saldoAcumulado : (settings?.saldoAnteriorSimulador || 0);
-    const saldoDelMes = ingresoBase + ingresosHip + ingresosReales - fijosSinTarjeta - cuotas - gastosHip - pagoDeudaHip - totalPlanificados;
+    const saldoDelMes = ingresosHip + ingresosReales - fijosSinTarjeta - cuotas - gastosHip - pagoDeudaHip - totalPlanificados;
     filas.push({ mes, itemsMes, ingresosHip, ingresosReales, gastosHip, cuotasTarjetas: cuotas, totalPlanificados, saldoDelMes, saldoAcumulado: traeDeMesAnterior + saldoDelMes, traeDeMesAnterior });
   }
 
@@ -222,10 +221,6 @@ export default async function SimuladorPage() {
               />
             )}
 
-            <div className="flex justify-between items-center text-sm text-muted py-1">
-              <span>Ingreso mensual</span>
-              <span className="text-foreground">S/ {formatMonto(ingresoBase, decimales)}</span>
-            </div>
             {ingresosReales > 0 && (
               <LineaExpandible
                 label="Ingresos registrados"
