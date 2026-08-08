@@ -1,4 +1,4 @@
-import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, getDebtPaymentPlans, getPlannedExpensesCredito, getPlannedExpensesPendientesTodas, mesEfectivoPlanificado, agruparPlanificadosPorCorte, nextMonthKeys } from "@/lib/queries";
+import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, getDebtPaymentPlans, getPlannedExpensesCredito, getPlannedExpensesPendientesTodas, mesEfectivoPlanificado, agruparPlanificadosPorCorte, mesDeFacturacion, nextMonthKeys } from "@/lib/queries";
 import { simularPagoTotalDeuda } from "@/lib/actions";
 import { formatMonto } from "@/lib/format";
 import { Calculator } from "lucide-react";
@@ -106,11 +106,32 @@ export default async function SimuladorPage() {
   function cuotasTarjetasMes(mes: string) {
     return tarjetas.reduce((s, d) => s + (pagoDeudaPorDeudaYMes[d.id]?.[mes] ?? 0), 0);
   }
+  // Lo que ya planificaste cargar a esta tarjeta este corte (fijos recurrentes
+  // + compras planificadas puntuales) — no es lo que pagas del saldo actual,
+  // sino lo que va a sumarse al saldo del proximo corte si sigues adelante.
+  function detalleTarjetaMes(d: (typeof tarjetas)[number], mes: string) {
+    const detalle: { label: string; sublabel?: string; amount: number }[] = [];
+    if (!d.paymentMethodId) return detalle;
+    for (const f of fijos) {
+      if (f.paymentMethodId === d.paymentMethodId && f.paymentMethod?.type === "credito") {
+        detalle.push({ label: f.name, sublabel: "fijo recurrente", amount: f.amount });
+      }
+    }
+    for (const p of planificadosCredito) {
+      if (p.paymentMethodId !== d.paymentMethodId) continue;
+      const mesCorte = p.date ? mesDeFacturacion(new Date(p.date), p.paymentMethod?.billingDay) : months[0];
+      if (mesCorte !== mes) continue;
+      detalle.push({ label: p.description, sublabel: "planificado", amount: p.amount });
+    }
+    return detalle;
+  }
+
   function cuotasTarjetasFilasMes(mes: string) {
     return tarjetas.map((d) => ({
       label: d.counterpartName || "Tarjeta de crédito",
       sublabel: planPorDeudaMes[d.id]?.[mes] !== undefined ? "según tu plan" : pagoTotalDefault ? "pago total" : "pago mínimo",
       amount: pagoDeudaPorDeudaYMes[d.id]?.[mes] ?? 0,
+      detalle: detalleTarjetaMes(d, mes),
     }));
   }
 

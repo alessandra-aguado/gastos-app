@@ -5,7 +5,8 @@ import { ChevronDown } from "lucide-react";
 import { formatMonto } from "@/lib/format";
 import { useDecimales } from "./DecimalesProvider";
 
-type Fila = { label: string; sublabel?: string; amount: number };
+type SubFila = { label: string; sublabel?: string; amount: number };
+type Fila = { label: string; sublabel?: string; amount: number; detalle?: SubFila[] };
 
 export default function LineaExpandible({
   label,
@@ -19,6 +20,7 @@ export default function LineaExpandible({
   filas: Fila[];
 }) {
   const [abierto, setAbierto] = useState(false);
+  const [filaAbierta, setFilaAbierta] = useState<number | null>(null);
   const decimales = useDecimales();
 
   return (
@@ -40,18 +42,55 @@ export default function LineaExpandible({
           {filas.length === 0 ? (
             <p className="text-xs text-muted px-3 py-2">Sin elementos.</p>
           ) : (
-            filas.map((f, i) => (
-              <div
-                key={i}
-                className={`flex justify-between items-center px-3 py-1.5 text-xs ${i < filas.length - 1 ? "border-b border-border" : ""}`}
-              >
-                <span className="text-muted">
-                  {f.label}
-                  {f.sublabel ? ` · ${f.sublabel}` : ""}
-                </span>
-                <span>S/ {formatMonto(f.amount, decimales)}</span>
-              </div>
-            ))
+            filas.map((f, i) => {
+              const tieneDetalle = !!f.detalle && f.detalle.length > 0;
+              const fila = (
+                <div className="flex justify-between items-center px-3 py-1.5 text-xs">
+                  <span className="text-muted flex items-center gap-1">
+                    {f.label}
+                    {f.sublabel ? ` · ${f.sublabel}` : ""}
+                    {tieneDetalle && (
+                      <ChevronDown
+                        size={11}
+                        strokeWidth={2}
+                        className={`text-muted transition-transform ${filaAbierta === i ? "" : "-rotate-90"}`}
+                      />
+                    )}
+                  </span>
+                  <span>S/ {formatMonto(f.amount, decimales)}</span>
+                </div>
+              );
+              return (
+                <div key={i} className={i < filas.length - 1 ? "border-b border-border" : ""}>
+                  {tieneDetalle ? (
+                    <button
+                      onClick={() => setFilaAbierta((cur) => (cur === i ? null : i))}
+                      className="w-full text-left hover:bg-background transition-colors"
+                    >
+                      {fila}
+                    </button>
+                  ) : (
+                    fila
+                  )}
+                  {tieneDetalle && filaAbierta === i && (
+                    <div className="bg-background px-3 py-1.5">
+                      {f.detalle!.map((d, j) => (
+                        <div
+                          key={j}
+                          className={`flex justify-between items-center py-1 text-[11px] ${j < f.detalle!.length - 1 ? "border-b border-border/60" : ""}`}
+                        >
+                          <span className="text-muted">
+                            {d.label}
+                            {d.sublabel ? ` · ${d.sublabel}` : ""}
+                          </span>
+                          <span className="text-muted">S/ {formatMonto(d.amount, decimales)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       )}
