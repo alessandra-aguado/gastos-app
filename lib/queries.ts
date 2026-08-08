@@ -57,15 +57,67 @@ export async function getIngresos() {
 // Ingresos (reales o ya registrados a futuro, ej. un pago que sabes que te
 // va a llegar) que caen dentro de los meses que muestra el Simulador, para
 // que se usen ahi automaticamente en vez de tener que "hardcodearlos" como
-// item hipotetico.
+// item hipotetico. Incluye tanto ingresos puntuales con fecha dentro del
+// rango, como ingresos recurrentes (ej. arriendo mensual) cuyo rango
+// [date, recurrenteHasta] se cruza con los meses pedidos.
 export async function getIngresosEnMeses(months: string[]) {
   if (months.length === 0) return [];
   const start = monthRangeFromKey(months[0]).start;
   const end = monthRangeFromKey(months[months.length - 1]).end;
   return prisma.income.findMany({
-    where: { date: { gte: start, lt: end } },
+    where: {
+      OR: [
+        { recurrente: false, date: { gte: start, lt: end } },
+        {
+          recurrente: true,
+          date: { lt: end },
+          OR: [{ recurrenteHasta: null }, { recurrenteHasta: { gte: start } }],
+        },
+      ],
+    },
     orderBy: { date: "asc" },
   });
+}
+
+export type IngresoRow = {
+  id: string;
+  amount: number;
+  date: Date;
+  type: string;
+  source: string | null;
+  notes: string | null;
+  recurrente: boolean;
+  recurrenteHasta: Date | null;
+  createdAt: Date;
+};
+
+// Expande una lista de ingresos (algunos puntuales, otros recurrentes) en
+// ocurrencias por mes dentro del set de meses pedido. Un ingreso recurrente
+// "aparece" en cada mes desde su fecha de inicio hasta recurrenteHasta (o
+// indefinidamente si no tiene fin).
+export function expandirIngresosPorMes(
+  ingresos: IngresoRow[],
+  months: string[]
+): Record<string, IngresoRow[]> {
+  const resultado: Record<string, IngresoRow[]> = {};
+  for (const mes of months) {
+    for (const ing of ingresos) {
+      const mesInicio = monthKeyFromLocalDate(new Date(ing.date));
+      if (!ing.recurrente) {
+        if (mesInicio === mes) {
+          if (!resultado[mes]) resultado[mes] = [];
+          resultado[mes].push(ing);
+        }
+        continue;
+      }
+      const mesFin = ing.recurrenteHasta ? monthKeyFromLocalDate(new Date(ing.recurrenteHasta)) : null;
+      if (mes >= mesInicio && (!mesFin || mes <= mesFin)) {
+        if (!resultado[mes]) resultado[mes] = [];
+        resultado[mes].push(ing);
+      }
+    }
+  }
+  return resultado;
 }
 
 export type DateRange = { start: Date; end: Date };

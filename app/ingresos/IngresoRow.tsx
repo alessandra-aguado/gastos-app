@@ -14,6 +14,8 @@ type Ingreso = {
   type: string;
   source: string | null;
   notes: string | null;
+  recurrente: boolean;
+  recurrenteHasta: Date | null;
 };
 
 function borrarConConfirmacion(id: string, nombre: string) {
@@ -31,9 +33,16 @@ export default function IngresoRow({ ingreso, ultimo }: { ingreso: Ingreso; ulti
   return (
     <div className={`flex justify-between items-center px-4 py-3 ${!ultimo ? "border-b border-border" : ""}`}>
       <div>
-        <p className="text-sm font-medium">{nombre}</p>
+        <p className="text-sm font-medium flex items-center gap-1.5">
+          {nombre}
+          {ingreso.recurrente && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-soft text-accent">Mensual</span>
+          )}
+        </p>
         <p className="text-xs text-muted">
-          {new Date(ingreso.date).toLocaleDateString("es-PE", { day: "numeric", month: "short", year: "numeric" })}
+          {ingreso.recurrente
+            ? `desde ${new Date(ingreso.date).toLocaleDateString("es-PE", { day: "numeric", month: "short", year: "numeric" })}${ingreso.recurrenteHasta ? ` hasta ${new Date(ingreso.recurrenteHasta).toLocaleDateString("es-PE", { day: "numeric", month: "short", year: "numeric" })}` : " · sin fecha de fin"}`
+            : new Date(ingreso.date).toLocaleDateString("es-PE", { day: "numeric", month: "short", year: "numeric" })}
           {" · "}
           {ingreso.type === "fijo" ? "fijo" : "variable"}
           {ingreso.notes ? ` · ${ingreso.notes}` : ""}

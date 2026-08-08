@@ -1,4 +1,4 @@
-import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, getDebtPaymentPlans, getPlannedExpensesCredito, getPlannedExpensesPendientesTodas, getIngresosEnMeses, mesEfectivoPlanificado, agruparPlanificadosPorCorte, mesDeFacturacion, monthKeyFromLocalDate, nextMonthKeys } from "@/lib/queries";
+import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, getDebtPaymentPlans, getPlannedExpensesCredito, getPlannedExpensesPendientesTodas, getIngresosEnMeses, expandirIngresosPorMes, mesEfectivoPlanificado, agruparPlanificadosPorCorte, mesDeFacturacion, nextMonthKeys } from "@/lib/queries";
 import { simularPagoTotalDeuda } from "@/lib/actions";
 import { formatMonto } from "@/lib/format";
 import { Calculator } from "lucide-react";
@@ -22,6 +22,11 @@ function mesAnteriorA(mes: string) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function toDateInput(d: Date) {
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
 export default async function SimuladorPage() {
   const months = nextMonthKeys(3);
   const [settings, fijos, deudas, categories, medios, items, planesPago, planificadosCredito, planificadosPendientes, ingresosRegistrados] = await Promise.all([
@@ -41,17 +46,13 @@ export default async function SimuladorPage() {
   // Ingresos que ya registraste en la seccion de Ingresos (reales o a futuro,
   // ej. un pago que sabes que te va a llegar) — se toman automaticamente para
   // el Simulador en vez de tener que volver a "hardcodearlos" como item
-  // hipotetico aparte.
-  const ingresosPorMes: Record<string, typeof ingresosRegistrados> = {};
-  for (const ing of ingresosRegistrados) {
-    const mes = monthKeyFromLocalDate(new Date(ing.date));
-    if (!ingresosPorMes[mes]) ingresosPorMes[mes] = [];
-    ingresosPorMes[mes].push(ing);
-  }
+  // hipotetico aparte. Los recurrentes (ej. arriendo mensual) se repiten en
+  // cada mes de su rango.
+  const ingresosPorMes = expandirIngresosPorMes(ingresosRegistrados, months);
   function ingresosFilasMes(mes: string) {
     return (ingresosPorMes[mes] || []).map((i) => ({
       label: i.source || (i.type === "fijo" ? "Ingreso fijo" : "Ingreso"),
-      sublabel: new Date(i.date).toLocaleDateString("es-PE", { day: "numeric", month: "short" }),
+      sublabel: (i.recurrente ? "mensual · " : "") + new Date(i.date).toLocaleDateString("es-PE", { day: "numeric", month: "short" }),
       amount: i.amount,
     }));
   }
@@ -144,7 +145,7 @@ export default async function SimuladorPage() {
   // simulador, y compras planificadas). La suma de este detalle es EXACTAMENTE
   // el monto que se muestra arriba en "pago total", para que no se confundan.
   function detalleTarjetaMes(d: (typeof tarjetas)[number], mes: string) {
-    const detalle: { label: string; sublabel?: string; amount: number }[] = [];
+    const detalle: { label: string; sublabel?: string; amount: number; id?: string; fecha?: string }[] = [];
     detalle.push({ label: "Deuda pendiente", sublabel: "lo que ya debes hoy", amount: d.balance });
     if (!d.paymentMethodId) return detalle;
     for (const f of fijos) {
@@ -162,7 +163,13 @@ export default async function SimuladorPage() {
       if (p.paymentMethodId !== d.paymentMethodId) continue;
       const mesCorte = p.date ? mesDeFacturacion(new Date(p.date), p.paymentMethod?.billingDay) : months[0];
       if (mesCorte !== mes) continue;
-      detalle.push({ label: p.description, sublabel: "planificado", amount: p.amount });
+      detalle.push({
+        label: p.description,
+        sublabel: "planificado",
+        amount: p.amount,
+        id: p.id,
+        fecha: p.date ? toDateInput(new Date(p.date)) : undefined,
+      });
     }
     return detalle;
   }
@@ -248,6 +255,8 @@ export default async function SimuladorPage() {
                   label: p.description,
                   sublabel: p.kind === "prestamo" ? `préstamo a ${p.counterpartName}` : p.category?.name || undefined,
                   amount: p.amount,
+                  id: p.id,
+                  fecha: p.date ? toDateInput(new Date(p.date)) : undefined,
                 }))}
               />
             )}

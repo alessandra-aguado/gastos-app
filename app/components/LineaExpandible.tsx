@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Pencil } from "lucide-react";
 import { formatMonto } from "@/lib/format";
 import { useDecimales } from "./DecimalesProvider";
+import { moverFechaPlanificado } from "@/lib/actions";
 
-type SubFila = { label: string; sublabel?: string; amount: number };
-type Fila = { label: string; sublabel?: string; amount: number; detalle?: SubFila[] };
+type SubFila = { label: string; sublabel?: string; amount: number; id?: string; fecha?: string };
+type Fila = SubFila & { detalle?: SubFila[] };
 
 export default function LineaExpandible({
   label,
@@ -23,8 +24,52 @@ export default function LineaExpandible({
 }) {
   const [abierto, setAbierto] = useState(false);
   const [filaAbierta, setFilaAbierta] = useState<number | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const decimales = useDecimales();
   const esIngreso = signo === "+";
+
+  function Monto({ item }: { item: SubFila }) {
+    if (item.id && item.fecha && editandoId === item.id) {
+      return (
+        <form
+          action={async (fd) => {
+            await moverFechaPlanificado(fd);
+            setEditandoId(null);
+          }}
+          className="flex items-center gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input type="hidden" name="id" value={item.id} />
+          <input
+            name="date"
+            type="date"
+            defaultValue={item.fecha}
+            autoFocus
+            className="border border-border rounded px-1 py-0.5 text-[10px] bg-background w-[110px]"
+          />
+          <button className="text-[10px] text-accent font-medium">Guardar</button>
+        </form>
+      );
+    }
+    return (
+      <span className="flex items-center gap-1.5">
+        S/ {formatMonto(item.amount, decimales)}
+        {item.id && item.fecha && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditandoId(item.id!);
+            }}
+            className="text-muted hover:text-accent transition-colors"
+            title="Cambiar fecha"
+          >
+            <Pencil size={10} strokeWidth={2} />
+          </button>
+        )}
+      </span>
+    );
+  }
 
   return (
     <div className="py-1.5">
@@ -63,7 +108,7 @@ export default function LineaExpandible({
                       />
                     )}
                   </span>
-                  <span>S/ {formatMonto(f.amount, decimales)}</span>
+                  <Monto item={f} />
                 </div>
               );
               return (
@@ -89,7 +134,9 @@ export default function LineaExpandible({
                             {d.label}
                             {d.sublabel ? ` · ${d.sublabel}` : ""}
                           </span>
-                          <span className="text-muted">S/ {formatMonto(d.amount, decimales)}</span>
+                          <span className="text-muted">
+                            <Monto item={d} />
+                          </span>
                         </div>
                       ))}
                       {f.detalle!.length > 1 && Math.abs(totalDetalle - f.amount) > 0.01 && (

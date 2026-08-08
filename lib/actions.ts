@@ -822,16 +822,20 @@ export async function createIngreso(formData: FormData) {
   const type = String(formData.get("type") || "variable");
   const source = String(formData.get("source") || "").trim() || null;
   const notes = String(formData.get("notes") || "").trim() || null;
+  const recurrente = formData.get("recurrente") === "on" || formData.get("recurrente") === "true";
+  const recurrenteHastaStr = String(formData.get("recurrenteHasta") || "").trim();
+  const recurrenteHasta = recurrente && recurrenteHastaStr ? new Date(recurrenteHastaStr) : null;
 
   if (!amount || !date) throw new Error("Faltan datos del ingreso");
 
   await prisma.income.create({
-    data: { amount, date: new Date(date), type, source, notes },
+    data: { amount, date: new Date(date), type, source, notes, recurrente, recurrenteHasta },
   });
 
-  await registrarActividad("Ingreso", "crear", `Ingreso registrado: S/ ${amount.toFixed(0)}${source ? ` (${source})` : ""}`);
+  await registrarActividad("Ingreso", "crear", `Ingreso registrado: S/ ${amount.toFixed(0)}${source ? ` (${source})` : ""}${recurrente ? " (recurrente)" : ""}`);
 
   revalidatePath("/ingresos");
+  revalidatePath("/simulador");
 }
 
 export async function updateIngreso(formData: FormData) {
@@ -841,17 +845,21 @@ export async function updateIngreso(formData: FormData) {
   const type = String(formData.get("type") || "variable");
   const source = String(formData.get("source") || "").trim() || null;
   const notes = String(formData.get("notes") || "").trim() || null;
+  const recurrente = formData.get("recurrente") === "on" || formData.get("recurrente") === "true";
+  const recurrenteHastaStr = String(formData.get("recurrenteHasta") || "").trim();
+  const recurrenteHasta = recurrente && recurrenteHastaStr ? new Date(recurrenteHastaStr) : null;
 
   if (!id || !amount || !date) throw new Error("Faltan datos del ingreso");
 
   await prisma.income.update({
     where: { id },
-    data: { amount, date: new Date(date), type, source, notes },
+    data: { amount, date: new Date(date), type, source, notes, recurrente, recurrenteHasta },
   });
 
   await registrarActividad("Ingreso", "editar", `Ingreso editado: S/ ${amount.toFixed(0)}${source ? ` (${source})` : ""}`);
 
   revalidatePath("/ingresos");
+  revalidatePath("/simulador");
 }
 
 export async function eliminarIngreso(formData: FormData) {
@@ -859,6 +867,26 @@ export async function eliminarIngreso(formData: FormData) {
   const ingresoEliminado = await prisma.income.delete({ where: { id } });
   await registrarActividad("Ingreso", "eliminar", `Ingreso de S/ ${ingresoEliminado.amount.toFixed(0)} eliminado`);
   revalidatePath("/ingresos");
+  revalidatePath("/simulador");
+}
+
+// Cambia solo la fecha de un gasto planificado (ej. moverlo a otro mes/corte),
+// sin tocar el resto de sus datos — usado desde el editor rapido en el Simulador.
+export async function moverFechaPlanificado(formData: FormData) {
+  const id = String(formData.get("id"));
+  const dateStr = String(formData.get("date") || "");
+  if (!id || !dateStr) throw new Error("Faltan datos");
+  const date = parseFechaLocal(dateStr);
+
+  const actualizado = await prisma.plannedExpense.update({
+    where: { id },
+    data: { date },
+  });
+
+  await registrarActividad("Planificado", "editar", `Fecha de "${actualizado.description}" movida a ${dateStr}`);
+
+  revalidatePath("/presupuesto");
+  revalidatePath("/simulador");
 }
 
 // ================= Ahorro =================

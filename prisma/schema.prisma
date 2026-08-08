@@ -312,6 +312,8 @@ model Income {
   type      String   // fijo | variable
   source    String?  // "Sueldo", "Cobro de deuda", "Regalo"...
   notes     String?
+  recurrente Boolean @default(false) // si es true, este ingreso se repite cada mes desde `date`
+  recurrenteHasta DateTime? // ultimo mes (inclusive) en el que aplica el ingreso recurrente; null = sin fin
   createdAt DateTime @default(now())
 }
 

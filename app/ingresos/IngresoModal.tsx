@@ -10,6 +10,8 @@ type Ingreso = {
   type: string;
   source: string | null;
   notes: string | null;
+  recurrente?: boolean;
+  recurrenteHasta?: Date | null;
 };
 
 function toDateInput(d: Date) {
@@ -25,6 +27,7 @@ export default function IngresoModal({ ingreso, onClose }: { ingreso?: Ingreso; 
   const esEdicion = !!ingreso;
   const [abierto, setAbierto] = useState(esEdicion);
   const [tipo, setTipo] = useState<"fijo" | "variable">((ingreso?.type as "fijo" | "variable") || "variable");
+  const [recurrente, setRecurrente] = useState(!!ingreso?.recurrente);
 
   function cerrar() {
     setAbierto(false);
@@ -69,8 +72,31 @@ export default function IngresoModal({ ingreso, onClose }: { ingreso?: Ingreso; 
             <label className="text-xs text-muted block mb-1">Monto</label>
             <input name="amount" type="number" step="any" required defaultValue={ingreso?.amount} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="3500" />
 
-            <label className="text-xs text-muted block mb-1">Fecha</label>
+            <label className="text-xs text-muted block mb-1">{recurrente ? "Empieza el" : "Fecha"}</label>
             <input name="date" type="date" required defaultValue={ingreso ? toDateInput(ingreso.date) : hoy()} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" />
+
+            <label className="flex items-center gap-2 text-xs text-muted mb-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                name="recurrente"
+                checked={recurrente}
+                onChange={(e) => setRecurrente(e.target.checked)}
+              />
+              Se repite cada mes (ej. arriendo, sueldo fijo)
+            </label>
+
+            {recurrente && (
+              <>
+                <label className="text-xs text-muted block mb-1">Hasta (opcional)</label>
+                <input
+                  name="recurrenteHasta"
+                  type="date"
+                  defaultValue={ingreso?.recurrenteHasta ? toDateInput(ingreso.recurrenteHasta) : ""}
+                  className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-1"
+                />
+                <p className="text-xs text-muted mb-2.5">Déjalo vacío si no sabes hasta cuándo vas a recibirlo.</p>
+              </>
+            )}
 
             <label className="text-xs text-muted block mb-1">Fuente (opcional)</label>
             <input name="source" defaultValue={ingreso?.source || ""} className="w-full border border-border rounded-lg px-3 py-2 bg-background text-sm mb-2.5" placeholder="Sueldo, cobro de deuda, regalo..." />

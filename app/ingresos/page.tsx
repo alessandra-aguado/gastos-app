@@ -1,4 +1,4 @@
-import { getIngresos, getSettings } from "@/lib/queries";
+import { getIngresos, getSettings, expandirIngresosPorMes, currentMonthKey } from "@/lib/queries";
 import { formatMonto } from "@/lib/format";
 import { CircleDollarSign } from "lucide-react";
 import IngresoModal from "./IngresoModal";
@@ -7,21 +7,14 @@ import DescargarReporte from "../components/DescargarReporte";
 
 export const dynamic = "force-dynamic";
 
-function mesActualKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
 export default async function IngresosPage() {
   const [ingresos, settings] = await Promise.all([getIngresos(), getSettings()]);
   const decimales = settings?.decimales ?? 0;
-  const mesActual = mesActualKey();
+  const mesActual = currentMonthKey();
 
-  const delMes = ingresos.filter((i) => {
-    const d = new Date(i.date);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    return key === mesActual;
-  });
+  // Incluye tanto ingresos puntuales de este mes como recurrentes cuyo rango
+  // cubre el mes actual (ej. un arriendo que empezo hace 2 meses).
+  const delMes = expandirIngresosPorMes(ingresos, [mesActual])[mesActual] || [];
   const totalMes = delMes.reduce((s, i) => s + i.amount, 0);
   const fijoMes = delMes.filter((i) => i.type === "fijo").reduce((s, i) => s + i.amount, 0);
   const variableMes = delMes.filter((i) => i.type === "variable").reduce((s, i) => s + i.amount, 0);
