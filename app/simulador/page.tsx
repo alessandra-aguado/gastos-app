@@ -61,8 +61,12 @@ export default async function SimuladorPage() {
     const itemsMes = itemsPorMes[mes];
     const ingresosHip = itemsMes.filter((i) => i.type === "ingreso").reduce((s, i) => s + i.amount, 0);
     const gastosHip = itemsMes.filter((i) => i.type === "gasto" || i.type === "prestamo").reduce((s, i) => s + i.amount, 0);
+    // Pago extra a deuda tambien sale de tu bolsillo este mes (ademas de la
+    // cuota minima/plan que ya se resta en "cuotas"), asi que debe restarse
+    // del saldo igual que un gasto hipotetico.
+    const pagoDeudaHip = itemsMes.filter((i) => i.type === "pago_deuda").reduce((s, i) => s + i.amount, 0);
     const cuotas = cuotasTarjetasMes(mes);
-    const saldoDelMes = ingresoBase + ingresosHip - fijosSinTarjeta - cuotas - gastosHip;
+    const saldoDelMes = ingresoBase + ingresosHip - fijosSinTarjeta - cuotas - gastosHip - pagoDeudaHip;
     const previo = filas.length > 0 ? filas[filas.length - 1].saldoAcumulado : 0;
     filas.push({ mes, itemsMes, ingresosHip, gastosHip, cuotasTarjetas: cuotas, saldoDelMes, saldoAcumulado: previo + saldoDelMes });
   }
