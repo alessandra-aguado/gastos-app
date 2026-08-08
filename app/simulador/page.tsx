@@ -114,7 +114,7 @@ export default async function SimuladorPage() {
     }));
   }
 
-  const filas: { mes: string; itemsMes: typeof items; ingresosHip: number; gastosHip: number; cuotasTarjetas: number; totalPlanificados: number; saldoDelMes: number; saldoAcumulado: number }[] = [];
+  const filas: { mes: string; itemsMes: typeof items; ingresosHip: number; gastosHip: number; cuotasTarjetas: number; totalPlanificados: number; saldoDelMes: number; saldoAcumulado: number; traeDeMesAnterior: number }[] = [];
   for (const mes of months) {
     const itemsMes = itemsPorMes[mes];
     const ingresosHip = itemsMes.filter((i) => i.type === "ingreso").reduce((s, i) => s + i.amount, 0);
@@ -127,9 +127,13 @@ export default async function SimuladorPage() {
     // no son con tarjeta: tambien salen de tu bolsillo este mes.
     const totalPlanificados = planificadosNoCreditoMes(mes).reduce((s, p) => s + p.amount, 0);
     const cuotas = cuotasTarjetasMes(mes);
+    // Lo que sobro del mes anterior no desaparece: es plata real que sigue
+    // en tu cuenta y con la que cuentas para vivir este mes (cobras a fin de
+    // mes y ese sueldo te sostiene el mes SIGUIENTE), asi que se suma como
+    // disponible ademas del ingreso de este mes.
+    const traeDeMesAnterior = filas.length > 0 ? filas[filas.length - 1].saldoAcumulado : 0;
     const saldoDelMes = ingresoBase + ingresosHip - fijosSinTarjeta - cuotas - gastosHip - pagoDeudaHip - totalPlanificados;
-    const previo = filas.length > 0 ? filas[filas.length - 1].saldoAcumulado : 0;
-    filas.push({ mes, itemsMes, ingresosHip, gastosHip, cuotasTarjetas: cuotas, totalPlanificados, saldoDelMes, saldoAcumulado: previo + saldoDelMes });
+    filas.push({ mes, itemsMes, ingresosHip, gastosHip, cuotasTarjetas: cuotas, totalPlanificados, saldoDelMes, saldoAcumulado: traeDeMesAnterior + saldoDelMes, traeDeMesAnterior });
   }
 
   return (
@@ -140,12 +144,19 @@ export default async function SimuladorPage() {
       </p>
 
       <div className="mt-6 space-y-4">
-        {filas.map(({ mes, itemsMes, saldoDelMes, cuotasTarjetas: cuotasMes, totalPlanificados, saldoAcumulado: acumulado }) => (
+        {filas.map(({ mes, itemsMes, saldoDelMes, cuotasTarjetas: cuotasMes, totalPlanificados, saldoAcumulado: acumulado, traeDeMesAnterior }, idx) => (
           <div key={mes} className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
             <div className="flex justify-between items-center mb-3">
               <p className="text-sm font-medium capitalize">{etiquetaMes(mes)}</p>
               <SimulationItemModal month={mes} categorias={categories} medios={medios} deudas={deudasActivas} />
             </div>
+
+            {idx > 0 && (
+              <div className="flex justify-between items-center text-sm py-1">
+                <span className="text-muted">Lo que traes de {etiquetaMes(filas[idx - 1].mes).split(" ")[0]}</span>
+                <span className={traeDeMesAnterior < 0 ? "text-warning" : "text-positive"}>S/ {formatMonto(traeDeMesAnterior, decimales)}</span>
+              </div>
+            )}
 
             <div className="flex justify-between items-center text-sm text-muted py-1">
               <span>Ingreso mensual</span>
