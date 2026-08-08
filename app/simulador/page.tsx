@@ -5,6 +5,7 @@ import { Calculator } from "lucide-react";
 import SimulationItemModal from "./SimulationItemModal";
 import SimulationItemRow from "./SimulationItemRow";
 import LineaExpandible from "../components/LineaExpandible";
+import SaldoAnteriorField from "./SaldoAnteriorField";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,12 @@ const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "
 function etiquetaMes(mes: string) {
   const [y, m] = mes.split("-").map(Number);
   return `${MESES[m - 1]} ${y}`;
+}
+
+function mesAnteriorA(mes: string) {
+  const [y, m] = mes.split("-").map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export default async function SimuladorPage() {
@@ -152,7 +159,7 @@ export default async function SimuladorPage() {
     // en tu cuenta y con la que cuentas para vivir este mes (cobras a fin de
     // mes y ese sueldo te sostiene el mes SIGUIENTE), asi que se suma como
     // disponible ademas del ingreso de este mes.
-    const traeDeMesAnterior = filas.length > 0 ? filas[filas.length - 1].saldoAcumulado : 0;
+    const traeDeMesAnterior = filas.length > 0 ? filas[filas.length - 1].saldoAcumulado : (settings?.saldoAnteriorSimulador || 0);
     const saldoDelMes = ingresoBase + ingresosHip - fijosSinTarjeta - cuotas - gastosHip - pagoDeudaHip - totalPlanificados;
     filas.push({ mes, itemsMes, ingresosHip, gastosHip, cuotasTarjetas: cuotas, totalPlanificados, saldoDelMes, saldoAcumulado: traeDeMesAnterior + saldoDelMes, traeDeMesAnterior });
   }
@@ -172,11 +179,16 @@ export default async function SimuladorPage() {
               <SimulationItemModal month={mes} categorias={categories} medios={medios} deudas={deudasActivas} />
             </div>
 
-            {idx > 0 && (
+            {idx > 0 ? (
               <div className="flex justify-between items-center text-sm py-1">
                 <span className="text-muted">Saldo anterior <span className="text-[11px]">({etiquetaMes(filas[idx - 1].mes).split(" ")[0]})</span></span>
                 <span className={traeDeMesAnterior < 0 ? "text-warning" : "text-positive"}>S/ {formatMonto(traeDeMesAnterior, decimales)}</span>
               </div>
+            ) : (
+              <SaldoAnteriorField
+                saldoAnterior={settings?.saldoAnteriorSimulador || 0}
+                mesAnteriorLabel={etiquetaMes(mesAnteriorA(mes)).split(" ")[0]}
+              />
             )}
 
             <div className="flex justify-between items-center text-sm text-muted py-1">

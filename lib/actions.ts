@@ -893,6 +893,17 @@ export async function updateIngresoMensual(formData: FormData) {
   revalidatePath("/presupuesto");
 }
 
+export async function updateSaldoAnteriorSimulador(formData: FormData) {
+  const saldoAnteriorSimulador = parseFloat(String(formData.get("saldoAnteriorSimulador") || "0")) || 0;
+  await prisma.settings.upsert({
+    where: { id: "singleton" },
+    update: { saldoAnteriorSimulador },
+    create: { id: "singleton", saldoAnteriorSimulador },
+  });
+  await registrarActividad("Simulador", "editar", `Saldo anterior (antes del primer mes) actualizado a S/ ${saldoAnteriorSimulador.toFixed(0)}`);
+  revalidatePath("/simulador");
+}
+
 export async function updateDecimales(formData: FormData) {
   const decimales = Math.min(3, Math.max(0, parseInt(String(formData.get("decimales") || "0"), 10) || 0));
 
