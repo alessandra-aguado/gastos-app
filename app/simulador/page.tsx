@@ -116,30 +116,38 @@ export default async function SimuladorPage() {
   // Lo que ya planificaste cargar a esta tarjeta este corte (fijos recurrentes
   // + compras planificadas puntuales) — no es lo que pagas del saldo actual,
   // sino lo que va a sumarse al saldo del proximo corte si sigues adelante.
-  function detalleTarjetaMes(d: (typeof tarjetas)[number], mes: string) {
+  function detalleTarjetaMes(d: (typeof tarjetas)[number], mes: string, pagoDeuda: number) {
     const detalle: { label: string; sublabel?: string; amount: number }[] = [];
+    // Primero, lo que ya debes de este corte (la deuda actual que estas
+    // pagando/simulando pagar este mes) — para que no se confunda con lo
+    // que viene abajo, que es plata NUEVA que se sumaria a tu deuda si
+    // sigues usando la tarjeta.
+    detalle.push({ label: "Deuda de este corte", sublabel: "lo que ya debes", amount: pagoDeuda });
     if (!d.paymentMethodId) return detalle;
     for (const f of fijos) {
       if (f.paymentMethodId === d.paymentMethodId && f.paymentMethod?.type === "credito") {
-        detalle.push({ label: f.name, sublabel: "fijo recurrente", amount: f.amount });
+        detalle.push({ label: f.name, sublabel: "se suma el próximo corte", amount: f.amount });
       }
     }
     for (const p of planificadosCredito) {
       if (p.paymentMethodId !== d.paymentMethodId) continue;
       const mesCorte = p.date ? mesDeFacturacion(new Date(p.date), p.paymentMethod?.billingDay) : months[0];
       if (mesCorte !== mes) continue;
-      detalle.push({ label: p.description, sublabel: "planificado", amount: p.amount });
+      detalle.push({ label: p.description, sublabel: "se sumaría si compras esto", amount: p.amount });
     }
     return detalle;
   }
 
   function cuotasTarjetasFilasMes(mes: string) {
-    return tarjetas.map((d) => ({
-      label: d.counterpartName || "Tarjeta de crédito",
-      sublabel: planPorDeudaMes[d.id]?.[mes] !== undefined ? "según tu plan" : pagoTotalDefault ? "pago total" : "pago mínimo",
-      amount: pagoDeudaPorDeudaYMes[d.id]?.[mes] ?? 0,
-      detalle: detalleTarjetaMes(d, mes),
-    }));
+    return tarjetas.map((d) => {
+      const pagoDeuda = pagoDeudaPorDeudaYMes[d.id]?.[mes] ?? 0;
+      return {
+        label: d.counterpartName || "Tarjeta de crédito",
+        sublabel: planPorDeudaMes[d.id]?.[mes] !== undefined ? "según tu plan" : pagoTotalDefault ? "pago total" : "pago mínimo",
+        amount: pagoDeuda,
+        detalle: detalleTarjetaMes(d, mes, pagoDeuda),
+      };
+    });
   }
 
   const filas: { mes: string; itemsMes: typeof items; ingresosHip: number; gastosHip: number; cuotasTarjetas: number; totalPlanificados: number; saldoDelMes: number; saldoAcumulado: number; traeDeMesAnterior: number }[] = [];
