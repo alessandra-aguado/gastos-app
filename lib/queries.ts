@@ -15,7 +15,7 @@ export function previousMonthKey(base = new Date()) {
   return d.toISOString().slice(0, 7);
 }
 
-function monthKeyFromLocalDate(d: Date) {
+export function monthKeyFromLocalDate(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
@@ -52,6 +52,20 @@ export async function getSettings() {
 // ---------- Ingresos ----------
 export async function getIngresos() {
   return prisma.income.findMany({ orderBy: { date: "desc" } });
+}
+
+// Ingresos (reales o ya registrados a futuro, ej. un pago que sabes que te
+// va a llegar) que caen dentro de los meses que muestra el Simulador, para
+// que se usen ahi automaticamente en vez de tener que "hardcodearlos" como
+// item hipotetico.
+export async function getIngresosEnMeses(months: string[]) {
+  if (months.length === 0) return [];
+  const start = monthRangeFromKey(months[0]).start;
+  const end = monthRangeFromKey(months[months.length - 1]).end;
+  return prisma.income.findMany({
+    where: { date: { gte: start, lt: end } },
+    orderBy: { date: "asc" },
+  });
 }
 
 export type DateRange = { start: Date; end: Date };

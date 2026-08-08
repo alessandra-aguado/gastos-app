@@ -1,4 +1,4 @@
-import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, getDebtPaymentPlans, getPlannedExpensesCredito, getPlannedExpensesPendientesTodas, mesEfectivoPlanificado, agruparPlanificadosPorCorte, mesDeFacturacion, nextMonthKeys } from "@/lib/queries";
+import { getSettings, getFijos, getDeudas, getTopCategories, getPaymentMethods, getSimulationItems, getDebtPaymentPlans, getPlannedExpensesCredito, getPlannedExpensesPendientesTodas, getIngresosEnMeses, mesEfectivoPlanificado, agruparPlanificadosPorCorte, mesDeFacturacion, monthKeyFromLocalDate, nextMonthKeys } from "@/lib/queries";
 import { simularPagoTotalDeuda } from "@/lib/actions";
 import { formatMonto } from "@/lib/format";
 import { Calculator } from "lucide-react";
@@ -24,7 +24,7 @@ function mesAnteriorA(mes: string) {
 
 export default async function SimuladorPage() {
   const months = nextMonthKeys(3);
-  const [settings, fijos, deudas, categories, medios, items, planesPago, planificadosCredito, planificadosPendientes] = await Promise.all([
+  const [settings, fijos, deudas, categories, medios, items, planesPago, planificadosCredito, planificadosPendientes, ingresosRegistrados] = await Promise.all([
     getSettings(),
     getFijos(),
     getDeudas(),
@@ -34,8 +34,30 @@ export default async function SimuladorPage() {
     getDebtPaymentPlans(months),
     getPlannedExpensesCredito(),
     getPlannedExpensesPendientesTodas(),
+    getIngresosEnMeses(months),
   ]);
   const planificadosPorMedioYMes = agruparPlanificadosPorCorte(planificadosCredito, months);
+
+  // Ingresos que ya registraste en la seccion de Ingresos (reales o a futuro,
+  // ej. un pago que sabes que te va a llegar) — se toman automaticamente para
+  // el Simulador en vez de tener que volver a "hardcodearlos" como item
+  // hipotetico aparte.
+  const ingresosPorMes: Record<string, typeof ingresosRegistrados> = {};
+  for (const ing of ingresosRegistrados) {
+    const mes = monthKeyFromLocalDate(new Date(ing.date));
+    if (!ingresosPorMes[mes]) ingresosPorMes[mes] = [];
+    ingresosPorMes[mes].push(ing);
+  }
+  function ingresosFilasMes(mes: string) {
+    return (ingresosPorMes[mes] || []).map((i) => ({
+      label: i.source || (i.type === "fijo" ? "Ingreso fijo" : "Ingreso"),
+      sublabel: new Date(i.date).toLocaleDateString("es-PE", { day: "numeric", month: "short" }),
+      amount: i.amount,
+    }));
+  }
+  function ingresosRealesMes(mes: string) {
+    return (ingresosPorMes[mes] || []).reduce((s, i) => s + i.amount, 0);
+  }
 
   // Todos los planificados pendientes, agrupados por el mes en el que
   // realmente van a impactar (fecha de corte si es tarjeta, mes calendario si
@@ -150,10 +172,11 @@ export default async function SimuladorPage() {
     });
   }
 
-  const filas: { mes: string; itemsMes: typeof items; ingresosHip: number; gastosHip: number; cuotasTarjetas: number; totalPlanificados: number; saldoDelMes: number; saldoAcumulado: number; traeDeMesAnterior: number }[] = [];
+  const filas: { mes: string; itemsMes: typeof items; ingresosHip: number; ingresosReales: number; gastosHip: number; cuotasTarjetas: number; totalPlanificados: number; saldoDelMes: number; saldoAcumulado: number; traeDeMesAnterior: number }[] = [];
   for (const mes of months) {
     const itemsMes = itemsPorMes[mes];
     const ingresosHip = itemsMes.filter((i) => i.type === "ingreso").reduce((s, i) => s + i.amount, 0);
+    const ingresosReales = ingresosRealesMes(mes);
     const gastosHip = itemsMes.filter((i) => i.type === "gasto" || i.type === "prestamo").reduce((s, i) => s + i.amount, 0);
     // Pago extra a deuda tambien sale de tu bolsillo este mes (ademas de la
     // cuota minima/plan que ya se resta en "cuotas"), asi que debe restarse
@@ -168,8 +191,8 @@ export default async function SimuladorPage() {
     // mes y ese sueldo te sostiene el mes SIGUIENTE), asi que se suma como
     // disponible ademas del ingreso de este mes.
     const traeDeMesAnterior = filas.length > 0 ? filas[filas.length - 1].saldoAcumulado : (settings?.saldoAnteriorSimulador || 0);
-    const saldoDelMes = ingresoBase + ingresosHip - fijosSinTarjeta - cuotas - gastosHip - pagoDeudaHip - totalPlanificados;
-    filas.push({ mes, itemsMes, ingresosHip, gastosHip, cuotasTarjetas: cuotas, totalPlanificados, saldoDelMes, saldoAcumulado: traeDeMesAnterior + saldoDelMes, traeDeMesAnterior });
+    const saldoDelMes = ingresoBase + ingresosHip + ingresosReales - fijosSinTarjeta - cuotas - gastosHip - pagoDeudaHip - totalPlanificados;
+    filas.push({ mes, itemsMes, ingresosHip, ingresosReales, gastosHip, cuotasTarjetas: cuotas, totalPlanificados, saldoDelMes, saldoAcumulado: traeDeMesAnterior + saldoDelMes, traeDeMesAnterior });
   }
 
   return (
@@ -180,7 +203,7 @@ export default async function SimuladorPage() {
       </p>
 
       <div className="mt-6 space-y-4">
-        {filas.map(({ mes, itemsMes, saldoDelMes, cuotasTarjetas: cuotasMes, totalPlanificados, saldoAcumulado: acumulado, traeDeMesAnterior }, idx) => (
+        {filas.map(({ mes, itemsMes, saldoDelMes, cuotasTarjetas: cuotasMes, totalPlanificados, ingresosReales, saldoAcumulado: acumulado, traeDeMesAnterior }, idx) => (
           <div key={mes} className="bg-surface border border-border rounded-xl shadow-[0_1px_2px_rgba(16,24,40,0.04)] p-5">
             <div className="flex justify-between items-center mb-3">
               <p className="text-sm font-medium capitalize">{etiquetaMes(mes)}</p>
@@ -203,6 +226,15 @@ export default async function SimuladorPage() {
               <span>Ingreso mensual</span>
               <span className="text-foreground">S/ {formatMonto(ingresoBase, decimales)}</span>
             </div>
+            {ingresosReales > 0 && (
+              <LineaExpandible
+                label="Ingresos registrados"
+                badge="Real"
+                signo="+"
+                total={ingresosReales}
+                filas={ingresosFilasMes(mes)}
+              />
+            )}
             <LineaExpandible label="Fijos (débito/efectivo)" total={fijosSinTarjeta} filas={fijosSinTarjetaFilas} />
             <LineaExpandible label="Cuotas de tarjetas" total={cuotasMes} filas={cuotasTarjetasFilasMes(mes)} />
             {totalPlanificados > 0 && (

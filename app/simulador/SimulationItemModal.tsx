@@ -19,7 +19,6 @@ type Item = {
 const TIPOS = [
   { value: "gasto", label: "Gasto" },
   { value: "prestamo", label: "Préstamo que doy" },
-  { value: "ingreso", label: "Ingreso extra" },
   { value: "pago_deuda", label: "Pago extra a deuda" },
 ];
 

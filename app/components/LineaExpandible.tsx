@@ -13,15 +13,18 @@ export default function LineaExpandible({
   badge,
   total,
   filas,
+  signo = "-",
 }: {
   label: string;
   badge?: string;
   total: number;
   filas: Fila[];
+  signo?: "+" | "-";
 }) {
   const [abierto, setAbierto] = useState(false);
   const [filaAbierta, setFilaAbierta] = useState<number | null>(null);
   const decimales = useDecimales();
+  const esIngreso = signo === "+";
 
   return (
     <div className="py-1.5">
@@ -34,7 +37,9 @@ export default function LineaExpandible({
           {badge && <span className="bg-accent-soft text-accent text-[10px] px-1.5 py-0.5 rounded ml-1">{badge}</span>}
           <ChevronDown size={12} strokeWidth={2} className={`text-muted transition-transform ${abierto ? "" : "-rotate-90"}`} />
         </span>
-        <span className="text-foreground">− S/ {formatMonto(total, decimales)}</span>
+        <span className={esIngreso ? "text-positive" : "text-foreground"}>
+          {esIngreso ? "+" : "−"} S/ {formatMonto(total, decimales)}
+        </span>
       </button>
 
       {abierto && (
@@ -44,6 +49,7 @@ export default function LineaExpandible({
           ) : (
             filas.map((f, i) => {
               const tieneDetalle = !!f.detalle && f.detalle.length > 0;
+              const totalDetalle = tieneDetalle ? f.detalle!.reduce((s, d) => s + d.amount, 0) : 0;
               const fila = (
                 <div className="flex justify-between items-center px-3 py-1.5 text-xs">
                   <span className="text-muted flex items-center gap-1">
@@ -77,7 +83,7 @@ export default function LineaExpandible({
                       {f.detalle!.map((d, j) => (
                         <div
                           key={j}
-                          className={`flex justify-between items-center py-1 text-[11px] ${j < f.detalle!.length - 1 ? "border-b border-border/60" : ""}`}
+                          className="flex justify-between items-center py-1 text-[11px] border-b border-border/60"
                         >
                           <span className="text-muted">
                             {d.label}
@@ -86,6 +92,12 @@ export default function LineaExpandible({
                           <span className="text-muted">S/ {formatMonto(d.amount, decimales)}</span>
                         </div>
                       ))}
+                      {f.detalle!.length > 1 && (
+                        <div className="flex justify-between items-center pt-1.5 text-[11px] font-medium">
+                          <span>Total si sigues usándola así</span>
+                          <span>S/ {formatMonto(totalDetalle, decimales)}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
